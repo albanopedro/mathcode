@@ -5,10 +5,10 @@ linguagem natural. Os cálculos são feitos por um motor determinístico (SymPy)
 e **todo resultado informa o quanto foi verificado**. A IA, quando existir,
 só interpreta o pedido: nunca é ela que calcula.
 
-> **Estado: Fase 3 (API).** A API já calcula aritmética, simplifica expressões
-> e resolve equações do 1º grau, com verificação independente e tempo limite
-> por cálculo. A interface de cálculo chega na Fase 4 (veja o
-> [roadmap](docs/roadmap.md)).
+> **Estado: Fase 4 (frontend básico).** Já é possível usar pelo navegador:
+> aritmética, simplificação e equações do 1º grau, com o resultado em LaTeX, a
+> verificação, os avisos e os erros apontando onde está o problema. Os próximos
+> passos estão no [roadmap](docs/roadmap.md).
 
 ## Princípios
 
@@ -46,8 +46,9 @@ npm install
 npm run dev
 ```
 
-Abra <http://localhost:5180>. Em desenvolvimento, o Vite encaminha `/api`
-para o backend na porta 8100. Rode os dois juntos.
+Abra <http://localhost:5180> e digite, por exemplo, `2x + 5 = 17`,
+`x² + 2x + x²` ou `sen(30°)`. Em desenvolvimento, o Vite encaminha `/api` para
+o backend na porta 8100, então rode os dois juntos.
 
 ### Usar a API
 
@@ -89,7 +90,7 @@ Mathcode/
 │   │           verification/ formatting/ calculator.py main.py
 │   └── tests/
 ├── frontend/   React + TypeScript + Vite + Tailwind
-│   └── src/    components/ hooks/ services/ types/ test/
+│   └── src/    components/ hooks/ services/ types/ utils/ test/
 └── docs/       arquitetura, roadmap e decisões (ADRs)
 ```
 

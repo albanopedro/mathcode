@@ -1,0 +1,16 @@
+{
+  "success": false,
+  "intent": null,
+  "input": "2 +",
+  "normalized_input": null,
+  "result": null,
+  "steps": [],
+  "details": {},
+  "verification": null,
+  "warnings": [],
+  "error": {
+    "code": "PARSE_ERROR",
+    "message": "A expressão está incompleta.",
+    "position": 3
+  }
+}

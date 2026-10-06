@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "intent": "simplify",
+  "input": "(x^2 - 1)/(x - 1)",
+  "normalized_input": "(x^2 - 1)/(x - 1)",
+  "result": {
+    "plain": "x + 1",
+    "latex": "x + 1",
+    "approx": null
+  },
+  "steps": [],
+  "details": {},
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "symbolic+numeric",
+    "checks": [
+      "Avaliador independente: a expressão original e o resultado coincidem em 6 ponto(s) sorteados.",
+      "A diferença entre a expressão original e o resultado simplifica para 0."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [
+    {
+      "code": "DOMAIN_CHANGED",
+      "message": "A expressão original não é definida para x = 1; o resultado só equivale a ela para x ≠ 1."
+    }
+  ],
+  "error": null
+}

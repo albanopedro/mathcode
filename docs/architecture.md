@@ -4,8 +4,8 @@
 > `core/` e `models/` e a base do frontend. A Fase 2 criou `parsing/`,
 > `interpreter/`, `math_engine/`, `verification/`, `formatting/` e
 > `calculator.py`. A Fase 3 criou `POST /api/calculate` e o pool de workers
-> (`core/workers.py`). As demais pastas são criadas nas fases em que ganham
-> código.
+> (`core/workers.py`). A Fase 4 criou a interface de cálculo (seção 6). As
+> demais pastas são criadas nas fases em que ganham código.
 
 ## 1. Princípios
 
@@ -142,7 +142,34 @@ formato.
 **Execução:** cada pedido vai para um worker do pool (ADR 0002, seção 4). O
 `lifespan` do FastAPI cria o pool na inicialização e o encerra no desligamento.
 
-## 6. Estrutura de pastas
+## 6. Frontend
+
+Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
+`ApiStatus` da Fase 1.
+
+| Peça | Papel |
+|---|---|
+| `types/math.ts` | tipos que espelham o `MathResult` e `isMathResult()`, que valida cada resposta antes de usá-la, com a mesma regra de consistência do backend |
+| `services/api.ts` | `calculate(input)`: decide pelo **corpo**, não pelo status, porque 200, 500 e 503 trazem `MathResult`. Trata 502–504 sem corpo como API inacessível e 422 como pedido recusado |
+| `hooks/useCalculator.ts` | estados `idle`, `loading`, `done` e `failed` (este último sem `MathResult`, ou seja, erro de rede); cancela o pedido anterior |
+| `components/Calculator.tsx` | formulário (Enter envia; botão desativado com o campo vazio ou durante o cálculo) e região `aria-live` |
+| `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
+| `components/ErrorView.tsx` | `role="alert"`, mensagem e a entrada com o caractere de `error.position` destacado (contando code points, como o Python) |
+| `components/Verification.tsx` | a mensagem do backend como título, com ícone e cor por status, e "Como foi verificado" (`<details>`) com os `checks` |
+| `components/MathFormula.tsx` | `katex.render` num `ref` (sem `innerHTML` vindo do React); gera HTML e MathML, que é o que leitores de tela leem |
+
+Decisões:
+
+- **KaTeX local:** CSS e fontes são empacotados pelo Vite (`dist/assets`), sem
+  CDN, então funcionam offline (ADR 0001).
+- **Resultados longos** (mais de 120 caracteres, `utils/display.ts`) aparecem
+  como texto que quebra linha. O KaTeX não quebra um número como `2^10000`
+  (3 011 dígitos) e precisaria de cerca de 36 000 px de largura.
+- **Passos** não são exibidos enquanto a lista vier vazia (seção 4).
+- Os testes usam **respostas reais da API** (`src/test/fixtures/*.json`), para
+  que os tipos não se afastem do backend.
+
+## 7. Estrutura de pastas
 
 ```
 Mathcode/
@@ -183,7 +210,7 @@ Esta estrutura difere do prompt original em três pontos:
 - O `docker-compose.yml` fica adiado: o Docker não está instalado, e um arquivo
   que não pode ser testado não deve entrar.
 
-## 7. Testes
+## 8. Testes
 
 - **Unitários:** normalize, tokenizer, parser (válidos, inválidos e
   maliciosos), cada executor, cada verificador e os schemas.
@@ -196,7 +223,7 @@ Esta estrutura difere do prompt original em três pontos:
   - solução inexistente, múltiplas soluções e soluções complexas omitidas;
   - timeout.
 
-## 8. Ambiente (2026-10-06)
+## 9. Ambiente (2026-10-06)
 
 | Ferramenta | Versão |
 |---|---|
@@ -211,7 +238,7 @@ Portas de desenvolvimento: API em **8100**, frontend em **5180**. O Vite
 encaminha `/api` para a API, então o navegador fala com uma origem só, e não é
 preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 
-## 9. Decisões registradas
+## 10. Decisões registradas
 
 | ADR | Tema |
 |---|---|

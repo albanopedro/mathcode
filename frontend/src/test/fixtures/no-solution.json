@@ -1,0 +1,28 @@
+{
+  "success": true,
+  "intent": "solve_equation",
+  "input": "x + 1 = x + 2",
+  "normalized_input": "x + 1 = x + 2",
+  "result": {
+    "plain": "∅",
+    "latex": "\\varnothing",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "solution_set": "none",
+    "solutions": []
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "symbolic+numeric",
+    "checks": [
+      "Os termos com x se cancelam e sobra -1 = 0, que é falso.",
+      "O avaliador independente confirma em 6 pontos sorteados."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

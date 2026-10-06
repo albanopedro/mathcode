@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "intent": "arithmetic",
+  "input": "sen(30) + log(100)",
+  "normalized_input": "sin(30) + log(100)",
+  "result": {
+    "plain": "sin(30) + 2",
+    "latex": "\\sin{\\left(30 \\right)} + 2",
+    "approx": "1.01196837590714"
+  },
+  "steps": [],
+  "details": {},
+  "verification": {
+    "status": "verified_numeric",
+    "method": "independent_numeric",
+    "checks": [
+      "Um avaliador independente (mpmath, com precisão ajustada ao tamanho dos números) obteve 1.01196837590714, igual ao resultado em pelo menos 30 algarismos significativos."
+    ],
+    "message": "Resultado conferido numericamente por um avaliador independente."
+  },
+  "warnings": [
+    {
+      "code": "ANGLE_IN_RADIANS",
+      "message": "Ângulos são lidos em radianos. Para graus, use o símbolo °, como em sin(30°)."
+    },
+    {
+      "code": "LOG_BASE_10",
+      "message": "log(x) é o logaritmo na base 10. Para o logaritmo natural, use ln(x)."
+    }
+  ],
+  "error": null
+}

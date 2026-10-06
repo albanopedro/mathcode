@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "intent": "arithmetic",
+  "input": "0.1 + 0.2",
+  "normalized_input": "0.1 + 0.2",
+  "result": {
+    "plain": "3/10",
+    "latex": "\\frac{3}{10}",
+    "approx": "0.3"
+  },
+  "steps": [],
+  "details": {},
+  "verification": {
+    "status": "verified_numeric",
+    "method": "independent_numeric",
+    "checks": [
+      "Um avaliador independente (mpmath, com precisão ajustada ao tamanho dos números) obteve 0.3, igual ao resultado em pelo menos 30 algarismos significativos."
+    ],
+    "message": "Resultado conferido numericamente por um avaliador independente."
+  },
+  "warnings": [],
+  "error": null
+}

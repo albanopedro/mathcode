@@ -1,0 +1,31 @@
+{
+  "success": true,
+  "intent": "solve_equation",
+  "input": "2x + 5 = 17",
+  "normalized_input": "2*x + 5 = 17",
+  "result": {
+    "plain": "x = 6",
+    "latex": "x = 6",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "solution_set": "unique",
+    "solutions": [
+      "6"
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "substitution",
+    "checks": [
+      "Substituindo x = 6 na equação original, os dois lados ficam iguais.",
+      "O avaliador independente confirma: os dois lados valem 17.",
+      "A equação é do 1º grau (coeficiente de x: 2), então não existem outras soluções."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

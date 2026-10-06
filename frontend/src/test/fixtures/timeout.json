@@ -1,0 +1,16 @@
+{
+  "success": false,
+  "intent": null,
+  "input": "(x+1)^1000*(x+2)^1000",
+  "normalized_input": null,
+  "result": null,
+  "steps": [],
+  "details": {},
+  "verification": null,
+  "warnings": [],
+  "error": {
+    "code": "TIMEOUT",
+    "message": "O cálculo passou de 5 s e foi interrompido.",
+    "position": null
+  }
+}

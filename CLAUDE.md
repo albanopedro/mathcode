@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-06, ao fim da Fase 3.
+> Última atualização: 2026-10-06, ao fim da Fase 4.
 
 ## O que é
 
@@ -47,13 +47,14 @@ A IA (Fase 8+) só interpreta o pedido: nunca calcula.
 |---|---|
 | 0: Auditoria e arquitetura | concluída e commitada |
 | 1: Foundation | concluída e commitada (`5e67f6b`) |
-| 2: Core matemático | concluída (estava sem commit quando a Fase 3 começou) |
-| 3: API | **concluída, aguardando revisão e commit do usuário** |
+| 2: Core matemático | concluída e commitada (`49fb79d`, junto com a 3) |
+| 3: API | concluída e commitada (`49fb79d`) |
+| 4: Frontend básico | **concluída, aguardando revisão e commit do usuário** |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
-Pendência do usuário: o commit `5e67f6b` incluiu `mathcode/` como um repositório
-embutido (gitlink). A correção sugerida foi `git rm --cached mathcode` seguido
-de `rm -rf mathcode`.
+Pendência do usuário (ainda aberta no `49fb79d`): `mathcode/` está no Git como
+um repositório embutido (gitlink). A correção sugerida é
+`git rm --cached mathcode` seguido de `rm -rf mathcode`.
 
 ## Arquitetura em uma tela
 
@@ -84,6 +85,20 @@ Arquivos-chave do backend (`backend/app/`):
   e limite de erro.
 - `api/`: rotas sob `/api`, que são `health` e `calculate`. O corpo é
   `{input, intent?}`, com `extra="forbid"` e `input` de até 2 000 caracteres.
+Frontend (`frontend/src/`, ver architecture §6):
+
+- `types/math.ts`: os tipos do `MathResult` e `isMathResult()`, que valida
+  cada resposta.
+- `services/api.ts`: `calculate()` decide pelo **corpo**, porque 200, 500 e
+  503 trazem `MathResult`.
+- `hooks/useCalculator.ts`: o estado da tela.
+- Componentes: `Calculator`, `ResultView`, `ErrorView`, `Verification`,
+  `MathFormula` (KaTeX) e `ApiStatus`.
+- `test/fixtures/*.json` são **respostas reais da API**. Se o `MathResult`
+  mudar, capture de novo com a API rodando (um POST por arquivo).
+
+Backend, continuação:
+
 - `core/workers.py`: `WorkerPool`, com processos `spawn` aquecidos (cada um
   importa o SymPy uma vez) e comunicação por `Pipe`.
   - Timeout: o worker é morto (SIGKILL) e substituído, e a resposta é `TIMEOUT`.
@@ -131,6 +146,13 @@ Arquivos-chave do backend (`backend/app/`):
   - `422` é requisição malformada, no formato `detail` do FastAPI;
   - `500` é `INTERNAL_ERROR`;
   - `503` é `SERVER_BUSY`.
+- **Frontend:**
+  - KaTeX com fontes locais, sem CDN;
+  - resultados com mais de 120 caracteres viram texto que quebra linha
+    (`utils/display.ts`);
+  - o título da verificação é a mensagem do backend;
+  - a posição do erro é destacada contando code points (`Array.from`);
+  - nada de dark mode, histórico, copiar ou MathLive antes da Fase 11.
 - **Configuração:** `MATHCODE_WORKERS` (2), `MATHCODE_CALCULATION_TIMEOUT`
   (5 s) e `MATHCODE_QUEUE_TIMEOUT` (10 s).
 
@@ -152,6 +174,12 @@ Arquivos-chave do backend (`backend/app/`):
   `tests/api/api_helpers.py`: `running_app(**settings)` e `SLOW_INPUT`.
 - O `TestClient` só roda o `lifespan` dentro de `with`. Os testes da Fase 1
   usam o client sem `with`, então eles funcionam sem o pool.
+- Em React com Fast Refresh, arquivos de componente só exportam componentes.
+  Constantes vão para `utils/`.
+- No Testing Library, `toHaveTextContent` remove espaços das pontas. Para
+  conferir um `\u00a0`, compare o `textContent`.
+- O `npm install` mostra um aviso sobre o install script do `fsevents`. É
+  inofensivo: o npm 11 bloqueia scripts por padrão.
 - O `ruff` tem `allowed-confusables` para `× · − º ℝ` etc. Em testes, caracteres
   de largura total vão como escapes `\uXXXX`.
 
@@ -171,14 +199,16 @@ cd frontend && npm test && npm run build
 
 ## Próximos passos
 
-- Fase 4 (próxima, aguardando o "pode seguir"): interface básica, com campo de
-  entrada, botão Calcular e resultado em KaTeX. Precisa mostrar erro, avisos e
-  verificação, e os tipos TypeScript do `MathResult` devem espelhar
-  `models/result.py`.
+- Fase 5 (próxima, aguardando o "pode seguir"): álgebra. Fatoração,
+  expansão, polinômios, equações gerais (quadráticas etc., com
+  `COMPLEX_SOLUTIONS_OMITTED` e status `partial` quando a completude não for
+  provada) e sistemas. Cada item com testes e verificação (ADR 0003).
 - Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
   resolução por regras; `docker-compose` quando houver Docker; servir os
   assets do Swagger localmente (hoje vêm do jsDelivr); ESLint no frontend;
-  limite de tamanho do corpo HTTP antes da leitura.
+  limite de tamanho do corpo HTTP antes da leitura; carregar o KaTeX sob
+  demanda (o JS tem 490 kB); exibir decimais com vírgula; seletor de operação
+  na interface (a API já aceita `intent`).
 
 ## Histórico
 
@@ -189,3 +219,5 @@ cd frontend && npm test && npm run build
   `solve_equation` (1º grau); verificação independente; 342 testes.
 - **Fase 3:** `POST /api/calculate`; pool de workers com timeout; mapeamento
   HTTP; 30 testes de integração (372 no backend).
+- **Fase 4:** interface de cálculo com KaTeX, verificação, avisos e erros
+  com posição; 60 testes Vitest.

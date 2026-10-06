@@ -1,0 +1,23 @@
+{
+  "success": true,
+  "intent": "simplify",
+  "input": "sqrt(x - 1000)",
+  "normalized_input": "sqrt(x - 1000)",
+  "result": {
+    "plain": "sqrt(x - 1000)",
+    "latex": "\\sqrt{x - 1000}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {},
+  "verification": {
+    "status": "unverified",
+    "method": "independent_numeric",
+    "checks": [
+      "Só 0 ponto(s) do domínio foram encontrados para comparar."
+    ],
+    "message": "Não foi possível verificar este resultado."
+  },
+  "warnings": [],
+  "error": null
+}

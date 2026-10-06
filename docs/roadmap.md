@@ -13,8 +13,8 @@ Regras gerais:
 | 0 | Auditoria e arquitetura | concluída |
 | 1 | Foundation | concluída |
 | 2 | Core matemático | concluída |
-| 3 | API | concluída (aguardando revisão) |
-| 4 | Frontend básico | — |
+| 3 | API | concluída |
+| 4 | Frontend básico | concluída (aguardando revisão) |
 | 5 | Álgebra | — |
 | 6 | Cálculo | — |
 | 7 | Gráficos | — |
@@ -102,6 +102,16 @@ Nenhum código foi escrito.
 - Campo de entrada, botão Calcular e exibição do resultado com KaTeX.
 - Estados de carregamento, erro e verificação.
 - Testes de componentes.
+- **Entregue:**
+  - interface com resultado em KaTeX (fontes locais), aproximação, operação
+    detectada, "Entendido como", verificação com "Como foi verificado" e avisos;
+  - erro com a posição destacada na entrada, além de timeout, falha de
+    verificação e API inacessível;
+  - acessibilidade: `aria-live`, `role="alert"`, MathML do KaTeX e rótulo no
+    campo;
+  - 60 testes Vitest (eram 13), com fixtures que são respostas reais da API.
+- **Descoberto no navegador:** `2^10000` ficava cortado (uma linha de cerca de
+  36 000 px). Resultados longos agora aparecem como texto que quebra linha.
 
 ## Fase 5 — Álgebra
 
