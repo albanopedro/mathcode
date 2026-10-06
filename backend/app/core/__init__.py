@@ -1,1 +1,1 @@
-"""Cross-cutting infrastructure: configuration (later: errors, limits, worker pool)."""
+"""Cross-cutting infrastructure: configuration, errors, notices and limits."""

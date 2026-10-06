@@ -5,9 +5,10 @@ linguagem natural. Os cálculos são feitos por um motor determinístico (SymPy)
 e **todo resultado informa o quanto foi verificado**. A IA, quando existir,
 só interpreta o pedido: nunca é ela que calcula.
 
-> **Estado: Fase 1 (Foundation).** Existem a estrutura, o health check da API
-> e uma página que mostra se a API está no ar. A calculadora chega nas próximas
-> fases (veja o [roadmap](docs/roadmap.md)).
+> **Estado: Fase 3 (API).** A API já calcula aritmética, simplifica expressões
+> e resolve equações do 1º grau, com verificação independente e tempo limite
+> por cálculo. A interface de cálculo chega na Fase 4 (veja o
+> [roadmap](docs/roadmap.md)).
 
 ## Princípios
 
@@ -48,6 +49,18 @@ npm run dev
 Abra <http://localhost:5180>. Em desenvolvimento, o Vite encaminha `/api`
 para o backend na porta 8100. Rode os dois juntos.
 
+### Usar a API
+
+Com o backend rodando:
+
+```bash
+curl -s http://127.0.0.1:8100/api/calculate -H "Content-Type: application/json" -d '{"input": "2x + 5 = 17"}'
+```
+
+A resposta é um `MathResult`: resultado em texto, LaTeX e decimal, além da
+verificação, dos avisos e do erro, se houver. Os detalhes e os códigos HTTP
+estão em [docs/architecture.md](docs/architecture.md), seção 5.
+
 ### Configuração
 
 Copie `.env.example` para `.env` na raiz. Todas as variáveis são opcionais.
@@ -72,14 +85,15 @@ npm run build
 ```
 Mathcode/
 ├── backend/    FastAPI + Pydantic (Python)
-│   ├── app/    api/ core/ models/ main.py
+│   ├── app/    api/ core/ models/ parsing/ interpreter/ math_engine/
+│   │           verification/ formatting/ calculator.py main.py
 │   └── tests/
 ├── frontend/   React + TypeScript + Vite + Tailwind
 │   └── src/    components/ hooks/ services/ types/ test/
 └── docs/       arquitetura, roadmap e decisões (ADRs)
 ```
 
-As pastas das próximas fases (`parsing/`, `math_engine/`, `verification/`...)
+As pastas das próximas fases (`planner/`, `ai/`...)
 são criadas quando tiverem código. A estrutura completa planejada está em
 [docs/architecture.md](docs/architecture.md).
 

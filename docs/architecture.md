@@ -1,8 +1,11 @@
 # Arquitetura do Mathcode
 
-> Estado: proposta aprovada na Fase 0 (2026-10-06). Na Fase 1 foram criados
-> `api/`, `core/` e `models/` no backend e a base do frontend. As demais pastas
-> são criadas nas fases em que ganham código.
+> Estado: proposta aprovada na Fase 0 (2026-10-06). A Fase 1 criou `api/`,
+> `core/` e `models/` e a base do frontend. A Fase 2 criou `parsing/`,
+> `interpreter/`, `math_engine/`, `verification/`, `formatting/` e
+> `calculator.py`. A Fase 3 criou `POST /api/calculate` e o pool de workers
+> (`core/workers.py`). As demais pastas são criadas nas fases em que ganham
+> código.
 
 ## 1. Princípios
 
@@ -25,9 +28,10 @@ Entrada (texto; LaTeX/MathJSON do MathLive na Fase 11)
   ▼  parsing/parser        tokenizer + Pratt → AST própria (sem eval)
   ▼  interpreter/          detecta o intent + extrai parâmetros
   │                        (regras; IA opcional na Fase 8)
-  ▼  planner/              ExecutionPlan: lista de passos tipados
-  │                        (1 passo até a Fase 12)
-  ▼  math_engine/<domínio> executor do intent (SymPy), em processo isolado com timeout
+  ▼  planner/              ExecutionPlan: lista de passos tipados (Fase 12;
+  │                        até lá, cada pedido é um passo só e não há planner)
+  ▼  math_engine/<domínio> executor do intent (SymPy), num worker isolado com
+  │                        timeout (core/workers.py)
   ▼  verification/         estratégia do intent → VerificationReport
   ▼  formatting/           plain + LaTeX + aproximação + avisos
   ▼  models/MathResult     resposta padronizada
@@ -38,6 +42,11 @@ Entrada (texto; LaTeX/MathJSON do MathLive na Fase 11)
 Onde a IA atua: interpretação, desambiguação, planejamento (Fase 12) e,
 opcionalmente, explicação. Ela **nunca** atua no cálculo nem na verificação.
 
+Quem amarra as etapas é `app/calculator.py`: `calculate(texto, intent=None)`
+devolve sempre um `MathResult`. Um `MathError` (erro esperado) vira uma resposta
+com `error`. Qualquer outra exceção é registrada no log e vira
+`INTERNAL_ERROR`, sem expor detalhes internos ao usuário.
+
 ## 3. Contrato de um intent
 
 Cada intent é registrado em `interpreter/registry.py` com:
@@ -45,10 +54,15 @@ Cada intent é registrado em `interpreter/registry.py` com:
 | Peça | Responsabilidade |
 |---|---|
 | `name` | identificador estável (`arithmetic`, `simplify`, `solve_equation`...) |
-| `InputSchema` | modelo Pydantic com os parâmetros (`expression`, `variable`, `order`...) |
-| `execute(params) → RawResult` | cálculo no domínio correspondente do `math_engine` |
-| `verify(params, raw) → VerificationReport` | estratégia do ADR 0003 |
-| `format(raw) → ResultValue` | plain/LaTeX/aproximação |
+| `params_model` | modelo Pydantic com os parâmetros (`models/intents.py`) |
+| `execute(params) → Outcome` | cálculo no domínio correspondente do `math_engine` |
+| `verify(outcome) → VerificationReport` | estratégia do ADR 0003 (`verification/`) |
+| `present(outcome) → Presentation` | `ResultValue` (plain/LaTeX/aproximação) + `details` (`formatting/results.py`) |
+
+Intents disponíveis: `arithmetic`, `simplify` e `solve_equation` (1º grau, uma
+variável). Sem intent explícito, a detecção por regras usa a forma da entrada:
+com `=`, é uma equação; com variável, é uma simplificação; caso contrário, é
+aritmética.
 
 Para adicionar um intent, cria-se um módulo e registra-se o intent. O fluxo
 principal não muda.
@@ -77,12 +91,20 @@ MathResult
 └── error: {code, message, position?} | null
 ```
 
-Códigos de erro iniciais:
+Códigos de erro (`core/errors.py`):
 
 - `EMPTY_INPUT`, `INPUT_TOO_LONG`, `PARSE_ERROR`, `AMBIGUOUS_INPUT`;
 - `UNKNOWN_SYMBOL`, `UNKNOWN_FUNCTION`, `UNSUPPORTED_FEATURE`;
-- `DIVISION_BY_ZERO`, `DOMAIN_ERROR`, `LIMIT_EXCEEDED`, `TIMEOUT`;
-- `UNSUPPORTED_INTENT`, `VERIFICATION_FAILED`, `INTERNAL_ERROR`.
+- `DIVISION_BY_ZERO`, `DOMAIN_ERROR`, `LIMIT_EXCEEDED`;
+- `UNSUPPORTED_INTENT`, `INVALID_INPUT_FOR_INTENT` (ex.: pedir aritmética de
+  uma expressão com variáveis), `VERIFICATION_FAILED`, `INTERNAL_ERROR`;
+- `TIMEOUT` e `SERVER_BUSY`, que vêm do pool de workers.
+
+Avisos (`core/notices.py`): `AMBIGUOUS_IMPLICIT_MULTIPLICATION`,
+`DECIMAL_COMMA`, `LOG_BASE_10`, `ANGLE_IN_RADIANS`, `REAL_ROOT` e
+`DOMAIN_CHANGED`. Cada aviso aparece uma vez por resultado.
+
+`error.position` é um índice no texto **original** digitado pelo usuário.
 
 "Sem solução" **não** é erro: é um sucesso com conjunto vazio.
 
@@ -90,24 +112,55 @@ Códigos de erro iniciais:
 preenchida quando existirem regras próprias que produzam passos verdadeiros.
 Até lá, a interface não mostra uma seção de passos.
 
-## 5. Estrutura de pastas
+## 5. API HTTP
+
+Todas as rotas ficam sob `/api`. A documentação interativa fica em `/api/docs`
+(desligada em produção).
+
+| Rota | Função |
+|---|---|
+| `GET /api/health` | status, versão e ambiente |
+| `POST /api/calculate` | corpo `{"input": "2x + 5 = 17", "intent": null}`; responde um `MathResult` |
+
+`intent` é opcional: `arithmetic`, `simplify` ou `solve_equation`. Sem ele, a
+operação é detectada pela entrada.
+
+**Códigos HTTP**: a resposta é sempre um `MathResult`, exceto no 422.
+
+| Situação | HTTP | `error.code` |
+|---|---|---|
+| Sucesso | 200 | — |
+| Erro de matemática ou de entrada (divisão por zero, sintaxe, domínio, limite, timeout...) | **200**, com `success: false` | o código específico |
+| Requisição malformada (JSON inválido, campo faltando ou extra, `intent` desconhecido, `input` acima de 2 000 caracteres) | 422 | formato padrão do FastAPI (`detail`) |
+| Falha interna (bug, worker morto) | 500 | `INTERNAL_ERROR` |
+| Todos os workers ocupados além do `queue_timeout` | 503 | `SERVER_BUSY` |
+
+Por que erro de matemática é 200: o pedido foi entendido e respondido, e a
+resposta é que a conta não tem valor. Assim, o frontend trata tudo com o mesmo
+formato.
+
+**Execução:** cada pedido vai para um worker do pool (ADR 0002, seção 4). O
+`lifespan` do FastAPI cria o pool na inicialização e o encerra no desligamento.
+
+## 6. Estrutura de pastas
 
 ```
 Mathcode/
 ├── backend/
 │   ├── app/
 │   │   ├── main.py             cria o app FastAPI
-│   │   ├── api/                rotas (health, calculate)
-│   │   ├── core/               config, erros, limites, pool de processos
+│   │   ├── calculator.py       pipeline: interpret → execute → verify → present
+│   │   ├── api/                rotas: health, calculate
+│   │   ├── core/               config, erros, avisos, limites, workers (pool)
 │   │   ├── models/             schemas Pydantic (MathResult...)
-│   │   ├── parsing/            normalize, tokenizer, parser, ast, build
+│   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build
 │   │   ├── interpreter/        registry + detecção por regras
-│   │   ├── planner/            ExecutionPlan
+│   │   ├── planner/            ExecutionPlan (Fase 12)
 │   │   ├── math_engine/        arithmetic/ algebra/ calculus/ graphing/ ...
 │   │   ├── verification/       estratégias por intent
 │   │   ├── formatting/         plain/LaTeX/aproximação
 │   │   └── ai/                 AIProvider + provedores gratuitos (Fase 8)
-│   ├── tests/                  unit/ e integration/
+│   ├── tests/                  parsing/ math_engine/ verification/ api/ + integração
 │   └── pyproject.toml
 ├── frontend/
 │   └── src/  components/ pages/ hooks/ services/ types/ utils/ App.tsx
@@ -130,7 +183,7 @@ Esta estrutura difere do prompt original em três pontos:
 - O `docker-compose.yml` fica adiado: o Docker não está instalado, e um arquivo
   que não pode ser testado não deve entrar.
 
-## 6. Testes
+## 7. Testes
 
 - **Unitários:** normalize, tokenizer, parser (válidos, inválidos e
   maliciosos), cada executor, cada verificador e os schemas.
@@ -143,7 +196,7 @@ Esta estrutura difere do prompt original em três pontos:
   - solução inexistente, múltiplas soluções e soluções complexas omitidas;
   - timeout.
 
-## 7. Ambiente (2026-10-06)
+## 8. Ambiente (2026-10-06)
 
 | Ferramenta | Versão |
 |---|---|
@@ -158,7 +211,7 @@ Portas de desenvolvimento: API em **8100**, frontend em **5180**. O Vite
 encaminha `/api` para a API, então o navegador fala com uma origem só, e não é
 preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 
-## 8. Decisões registradas
+## 9. Decisões registradas
 
 | ADR | Tema |
 |---|---|

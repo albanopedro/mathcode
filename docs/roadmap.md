@@ -11,9 +11,9 @@ Regras gerais:
 | Fase | Nome | Status |
 |---|---|---|
 | 0 | Auditoria e arquitetura | concluída |
-| 1 | Foundation | concluída (aguardando revisão) |
-| 2 | Core matemático | — |
-| 3 | API | — |
+| 1 | Foundation | concluída |
+| 2 | Core matemático | concluída |
+| 3 | API | concluída (aguardando revisão) |
 | 4 | Frontend básico | — |
 | 5 | Álgebra | — |
 | 6 | Cálculo | — |
@@ -64,6 +64,19 @@ Nenhum código foi escrito.
 - `MathResult` e os códigos de erro.
 - **Critério de saída:** testes unitários com casos normais, inválidos e
   maliciosos.
+- **Entregue:**
+  - parser sem `eval`, com posições de erro no texto original e avisos de
+    ambiguidade;
+  - os três intents, cada um com verificador independente (mpmath);
+  - `calculate()` devolvendo `MathResult`;
+  - 342 testes no backend, incluindo resultados adulterados que a verificação
+    precisa pegar e uma checagem de que `eval`/`sympify` não aparecem no código.
+- **Decidido durante a fase** (registrado nos ADRs 0002, 0003 e 0005):
+  - limite de 4 000 dígitos, por causa da proteção do Python 3.14;
+  - precisão adaptativa e tolerância de 30 algarismos na verificação;
+  - `0^0` é indeterminação;
+  - raiz real para índice ímpar;
+  - aviso em `f(x)` e erro em `1e5`.
 
 ## Fase 3 — API
 
@@ -72,6 +85,17 @@ Nenhum código foi escrito.
 - Mapeamento de erros para HTTP. Todo erro de matemática é `200` com
   `success: false`; `422` fica reservado para requisições malformadas.
 - Testes de integração.
+- **Entregue:**
+  - `app/api/calculate.py`, com validação Pydantic (`extra="forbid"`, `intent`
+    como enum, `input` até 2 000 caracteres);
+  - `app/core/workers.py`: workers `spawn` aquecidos, timeout com SIGKILL e
+    substituição, `TIMEOUT`, `INTERNAL_ERROR` (500) e `SERVER_BUSY` (503);
+  - configuração `MATHCODE_WORKERS`, `MATHCODE_CALCULATION_TIMEOUT` e
+    `MATHCODE_QUEUE_TIMEOUT`;
+  - 30 testes de integração com processos reais (timeout, worker morto e
+    substituído, fila cheia, pedidos em paralelo, 422).
+- **Descoberto:** entradas válidas como `(x+1)^1000*(x+2)^1000` levavam minutos
+  no SymPy. Agora são cortadas em 5 s.
 
 ## Fase 4 — Frontend básico
 

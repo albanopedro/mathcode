@@ -13,13 +13,16 @@ avisar o usuário seria uma forma de esconder erro.
 
 | Tema | Convenção | Aviso ao usuário |
 |---|---|---|
-| Domínio | **ℝ** (números reais) | Se existirem soluções complexas descartadas: `COMPLEX_SOLUTIONS_OMITTED` |
-| Raiz de negativo em ℝ | erro `DOMAIN_ERROR` | — |
+| Domínio | **ℝ** (números reais); toda variável é real | Se existirem soluções complexas descartadas: `COMPLEX_SOLUTIONS_OMITTED` |
+| Raiz de índice par de negativo (`sqrt(-4)`, `(-4)^(1/2)`) | erro `DOMAIN_ERROR` | — |
+| Raiz de índice ímpar de negativo (`(-8)^(1/3)`) | **raiz real** (`-2`), e não a raiz principal complexa do SymPy | `REAL_ROOT` |
+| Negativo elevado a expoente irracional (`(-2)^pi`) | erro `DOMAIN_ERROR` | — |
+| `0^0` | erro `DOMAIN_ERROR` (indeterminação, como no ensino médio). O SymPy e o Python dariam `1`. | — |
 | Decimais digitados | viram **frações exatas** (`0.1` → `1/10`) | — |
 | Saída | forma **exata** + aproximação decimal (15 algarismos significativos) quando o resultado não for inteiro | — |
-| `log(x)` | **base 10** (convenção do ensino brasileiro) | `LOG_BASE_10` na primeira vez |
+| `log(x)` | **base 10** (convenção do ensino brasileiro) | `LOG_BASE_10`, uma vez por resultado |
 | `ln(x)` | logaritmo natural | — |
-| `log(x, b)` | base `b` (quando houver separador de argumentos) | — |
+| `log(x; b)` ou `log(x, b)` | base `b`, que precisa ser positiva e diferente de 1 | — |
 | Ângulos | **radianos** | `ANGLE_IN_RADIANS` quando uma função trigonométrica recebe um número puro; `30°` é aceito como graus |
 | Divisão por zero | erro `DIVISION_BY_ZERO` (não devolve `zoo`/`nan`) | — |
 | Sem solução | **sucesso** com conjunto vazio (`∅`), não erro | — |
