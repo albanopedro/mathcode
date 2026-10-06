@@ -1,11 +1,11 @@
 {
   "success": true,
   "intent": "solve_equation",
-  "input": "2x + 5 = 17",
-  "normalized_input": "2*x + 5 = 17",
+  "input": "x^2 - 2x + 1 = 0",
+  "normalized_input": "x^2 - 2*x + 1 = 0",
   "result": {
-    "plain": "x = 6",
-    "latex": "x = 6",
+    "plain": "x = 1",
+    "latex": "x = 1",
     "approx": null
   },
   "steps": [],
@@ -13,10 +13,10 @@
     "variable": "x",
     "solution_set": "finite",
     "solutions": [
-      "6"
+      "1"
     ],
     "multiplicities": [
-      1
+      2
     ]
   },
   "verification": {
@@ -24,7 +24,7 @@
     "method": "substitution+sturm",
     "checks": [
       "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
-      "Pelo teorema de Sturm, o polinômio 2*x - 12 tem exatamente 1 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      "Pelo teorema de Sturm, o polinômio x^2 - 2*x + 1 tem exatamente 1 raiz(es) real(is) distinta(s), e todas foram consideradas."
     ],
     "message": "Resultado verificado simbolicamente."
   },

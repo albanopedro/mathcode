@@ -3,7 +3,7 @@
 from dataclasses import replace
 
 from app.core.errors import ErrorCode, MathError
-from app.core.limits import MAX_NESTING
+from app.core.limits import MAX_NESTING, MAX_SYSTEM_EQUATIONS
 from app.core.notices import Notice, NoticeCode
 from app.parsing.ast import (
     Binary,
@@ -14,6 +14,7 @@ from app.parsing.ast import (
     Negate,
     Node,
     Number,
+    System,
     Tree,
     Variable,
 )
@@ -46,9 +47,22 @@ class _Parser:
         self._notices = notices
 
     def parse(self) -> Tree:
+        first = self._item()
+        if self._peek().kind is not TokenKind.COMMA:
+            self._expect_end()
+            return first
+
+        separator = self._peek()
+        items = [first]
+        while self._peek().kind is TokenKind.COMMA:
+            self._advance()
+            items.append(self._item())
+        self._expect_end()
+        return self._system(items, separator)
+
+    def _item(self) -> Node | Equation:
         left = self._expression(0)
         if self._peek().kind is not TokenKind.EQUALS:
-            self._expect_end()
             return left
         equals = self._advance()
         right = self._expression(0)
@@ -56,8 +70,31 @@ class _Parser:
             raise MathError(
                 ErrorCode.PARSE_ERROR, "Use um único '=' por equação.", self._peek().position
             )
-        self._expect_end()
         return Equation(left, right, equals.position)
+
+    def _system(self, items: list[Node | Equation], separator: Token) -> System:
+        if not any(isinstance(item, Equation) for item in items):
+            raise MathError(
+                ErrorCode.PARSE_ERROR,
+                "Vírgula fora de uma função. Para número decimal, escreva sem espaço: 3,5.",
+                separator.position,
+            )
+        equations: list[Equation] = []
+        for item in items:
+            if not isinstance(item, Equation):
+                raise MathError(
+                    ErrorCode.PARSE_ERROR,
+                    "Num sistema, cada parte separada por ';' precisa ser uma equação, com '='.",
+                    item.position,
+                )
+            equations.append(item)
+        if len(equations) > MAX_SYSTEM_EQUATIONS:
+            raise MathError(
+                ErrorCode.LIMIT_EXCEEDED,
+                f"O sistema tem mais de {MAX_SYSTEM_EQUATIONS} equações.",
+                separator.position,
+            )
+        return System(tuple(equations), separator.position)
 
     # -- Pratt core ---------------------------------------------------------
 

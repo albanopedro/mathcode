@@ -3,7 +3,14 @@
  * Keep both in sync: the fixtures in src/test/fixtures are real API responses.
  */
 
-export type IntentName = "arithmetic" | "simplify" | "solve_equation";
+export type IntentName =
+  | "arithmetic"
+  | "simplify"
+  | "factor"
+  | "expand"
+  | "solve_equation"
+  | "solve_system"
+  | "polynomial_division";
 
 export type VerificationStatus =
   | "verified_symbolic"
@@ -56,7 +63,15 @@ export interface MathResult {
   error: ResultError | null;
 }
 
-const INTENTS: readonly string[] = ["arithmetic", "simplify", "solve_equation"];
+const INTENTS: readonly string[] = [
+  "arithmetic",
+  "simplify",
+  "factor",
+  "expand",
+  "solve_equation",
+  "solve_system",
+  "polynomial_division",
+];
 const STATUSES: readonly string[] = [
   "verified_symbolic",
   "verified_numeric",

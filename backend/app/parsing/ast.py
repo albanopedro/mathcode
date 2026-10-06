@@ -62,11 +62,21 @@ class Equation:
     position: int  # of the "="
 
 
-type Tree = Node | Equation
+@dataclass(frozen=True)
+class System:
+    """Equations separated by ";" (or ", " with a space), solved together."""
+
+    equations: tuple[Equation, ...]
+    position: int  # of the first separator
 
 
-def children(node: Tree) -> tuple[Node, ...]:
+type Tree = Node | Equation | System
+
+
+def children(node: Tree) -> tuple[Tree, ...]:
     match node:
+        case System(equations=equations):
+            return equations
         case Negate(operand=operand) | Degrees(operand=operand):
             return (operand,)
         case Binary(left=left, right=right) | Equation(left=left, right=right):

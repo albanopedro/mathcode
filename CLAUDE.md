@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-06, ao fim da Fase 4.
+> Última atualização: 2026-10-06, ao fim da Fase 5.
 
 ## O que é
 
@@ -49,10 +49,11 @@ A IA (Fase 8+) só interpreta o pedido: nunca calcula.
 | 1: Foundation | concluída e commitada (`5e67f6b`) |
 | 2: Core matemático | concluída e commitada (`49fb79d`, junto com a 3) |
 | 3: API | concluída e commitada (`49fb79d`) |
-| 4: Frontend básico | **concluída, aguardando revisão e commit do usuário** |
+| 4: Frontend básico | concluída e commitada (`4052f9d`) |
+| 5: Álgebra | **concluída, aguardando revisão e commit do usuário** |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
-Pendência do usuário (ainda aberta no `49fb79d`): `mathcode/` está no Git como
+Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
 um repositório embutido (gitlink). A correção sugerida é
 `git rm --cached mathcode` seguido de `rm -rf mathcode`.
 
@@ -60,8 +61,10 @@ um repositório embutido (gitlink). A correção sugerida é
 
 ```
 texto → parsing/ (normalize → tokenizer → parser Pratt → AST → build SymPy)
-      → interpreter/ (detect: "=" → solve_equation; com variável → simplify; senão arithmetic)
-      → math_engine/ (arithmetic.py, algebra.py)
+      → interpreter/ (detect: ";" → solve_system; "=" → solve_equation; com variável → simplify;
+                      senão arithmetic. factor/expand/polynomial_division só por intent explícito)
+      → math_engine/ (arithmetic, algebra [simplify/factor/expand/divide], equations, systems,
+                      polynomials [forma pela AST, real_roots, Sturm])
       → verification/ (avaliador mpmath independente da AST + checagens simbólicas)
       → formatting/ (plain / LaTeX / aproximação)
       → MathResult (models/result.py)
@@ -79,6 +82,11 @@ Arquivos-chave do backend (`backend/app/`):
   - `limits.py`: os limites de segurança.
 - `parsing/vocabulary.py`: a lista fechada de funções, os aliases em PT
   (`sen`, `tg`, `raiz`...) e as constantes `pi` e `e`.
+- `parsing/ast.py`: os nós da AST, mais `Equation` e `System` (equações
+  separadas por `;`).
+- `math_engine/polynomials.py`: `shape()` diz se a forma pela AST é
+  `POLYNOMIAL`, `RATIONAL` ou `OTHER`, e é ela que decide como uma equação é
+  resolvida.
 - `parsing/build.py`: AST → SymPy. É aqui que ficam as convenções de domínio e
   o registro dos denominadores.
 - `verification/numeric.py`: o avaliador independente, com precisão adaptativa
@@ -139,6 +147,19 @@ Backend, continuação:
   - **4 000 dígitos**, porque o Python 3.14 recusa converter em texto inteiros
     com mais de 4 300;
   - expoente simbólico até 1 000.
+- **Álgebra** ([ADR 0006](docs/decisions/0006-escopo-da-algebra.md)):
+  - equações polinomiais e racionais (coeficientes racionais) usam
+    `real_roots`, e a completude vem do **teorema de Sturm**. Se Sturm contar
+    mais raízes do que foram achadas, é `failed`;
+  - nas outras formas (raiz, módulo, log, exponencial), a completude não é
+    provada: `partial`;
+  - raízes `CRootOf` são exatas, mas exibidas aproximadas, com o aviso
+    `ROOTS_SHOWN_APPROXIMATELY`;
+  - várias raízes aparecem uma por linha (`aligned`, x₁, x₂);
+  - sistemas só lineares: `linsolve` + verificação por substituição e postos;
+  - fatoração sobre ℚ, e inteiros em primos (produto exato + `isprime`);
+  - a divisão constrói A e B separados (A/B deixaria o SymPy cancelar) e
+    verifica B·Q + R = A.
 - **Passos de resolução:** a lista `steps` fica vazia até existirem regras
   reais. O SymPy não gera passos.
 - **Respostas HTTP** (architecture §5):
@@ -174,6 +195,13 @@ Backend, continuação:
   `tests/api/api_helpers.py`: `running_app(**settings)` e `SLOW_INPUT`.
 - O `TestClient` só roda o `lifespan` dentro de `with`. Os testes da Fase 1
   usam o client sem `with`, então eles funcionam sem o pool.
+- Contas com `mpf` só valem dentro de `mp.workdps(...)`. Fora dele, a precisão
+  volta a 15 dígitos, e a verificação (30 algarismos) reprova resultados certos.
+  Isso já aconteceu na Fase 5.
+- Em strings Python não raw, `\b` vira backspace. Ao gerar TS/LaTeX com
+  `\begin` via script, use raw strings e procure caracteres de controle no fim.
+- O SymPy já distribui `2(x + 3)` ao construir: não serve de exemplo de
+  "expandir".
 - Em React com Fast Refresh, arquivos de componente só exportam componentes.
   Constantes vão para `utils/`.
 - No Testing Library, `toHaveTextContent` remove espaços das pontas. Para
@@ -199,16 +227,19 @@ cd frontend && npm test && npm run build
 
 ## Próximos passos
 
-- Fase 5 (próxima, aguardando o "pode seguir"): álgebra. Fatoração,
-  expansão, polinômios, equações gerais (quadráticas etc., com
-  `COMPLEX_SOLUTIONS_OMITTED` e status `partial` quando a completude não for
-  provada) e sistemas. Cada item com testes e verificação (ADR 0003).
+- Fase 6 (próxima, aguardando o "pode seguir"): cálculo. Derivadas, integrais
+  (indefinidas e definidas) e limites, cada um com a estratégia de verificação
+  do ADR 0003: diferença finita, derivar a primitiva, quadratura, e avaliação
+  pelos dois lados no caso de limites. A interface vai precisar de entrada para a
+  variável, a ordem e os limites de integração, o que é uma decisão a tomar no
+  início da fase.
 - Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
   resolução por regras; `docker-compose` quando houver Docker; servir os
   assets do Swagger localmente (hoje vêm do jsDelivr); ESLint no frontend;
   limite de tamanho do corpo HTTP antes da leitura; carregar o KaTeX sob
   demanda (o JS tem 490 kB); exibir decimais com vírgula; seletor de operação
-  na interface (a API já aceita `intent`).
+  na interface (feito na Fase 5); sistemas não lineares; equações
+  trigonométricas; divisão com várias variáveis.
 
 ## Histórico
 
@@ -221,3 +252,6 @@ cd frontend && npm test && npm run build
   HTTP; 30 testes de integração (372 no backend).
 - **Fase 4:** interface de cálculo com KaTeX, verificação, avisos e erros
   com posição; 60 testes Vitest.
+- **Fase 5:** fatorar, expandir, equações gerais (Sturm), sistemas lineares e
+  divisão de polinômios; seletor de operação; 507 testes no backend e 105 no
+  frontend.

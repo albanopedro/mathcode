@@ -2,11 +2,14 @@ import { type FormEvent, useState } from "react";
 
 import { useCalculator } from "../hooks/useCalculator";
 import type { MathResult } from "../types/math";
+import { OPERATIONS } from "../utils/operations";
 import { ErrorView } from "./ErrorView";
 import { ResultView } from "./ResultView";
 
 export function Calculator() {
   const [input, setInput] = useState("");
+  const [operationIndex, setOperationIndex] = useState(0);
+  const operation = OPERATIONS[operationIndex] ?? OPERATIONS[0]!;
   const { state, submit } = useCalculator();
   const loading = state.status === "loading";
   const canSubmit = input.trim() !== "" && !loading;
@@ -14,13 +17,30 @@ export function Calculator() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (canSubmit) {
-      void submit(input);
+      void submit(input, operation.intent);
     }
   }
 
   return (
     <div className="flex flex-col gap-6">
       <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <div className="flex items-center gap-3">
+          <label htmlFor="operation" className="text-sm font-medium text-slate-700">
+            Operação
+          </label>
+          <select
+            id="operation"
+            value={operationIndex}
+            onChange={(event) => setOperationIndex(Number(event.target.value))}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+          >
+            {OPERATIONS.map((option, index) => (
+              <option key={option.label} value={index}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <label htmlFor="expression" className="text-sm font-medium text-slate-700">
           Expressão ou equação
         </label>
@@ -30,7 +50,7 @@ export function Calculator() {
             type="text"
             value={input}
             onChange={(event) => setInput(event.target.value)}
-            placeholder="Ex.: 2x + 5 = 17"
+            placeholder={operation.placeholder}
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
@@ -46,8 +66,8 @@ export function Calculator() {
           </button>
         </div>
         <p id="expression-help" className="text-sm text-slate-500">
-          Use ^ para potência, sqrt(x) ou √ para raiz, ° para graus e ; para separar
-          argumentos, como em log(8; 2).
+          Use ^ para potência, sqrt(x) ou √ para raiz e ° para graus. Separe argumentos
+          e as equações de um sistema com ;, como em log(8; 2) ou x + y = 3; x - y = 1.
         </p>
       </form>
 

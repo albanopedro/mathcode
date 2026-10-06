@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "intent": "factor",
+  "input": "x^2 - 4",
+  "normalized_input": "x^2 - 4",
+  "result": {
+    "plain": "(x - 2)*(x + 2)",
+    "latex": "\\left(x - 2\\right) \\left(x + 2\\right)",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "changed": true
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "symbolic+numeric",
+    "checks": [
+      "Avaliador independente: a expressão original e o resultado coincidem em 6 ponto(s) sorteados.",
+      "A diferença entre a expressão original e a forma fatorada se reduz a 0."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

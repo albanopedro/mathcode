@@ -1,19 +1,23 @@
+"""Verification of rewrites (simplify, factor, expand), prime factorization and division."""
+
 from collections.abc import Iterator, Mapping
 
 import sympy as sp
+from mpmath import mp
 
 from app.formatting.expressions import plain
-from app.math_engine.algebra import EquationOutcome, SimplifyOutcome, SolutionKind
+from app.math_engine.algebra import DivisionOutcome, PrimeFactorization, RewriteOutcome
+from app.models.intents import IntentName
 from app.models.result import VerificationReport, VerificationStatus
 from app.parsing.ast import Node, variables
 from app.parsing.build import symbol
 from app.verification.numeric import (
+    BASE_PRECISION,
     Evaluation,
     OutsideDomain,
     Point,
     TooLarge,
     agrees,
-    decimal,
     evaluate,
     sample_points,
     to_mpf,
@@ -23,39 +27,46 @@ from app.verification.reports import report, show
 REQUIRED_POINTS = 6
 MAX_ATTEMPTS = 40
 
+_WORDS = {
+    IntentName.SIMPLIFY: "simplificada",
+    IntentName.FACTOR: "fatorada",
+    IntentName.EXPAND: "expandida",
+}
 
-def _points(key: str, names: list[str]) -> Iterator[dict[str, str]]:
+
+def points(key: str, names: list[str]) -> Iterator[dict[str, str]]:
     for attempt, point in enumerate(sample_points(key, names)):
         if attempt >= MAX_ATTEMPTS:
             return
         yield point
 
 
-def _describe(point: Mapping[str, str]) -> str:
+def describe(point: Mapping[str, str]) -> str:
     return ", ".join(f"{name} = {value}" for name, value in point.items())
 
 
-def _try_evaluate(node: Node, point: Point) -> Evaluation | None:
+def try_evaluate(node: Node, point: Point) -> Evaluation | None:
     try:
         return evaluate(node, point)
     except OutsideDomain, TooLarge:
         return None
 
 
-# -- simplify ---------------------------------------------------------------------
+# -- rewrites ---------------------------------------------------------------------------
 
 
-def verify_simplify(outcome: SimplifyOutcome) -> VerificationReport:
+def verify_rewrite(outcome: RewriteOutcome) -> VerificationReport:
+    """The result must be equal to the original wherever the original is defined."""
     names = sorted(variables(outcome.tree))
     needed = REQUIRED_POINTS if names else 1
     agreeing = 0
-    for point in _points(outcome.parsed.canonical, names):
-        expected = _try_evaluate(outcome.tree, point)
+    for point in points(outcome.parsed.canonical, names):
+        expected = try_evaluate(outcome.tree, point)
         if expected is None:
             continue  # outside the original's domain: nothing to compare
         actual = to_mpf(outcome.result, {symbol(n): v for n, v in point.items()})
         if actual is None or not agrees(expected, actual):
-            where = f"Em {_describe(point)}, a" if names else "A"
+            where = f"Em {describe(point)}, a" if names else "A"
             got = "não tem valor real" if actual is None else f"vale {show(actual)}"
             return report(
                 VerificationStatus.FAILED,
@@ -77,127 +88,111 @@ def verify_simplify(outcome: SimplifyOutcome) -> VerificationReport:
         "Avaliador independente: a expressão original e o resultado coincidem em "
         f"{agreeing} ponto(s)" + (" sorteados." if names else ".")
     ]
-    if sp.simplify(outcome.original - outcome.result) == 0:
-        checks.append("A diferença entre a expressão original e o resultado simplifica para 0.")
+    difference = outcome.original - outcome.result
+    # Factor and expand are polynomial identities: expanding the difference is
+    # an exact test. Simplify may involve functions, so it also tries simplify.
+    if sp.expand(difference) == 0 or sp.simplify(difference) == 0:
+        word = _WORDS.get(outcome.operation, "reescrita")
+        checks.append(f"A diferença entre a expressão original e a forma {word} se reduz a 0.")
         return report(VerificationStatus.VERIFIED_SYMBOLIC, "symbolic+numeric", checks)
     return report(VerificationStatus.VERIFIED_NUMERIC, "independent_numeric", checks)
 
 
-# -- equations ----------------------------------------------------------------------
+# -- prime factorization ------------------------------------------------------------------
+
+_DETERMINISTIC_PRIME_LIMIT = 2**64
 
 
-def verify_equation(outcome: EquationOutcome) -> VerificationReport:
-    match outcome.kind:
-        case SolutionKind.UNIQUE:
-            return _verify_unique(outcome)
-        case SolutionKind.NONE:
-            return _verify_identity(outcome, should_hold=False)
-        case SolutionKind.ALL_REALS:
-            return _verify_identity(outcome, should_hold=True)
-
-
-def _sides(outcome: EquationOutcome, point: Point) -> tuple[Evaluation, Evaluation] | None:
-    left = _try_evaluate(outcome.equation.left, point)
-    right = _try_evaluate(outcome.equation.right, point)
-    if left is None or right is None:
-        return None
-    return left, right
-
-
-def _equal(sides: tuple[Evaluation, Evaluation]) -> bool:
-    left, right = sides
-    return agrees(left, right.value, right.error_bound)
-
-
-def _verify_unique(outcome: EquationOutcome) -> VerificationReport:
-    var, solution = outcome.variable, outcome.solution
-    if solution is None:
-        raise AssertionError("a unique solution must be present")
-    name = var.name
-    shown = f"{name} = {plain(solution)}"
-
-    symbolic = sp.simplify(outcome.left.subs(var, solution) - outcome.right.subs(var, solution))
-    if symbolic != 0:
+def verify_prime_factorization(outcome: PrimeFactorization) -> VerificationReport:
+    product = 1
+    for prime, exponent in outcome.factors:
+        product *= prime**exponent
+    if product != abs(outcome.number):
         return report(
             VerificationStatus.FAILED,
-            "substitution",
-            [f"Substituindo {shown}, a diferença entre os lados é {plain(symbolic)}, não 0."],
+            "exact_product",
+            [f"O produto dos fatores é {product}, não {abs(outcome.number)}."],
         )
-
-    sides = _sides(outcome, {name: decimal(solution)})
-    if sides is None:
-        return report(
-            VerificationStatus.FAILED,
-            "substitution",
-            [f"A equação original não tem valor real em {shown}."],
-        )
-    if not _equal(sides):
-        left, right = sides
-        return report(
-            VerificationStatus.FAILED,
-            "substitution",
-            [
-                f"Em {shown}, o avaliador independente obteve "
-                f"{show(left.value)} ≠ {show(right.value)}."
-            ],
-        )
-
-    # Completeness: a nonzero coefficient on x means degree 1, so at most one root.
-    coefficient = sp.Poly(sp.expand(outcome.left - outcome.right), var).coeff_monomial(var)
-    if sp.simplify(coefficient) == 0:
-        return report(
-            VerificationStatus.FAILED,
-            "substitution",
-            [f"O coeficiente de {name} é 0, então a solução não poderia ser única."],
-        )
+    composite = [prime for prime, _ in outcome.factors if not sp.isprime(prime)]
+    if composite:
+        return report(VerificationStatus.FAILED, "primality", [f"{composite[0]} não é primo."])
+    largest = max(prime for prime, _ in outcome.factors)
+    method = (
+        "teste determinístico"
+        if largest < _DETERMINISTIC_PRIME_LIMIT
+        else "teste BPSW, que não tem contraexemplo conhecido"
+    )
     return report(
         VerificationStatus.VERIFIED_SYMBOLIC,
-        "substitution",
+        "exact_product+primality",
         [
-            f"Substituindo {shown} na equação original, os dois lados ficam iguais.",
-            f"O avaliador independente confirma: os dois lados valem {show(sides[0].value)}.",
-            f"A equação é do 1º grau (coeficiente de {name}: {plain(coefficient)}), "
-            "então não existem outras soluções.",
+            f"Multiplicando os fatores com inteiros exatos, obtém-se {abs(outcome.number)}.",
+            f"Cada fator foi confirmado primo ({method}).",
         ],
     )
 
 
-def _verify_identity(outcome: EquationOutcome, *, should_hold: bool) -> VerificationReport:
-    """No solution: the sides always differ. Every real: the sides always agree."""
-    name = outcome.variable.name
-    difference = sp.expand(outcome.left - outcome.right)
-    if difference.free_symbols or (difference == 0) != should_hold:
+def verify_factor(outcome: RewriteOutcome | PrimeFactorization) -> VerificationReport:
+    if isinstance(outcome, PrimeFactorization):
+        return verify_prime_factorization(outcome)
+    return verify_rewrite(outcome)
+
+
+# -- polynomial division ------------------------------------------------------------------
+
+
+def verify_division(outcome: DivisionOutcome) -> VerificationReport:
+    var = outcome.variable
+    a, b, q, r = outcome.dividend, outcome.divisor, outcome.quotient, outcome.remainder
+
+    identity = sp.expand(b * q + r - a)
+    if identity != 0:
+        return report(
+            VerificationStatus.FAILED, "identity", [f"B·Q + R − A = {plain(identity)}, e não 0."]
+        )
+    degree_r = sp.degree(r, var) if r != 0 else None
+    degree_b = sp.degree(b, var)
+    if degree_r is not None and degree_r >= degree_b:
         return report(
             VerificationStatus.FAILED,
-            "symbolic",
-            [f"A diferença entre os lados é {plain(difference)}, o que não confirma o resultado."],
+            "degree",
+            [f"O resto tem grau {degree_r}, que não é menor que o grau {degree_b} do divisor."],
         )
 
-    checked = 0
-    for point in _points(outcome.parsed.canonical, [name]):
-        sides = _sides(outcome, point)
-        if sides is None:
+    agreeing = 0
+    for point in points(outcome.parsed.canonical, [var.name]):
+        dividend = try_evaluate(outcome.dividend_tree, point)
+        divisor = try_evaluate(outcome.divisor_tree, point)
+        if dividend is None or divisor is None:
             continue
-        if _equal(sides) != should_hold:
-            left, right = sides
+        subs = {var: point[var.name]}
+        q_value, r_value = to_mpf(q, subs), to_mpf(r, subs)
+        if q_value is None or r_value is None:
+            continue
+        # Combine at full precision: outside workdps, mpmath rounds to 15 digits.
+        with mp.workdps(BASE_PRECISION):
+            rebuilt = divisor.value * q_value + r_value
+        if not agrees(dividend, rebuilt, divisor.error_bound * abs(q_value)):
             return report(
                 VerificationStatus.FAILED,
-                "symbolic+numeric",
-                [
-                    f"Em {_describe(point)}, o lado esquerdo vale {show(left.value)} "
-                    f"e o direito {show(right.value)}."
-                ],
+                "independent_numeric",
+                [f"Em {describe(point)}, A vale {show(dividend.value)}, mas B·Q + R não."],
             )
-        checked += 1
-        if checked == REQUIRED_POINTS:
+        agreeing += 1
+        if agreeing == REQUIRED_POINTS:
             break
 
-    if should_hold:
-        first = "Os dois lados são idênticos: a diferença entre eles é 0."
-    else:
-        first = f"Os termos com {name} se cancelam e sobra {plain(difference)} = 0, que é falso."
+    remainder_check = (
+        "O resto é 0: a divisão é exata."
+        if r == 0
+        else f"O resto tem grau {degree_r}, menor que o grau {degree_b} do divisor."
+    )
     return report(
         VerificationStatus.VERIFIED_SYMBOLIC,
-        "symbolic+numeric",
-        [first, f"O avaliador independente confirma em {checked} pontos sorteados."],
+        "identity+numeric",
+        [
+            "Expandindo B·Q + R, obtém-se exatamente o dividendo A.",
+            remainder_check,
+            f"O avaliador independente confirma A = B·Q + R em {agreeing} pontos sorteados.",
+        ],
     )

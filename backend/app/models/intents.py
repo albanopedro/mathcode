@@ -8,7 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field
 class IntentName(StrEnum):
     ARITHMETIC = "arithmetic"
     SIMPLIFY = "simplify"
+    FACTOR = "factor"
+    EXPAND = "expand"
     SOLVE_EQUATION = "solve_equation"
+    SOLVE_SYSTEM = "solve_system"
+    POLYNOMIAL_DIVISION = "polynomial_division"
 
 
 class _Params(BaseModel):
@@ -23,9 +27,33 @@ class SimplifyParams(_Params):
     expression: str
 
 
+class FactorParams(_Params):
+    expression: str
+
+
+class ExpandParams(_Params):
+    expression: str
+
+
 class SolveEquationParams(_Params):
     equation: str
     variable: str | None = Field(default=None, pattern=r"^[a-zA-Z]$")
 
 
-type IntentParams = ArithmeticParams | SimplifyParams | SolveEquationParams
+class SolveSystemParams(_Params):
+    system: str
+
+
+class PolynomialDivisionParams(_Params):
+    division: str  # "A / B"
+
+
+type IntentParams = (
+    ArithmeticParams
+    | SimplifyParams
+    | FactorParams
+    | ExpandParams
+    | SolveEquationParams
+    | SolveSystemParams
+    | PolynomialDivisionParams
+)

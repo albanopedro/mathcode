@@ -1,18 +1,9 @@
-import type { IntentName, MathResult, ResultValue, VerificationReport } from "../types/math";
+import type { MathResult, ResultValue, VerificationReport } from "../types/math";
+import { captions } from "../utils/captions";
 import { LONG_RESULT_CHARS } from "../utils/display";
+import { INTENT_LABELS } from "../utils/operations";
 import { MathFormula } from "./MathFormula";
 import { Verification } from "./Verification";
-
-const INTENT_LABELS: Record<IntentName, string> = {
-  arithmetic: "Aritmética",
-  simplify: "Simplificação",
-  solve_equation: "Equação",
-};
-
-const SOLUTION_SET_CAPTIONS: Record<string, string> = {
-  none: "A equação não tem solução real.",
-  all_reals: "Todo número real é solução: os dois lados são sempre iguais.",
-};
 
 interface ResultViewProps {
   result: MathResult;
@@ -21,8 +12,7 @@ interface ResultViewProps {
 }
 
 export function ResultView({ result, value, verification }: ResultViewProps) {
-  const solutionSet = result.details.solution_set;
-  const caption = typeof solutionSet === "string" ? SOLUTION_SET_CAPTIONS[solutionSet] : undefined;
+  const lines = captions(result);
 
   return (
     <section
@@ -58,7 +48,11 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
           <span aria-label="aproximadamente">≈</span> {value.approx}
         </p>
       )}
-      {caption && <p className="text-slate-700">{caption}</p>}
+      {lines.map((line) => (
+        <p key={line} className="text-slate-700">
+          {line}
+        </p>
+      ))}
 
       {result.normalized_input && (
         <p className="text-sm text-slate-500">

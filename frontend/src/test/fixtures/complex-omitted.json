@@ -1,8 +1,8 @@
 {
   "success": true,
   "intent": "solve_equation",
-  "input": "x + 1 = x + 2",
-  "normalized_input": "x + 1 = x + 2",
+  "input": "x^2 + 1 = 0",
+  "normalized_input": "x^2 + 1 = 0",
   "result": {
     "plain": "∅",
     "latex": "\\varnothing",
@@ -16,12 +16,17 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "symbolic",
+    "method": "sturm",
     "checks": [
-      "Os termos com x se cancelam e sobra -1 = 0, que é falso."
+      "Pelo teorema de Sturm, o polinômio x^2 + 1 tem 0 raiz(es) real(is) distinta(s)."
     ],
     "message": "Resultado verificado simbolicamente."
   },
-  "warnings": [],
+  "warnings": [
+    {
+      "code": "COMPLEX_SOLUTIONS_OMITTED",
+      "message": "A equação também tem 2 solução(ões) complexa(s), omitida(s) porque o domínio é ℝ."
+    }
+  ],
   "error": null
 }

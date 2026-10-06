@@ -12,3 +12,6 @@ MAX_RESULT_DIGITS = 4000
 
 # Largest integer exponent applied to a symbolic base, as in (x + 1)^1000.
 MAX_SYMBOLIC_EXPONENT = 1000
+
+# Equations in a system, and unknowns in it.
+MAX_SYSTEM_EQUATIONS = 10

@@ -9,13 +9,15 @@
     "approx": null
   },
   "steps": [],
-  "details": {},
+  "details": {
+    "changed": true
+  },
   "verification": {
     "status": "verified_symbolic",
     "method": "symbolic+numeric",
     "checks": [
       "Avaliador independente: a expressão original e o resultado coincidem em 6 ponto(s) sorteados.",
-      "A diferença entre a expressão original e o resultado simplifica para 0."
+      "A diferença entre a expressão original e a forma simplificada se reduz a 0."
     ],
     "message": "Resultado verificado simbolicamente."
   },

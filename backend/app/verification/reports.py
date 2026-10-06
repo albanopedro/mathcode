@@ -7,6 +7,10 @@ _MESSAGES = {
     VerificationStatus.VERIFIED_NUMERIC: (
         "Resultado conferido numericamente por um avaliador independente."
     ),
+    VerificationStatus.PARTIAL: (
+        "Verificação parcial: o resultado encontrado foi confirmado, mas não foi "
+        "provado que ele é completo."
+    ),
     VerificationStatus.UNVERIFIED: "Não foi possível verificar este resultado.",
     VerificationStatus.FAILED: "A verificação independente contradiz o resultado.",
 }

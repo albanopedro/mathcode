@@ -11,9 +11,12 @@ function answer(result: MathResult, status = 200) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(result, status)));
 }
 
-async function calculateText(text: string) {
+async function calculateText(text: string, operation?: string) {
   const user = userEvent.setup();
   render(<Calculator />);
+  if (operation) {
+    await user.selectOptions(screen.getByLabelText("Operação"), operation);
+  }
   await user.type(screen.getByLabelText("Expressão ou equação"), text);
   await user.click(screen.getByRole("button", { name: "Calcular" }));
   return user;
@@ -40,7 +43,7 @@ describe("Calculator", () => {
     expect(within(result).getByText("2*x + 5 = 17")).toBeInTheDocument();
     expect(within(result).getByText("Resultado verificado simbolicamente.")).toBeInTheDocument();
     expect(within(result).getByText("Como foi verificado")).toBeInTheDocument();
-    expect(within(result).getByText(/não existem outras soluções/)).toBeInTheDocument();
+    expect(within(result).getByText(/teorema de Sturm/)).toBeInTheDocument();
   });
 
   it("submits with Enter", async () => {
@@ -199,5 +202,83 @@ describe("Calculator", () => {
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Resultado" })).not.toBeInTheDocument();
+  });
+
+  it("detects the operation by default, sending no intent", async () => {
+    answer(fixtures.equation);
+    await calculateText("2x + 5 = 17");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({ input: "2x + 5 = 17" });
+  });
+
+  it.each([
+    ["Fatorar", "factor"],
+    ["Expandir", "expand"],
+    ["Resolver sistema", "solve_system"],
+    ["Dividir polinômios", "polynomial_division"],
+  ])("sends the chosen operation (%s)", async (label, intent) => {
+    answer(fixtures.factor);
+    await calculateText("x^2 - 4", label);
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({ input: "x^2 - 4", intent });
+  });
+
+  it("adapts the example to the chosen operation", async () => {
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Dividir polinômios");
+
+    expect(screen.getByLabelText("Expressão ou equação")).toHaveAttribute(
+      "placeholder",
+      "Ex.: (x^3 - 1)/(x - 1)",
+    );
+  });
+
+  it.each([
+    [fixtures.factor, "Fatoração"],
+    [fixtures.expand, "Expansão"],
+    [fixtures.division, "Divisão de polinômios"],
+    [fixtures.systemUnique, "Sistema"],
+  ])("labels the operation of the result", async (fixture, label) => {
+    answer(fixture);
+    await calculateText(fixture.input);
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText(label)).toBeInTheDocument();
+  });
+
+  it("shows a system as cases", async () => {
+    answer(fixtures.systemUnique);
+    await calculateText("x + y = 3; x - y = 1");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(result.querySelector("annotation")?.textContent).toContain(String.raw`\begin{cases}`);
+  });
+
+  it("shows captions built from the details", async () => {
+    answer(fixtures.doubleRoot);
+    await calculateText("x^2 - 2x + 1 = 0");
+
+    expect(await screen.findByText("Raiz dupla: x = 1.")).toBeInTheDocument();
+  });
+
+  it("shows a partial verification honestly", async () => {
+    answer(fixtures.partial);
+    await calculateText("sqrt(x + 2) = x");
+
+    expect(await screen.findByText(/^Verificação parcial/)).toBeInTheDocument();
+    expect(screen.getByText("Não foi provado que não existem outras soluções.")).toBeInTheDocument();
+  });
+
+  it("shows omitted complex solutions as a warning", async () => {
+    answer(fixtures.complexOmitted);
+    await calculateText("x^2 + 1 = 0");
+
+    expect(await screen.findByText(/complexa\(s\), omitida/)).toBeInTheDocument();
+    expect(screen.getByText("A equação não tem solução real.")).toBeInTheDocument();
   });
 });

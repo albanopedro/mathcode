@@ -88,7 +88,7 @@ def to_mpf(expr: sp.Expr, point: Mapping[sp.Symbol, str] | None = None) -> mpf |
     SymPy's ``evalf`` is adaptive: the 50 digits returned are significant digits
     of the result itself, even after cancellation.
     """
-    subs = {s: _rational(v) for s, v in (point or {}).items()}
+    subs = {s: rational(v) for s, v in (point or {}).items()}
     value = expr.evalf(50, subs=subs)
     if not value.is_Number or value.is_real is not True or not value.is_finite:
         return None
@@ -110,7 +110,8 @@ def sample_points(key: str, names: Sequence[str]) -> Iterator[dict[str, str]]:
         yield {name: f"{rng.uniform(-10, 10):.6f}" for name in names}
 
 
-def _rational(value: str) -> sp.Rational:
+def rational(value: str) -> sp.Rational:
+    """An exact decimal string as a SymPy rational (via Fraction: no text reaches SymPy)."""
     fraction = Fraction(value)
     return sp.Rational(fraction.numerator, fraction.denominator)
 

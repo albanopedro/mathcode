@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError, calculate } from "../services/api";
-import type { MathResult } from "../types/math";
+import type { IntentName, MathResult } from "../types/math";
 
 export type CalculatorState =
   | { status: "idle" }
@@ -16,14 +16,14 @@ export function useCalculator() {
 
   useEffect(() => () => controller.current?.abort(), []);
 
-  const submit = useCallback(async (input: string) => {
+  const submit = useCallback(async (input: string, intent: IntentName | null = null) => {
     controller.current?.abort();
     const current = new AbortController();
     controller.current = current;
     setState({ status: "loading" });
 
     try {
-      const result = await calculate(input, current.signal);
+      const result = await calculate(input, intent, current.signal);
       if (!current.signal.aborted) {
         setState({ status: "done", result });
       }

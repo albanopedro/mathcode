@@ -14,16 +14,31 @@ from app.core.notices import Notice
 from app.formatting.results import (
     Presentation,
     present_arithmetic,
+    present_division,
     present_equation,
-    present_simplify,
+    present_factor,
+    present_rewrite,
+    present_system,
 )
-from app.math_engine.algebra import simplify, solve_linear
+from app.math_engine.algebra import divide, expand, factor, simplify
 from app.math_engine.arithmetic import evaluate
-from app.models.intents import ArithmeticParams, IntentName, SimplifyParams, SolveEquationParams
+from app.math_engine.equations import solve_equation
+from app.math_engine.systems import solve_system
+from app.models.intents import (
+    ArithmeticParams,
+    ExpandParams,
+    FactorParams,
+    IntentName,
+    PolynomialDivisionParams,
+    SimplifyParams,
+    SolveEquationParams,
+    SolveSystemParams,
+)
 from app.models.result import VerificationReport
 from app.parsing import ParseResult
-from app.verification.algebra import verify_equation, verify_simplify
+from app.verification.algebra import verify_division, verify_factor, verify_rewrite
 from app.verification.arithmetic import verify_arithmetic
+from app.verification.equations import verify_equation, verify_system
 
 
 class Outcome(Protocol):
@@ -49,15 +64,25 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
         IntentSpec(
             IntentName.ARITHMETIC, ArithmeticParams, evaluate, verify_arithmetic, present_arithmetic
         ),
-        IntentSpec(
-            IntentName.SIMPLIFY, SimplifyParams, simplify, verify_simplify, present_simplify
-        ),
+        IntentSpec(IntentName.SIMPLIFY, SimplifyParams, simplify, verify_rewrite, present_rewrite),
+        IntentSpec(IntentName.FACTOR, FactorParams, factor, verify_factor, present_factor),
+        IntentSpec(IntentName.EXPAND, ExpandParams, expand, verify_rewrite, present_rewrite),
         IntentSpec(
             IntentName.SOLVE_EQUATION,
             SolveEquationParams,
-            solve_linear,
+            solve_equation,
             verify_equation,
             present_equation,
+        ),
+        IntentSpec(
+            IntentName.SOLVE_SYSTEM, SolveSystemParams, solve_system, verify_system, present_system
+        ),
+        IntentSpec(
+            IntentName.POLYNOMIAL_DIVISION,
+            PolynomialDivisionParams,
+            divide,
+            verify_division,
+            present_division,
         ),
     )
 }

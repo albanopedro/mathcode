@@ -32,14 +32,18 @@ feitos e um texto curto para o usuário. A palavra "garantido" nunca é usada.
 |---|---|---|
 | arithmetic | Avaliar a **AST original** com `mpmath` (um avaliador próprio, sem SymPy, com precisão adaptativa) e comparar com `N(resultado, 50)` | `verified_numeric` |
 | simplify | Original (avaliador independente) e resultado (SymPy) em 6 pontos sorteados; se `simplify(original − resultado) == 0`, também simbólico | `verified_symbolic` |
-| solve_equation (linear) | Substituir a solução na equação original, de forma simbólica e com o avaliador independente. Coeficiente de `x` ≠ 0 ⇒ grau 1 ⇒ no máximo uma solução, então a completude também fica provada. "Sem solução" e "todo x real" são conferidos pela diferença entre os lados e em pontos sorteados | `verified_symbolic` |
-| solve_equation (geral) | Substituição + aviso de que não foi provado que não há outras soluções | `partial` |
+| solve_equation (polinomial ou racional, coeficientes racionais) | Cada solução substituída na equação original, de forma exata e com o avaliador independente. Completude: o **teorema de Sturm** conta as raízes reais distintas; se contar mais do que as encontradas, o status é `failed` ([ADR 0006](0006-escopo-da-algebra.md)) | `verified_symbolic` |
+| solve_equation (1º grau, qualquer coeficiente) | Substituição; coeficiente de `x` ≠ 0 ⇒ no máximo uma solução | `verified_symbolic` |
+| solve_equation (outras: raiz, módulo, log, exponencial) | Substituição; pega raízes estranhas, mas a completude não é provada | `partial` |
+| "sem solução" e "todo x real" | Diferença entre os lados (ou numerador) constante ou nula, mais pontos sorteados | `verified_symbolic` / `partial` |
 | factor / expand | `expand(resultado) − expand(original) == 0` + pontos numéricos | `verified_symbolic` |
+| fatoração de inteiros | Produto exato dos fatores + primalidade de cada um (determinística abaixo de 2⁶⁴; BPSW acima) | `verified_symbolic` |
+| polynomial_division | `B·Q + R = A` exato, `grau R < grau B`, mais pontos sorteados | `verified_symbolic` |
 | derivative | Diferença finita central em pontos aleatórios (mpmath) | `verified_numeric` |
 | integral indefinida | `diff(F) − f == 0` (derivar é um algoritmo diferente de integrar) + pontos | `verified_symbolic` |
 | integral definida | Comparar com quadratura numérica (`scipy.integrate.quad` ou `mpmath.quad`) | `verified_numeric` |
 | limit | Avaliação numérica aproximando-se pelos dois lados | `partial` |
-| solve_system | Substituir as soluções em todas as equações | `partial` / `verified_symbolic` (sistema linear com determinante ≠ 0) |
+| solve_system (linear) | Substituição (simbólica e pelo avaliador independente) + **postos** da matriz dos coeficientes e da ampliada, para única, infinitas e nenhuma | `verified_symbolic` |
 | graph | — | `not_applicable` |
 
 ### Regras da verificação numérica

@@ -17,7 +17,12 @@ def test_derived_example_from_the_spec() -> None:
     assert result.result is not None
     assert result.result.plain == "x = 6"
     assert result.result.latex == "x = 6"
-    assert result.details == {"variable": "x", "solution_set": "unique", "solutions": ["6"]}
+    assert result.details == {
+        "variable": "x",
+        "solution_set": "finite",
+        "solutions": ["6"],
+        "multiplicities": [1],
+    }
     assert result.verification is not None
     assert result.verification.status is VerificationStatus.VERIFIED_SYMBOLIC
     assert result.steps == []
@@ -122,7 +127,7 @@ def test_domain_change_warning() -> None:
         ("sqrt(-9)", ErrorCode.DOMAIN_ERROR),
         ("log(0)", ErrorCode.DOMAIN_ERROR),
         ("10^5000", ErrorCode.LIMIT_EXCEEDED),
-        ("x^2 = 4", ErrorCode.UNSUPPORTED_FEATURE),
+        ("sin(x) = 0", ErrorCode.UNSUPPORTED_FEATURE),
         ("2i", ErrorCode.UNSUPPORTED_FEATURE),
     ],
 )
@@ -133,3 +138,122 @@ def test_errors(text: str, code: ErrorCode) -> None:
     assert result.error is not None
     assert result.error.code is code
     assert result.error.message
+
+
+# -- Phase 5: algebra ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "intent", "plain", "latex"),
+    [
+        ("x^2 - 4", "factor", "(x - 2)*(x + 2)", r"\left(x - 2\right) \left(x + 2\right)"),
+        ("360", "factor", "2^3 * 3^2 * 5", r"2^{3} \cdot 3^{2} \cdot 5"),
+        ("-84", "factor", "-2^2 * 3 * 7", r"-2^{2} \cdot 3 \cdot 7"),
+        ("(x + 1)^3", "expand", "x^3 + 3*x^2 + 3*x + 1", "x^{3} + 3 x^{2} + 3 x + 1"),
+        (
+            "(x^3 + 2x + 5)/(x^2 + 1)",
+            "polynomial_division",
+            "quociente: x; resto: x + 5",
+            r"Q(x) = x, \quad R(x) = x + 5",
+        ),
+    ],
+)
+def test_explicit_algebra_intents(text: str, intent: str, plain: str, latex: str) -> None:
+    result = calculate(text, intent=intent)
+    assert result.success, result.error
+    assert result.result is not None
+    assert (result.result.plain, result.result.latex) == (plain, latex)
+    assert result.verification is not None
+    assert result.verification.status is VerificationStatus.VERIFIED_SYMBOLIC
+
+
+def test_rewrite_details_say_whether_anything_changed() -> None:
+    assert calculate("x^2 - 4", intent="factor").details == {"changed": True}
+    assert calculate("x^2 - 2", intent="factor").details == {"changed": False}
+
+
+def test_prime_factorization_details() -> None:
+    details = calculate("360", intent="factor").details
+    assert details["prime_factors"] == [
+        {"prime": "2", "exponent": 3},
+        {"prime": "3", "exponent": 2},
+        {"prime": "5", "exponent": 1},
+    ]
+
+
+def test_division_details() -> None:
+    details = calculate("(x^3 - 1)/(x - 1)", intent="polynomial_division").details
+    assert details == {"variable": "x", "quotient": "x^2 + x + 1", "remainder": "0", "exact": True}
+
+
+@pytest.mark.parametrize(
+    ("text", "plain", "approx", "status"),
+    [
+        ("x^2 - 5x + 6 = 0", "x = 2 ou x = 3", None, VerificationStatus.VERIFIED_SYMBOLIC),
+        (
+            "x^2 = 2",
+            "x = -sqrt(2) ou x = sqrt(2)",
+            "-1.4142135623731; 1.4142135623731",
+            VerificationStatus.VERIFIED_SYMBOLIC,
+        ),
+        ("x/x = 1", "x ∈ ℝ, x ≠ 0", None, VerificationStatus.VERIFIED_SYMBOLIC),
+        ("sqrt(x + 2) = x", "x = 2", None, VerificationStatus.PARTIAL),
+    ],
+)
+def test_equations(text: str, plain: str, approx: str | None, status: VerificationStatus) -> None:
+    result = calculate(text)
+    assert result.intent is IntentName.SOLVE_EQUATION
+    assert result.result is not None
+    assert (result.result.plain, result.result.approx) == (plain, approx)
+    assert result.verification is not None and result.verification.status is status
+
+
+def test_roots_without_radicals_are_shown_approximately() -> None:
+    result = calculate("x^3 = 3x - 1")
+    assert result.result is not None
+    assert result.result.plain.startswith("x ≈ -1.87938524157182 ou")
+    assert r"\approx" in result.result.latex
+    assert [w.code for w in result.warnings] == [NoticeCode.ROOTS_SHOWN_APPROXIMATELY]
+
+
+def test_double_root_multiplicity_in_details() -> None:
+    details = calculate("x^2 - 2x + 1 = 0").details
+    assert details["solutions"] == ["1"]
+    assert details["multiplicities"] == [2]
+
+
+@pytest.mark.parametrize(
+    ("text", "plain", "latex", "solution_set"),
+    [
+        (
+            "x + y = 3; x - y = 1",
+            "x = 2; y = 1",
+            r"\begin{cases} x = 2 \\ y = 1 \end{cases}",
+            "unique",
+        ),
+        (
+            "x + y = 3; 2x + 2y = 6",
+            "x = 3 - y; y ∈ ℝ",
+            r"\begin{cases} x = 3 - y \\ y \in \mathbb{R} \end{cases}",
+            "infinite",
+        ),
+        ("x + y = 3; x + y = 4", "∅", r"\varnothing", "none"),
+    ],
+)
+def test_systems(text: str, plain: str, latex: str, solution_set: str) -> None:
+    result = calculate(text)
+    assert result.intent is IntentName.SOLVE_SYSTEM
+    assert result.result is not None
+    assert (result.result.plain, result.result.latex) == (plain, latex)
+    assert result.details["solution_set"] == solution_set
+    assert result.verification is not None
+    assert result.verification.status is VerificationStatus.VERIFIED_SYMBOLIC
+
+
+def test_several_roots_are_one_per_line_in_latex() -> None:
+    """One line of roots does not fit a phone screen (seen in the browser, Phase 5)."""
+    result = calculate("x^2 - 5x + 6 = 0")
+    assert result.result is not None
+    assert result.result.latex == r"\begin{aligned} x_{1} & = 2 \\ x_{2} & = 3 \end{aligned}"
+    single = calculate("2x + 5 = 17")
+    assert single.result is not None and single.result.latex == "x = 6"

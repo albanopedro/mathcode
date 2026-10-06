@@ -14,8 +14,8 @@ Regras gerais:
 | 1 | Foundation | concluída |
 | 2 | Core matemático | concluída |
 | 3 | API | concluída |
-| 4 | Frontend básico | concluída (aguardando revisão) |
-| 5 | Álgebra | — |
+| 4 | Frontend básico | concluída |
+| 5 | Álgebra | concluída (aguardando revisão) |
 | 6 | Cálculo | — |
 | 7 | Gráficos | — |
 | 8 | Linguagem natural / IA | — |
@@ -118,6 +118,33 @@ Nenhum código foi escrito.
 Fatoração, expansão, polinômios, equações gerais (quadráticas, polinomiais e
 racionais) e sistemas. Cada item tem testes e uma estratégia de verificação.
 
+- **Escopo decidido com o usuário** ([ADR 0006](decisions/0006-escopo-da-algebra.md)):
+  - seletor de operação na interface;
+  - "polinômios" = divisão de polinômios;
+  - sistemas só lineares.
+- **Entregue:**
+  - `factor` (sobre ℚ; inteiros viram fatoração em primos);
+  - `expand`;
+  - `polynomial_division` (quociente e resto);
+  - `solve_equation` geral (polinomial de qualquer grau, racional e outras);
+  - `solve_system` linear (única, infinitas ou nenhuma).
+- **Verificação:**
+  - a completude das equações polinomiais e racionais é provada pelo
+    **teorema de Sturm**;
+  - nos sistemas, pelos postos das matrizes;
+  - raízes estranhas são pegas pelo avaliador independente;
+  - quando a completude não pode ser provada, o status é `partial`.
+- **Frontend:**
+  - seletor de operação com exemplo próprio;
+  - legendas a partir de `details`;
+  - sistemas exibidos com chave e raízes uma por linha.
+- **Testes:** 507 no backend (eram 372) e 105 no frontend (eram 60).
+- **Descoberto durante a fase:**
+  - a verificação da divisão reprovava resultados certos, porque fazia contas
+    fora do contexto de alta precisão do mpmath;
+  - uma raiz faltando dava `partial` em vez de `failed`;
+  - várias raízes numa linha estouravam a tela do celular.
+
 ## Fase 6 — Cálculo
 
 Derivadas, integrais indefinidas e definidas, e limites. A verificação segue a
@@ -162,6 +189,8 @@ determinística.
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
+- Sistemas não lineares; equações trigonométricas (infinitas soluções);
+  divisão de polinômios com várias variáveis.
 - Passos de resolução gerados por regras próprias.
 - `docker-compose.yml`, quando houver Docker para testar.
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer

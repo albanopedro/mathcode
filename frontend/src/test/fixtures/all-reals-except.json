@@ -1,25 +1,29 @@
 {
   "success": true,
   "intent": "solve_equation",
-  "input": "2(x + 1) = 2x + 2",
-  "normalized_input": "2*(x + 1) = 2*x + 2",
+  "input": "x/x = 1",
+  "normalized_input": "x/x = 1",
   "result": {
-    "plain": "x ∈ ℝ",
-    "latex": "x \\in \\mathbb{R}",
+    "plain": "x ∈ ℝ, x ≠ 0",
+    "latex": "x \\in \\mathbb{R} \\setminus \\{0\\}",
     "approx": null
   },
   "steps": [],
   "details": {
     "variable": "x",
     "solution_set": "all_reals",
-    "solutions": []
+    "solutions": [],
+    "excluded": [
+      "0"
+    ]
   },
   "verification": {
     "status": "verified_symbolic",
     "method": "symbolic+numeric",
     "checks": [
       "Os dois lados são idênticos: a diferença entre eles se reduz a 0.",
-      "O avaliador independente confirma a igualdade em 6 pontos sorteados."
+      "O avaliador independente confirma a igualdade em 6 pontos sorteados.",
+      "Exceto onde a equação não é definida: x = 0."
     ],
     "message": "Resultado verificado simbolicamente."
   },

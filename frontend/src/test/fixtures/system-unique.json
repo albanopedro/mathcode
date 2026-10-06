@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "intent": "solve_system",
+  "input": "x + y = 3; x - y = 1",
+  "normalized_input": "x + y = 3; x - y = 1",
+  "result": {
+    "plain": "x = 2; y = 1",
+    "latex": "\\begin{cases} x = 2 \\\\ y = 1 \\end{cases}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variables": [
+      "x",
+      "y"
+    ],
+    "solution_set": "unique",
+    "free_variables": [],
+    "solutions": {
+      "x": "2",
+      "y": "1"
+    }
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "substitution+rank",
+    "checks": [
+      "Substituindo a solução em cada equação original, os dois lados ficam iguais.",
+      "O avaliador independente confirma em 1 ponto(s).",
+      "O posto da matriz dos coeficientes é 2, igual ao número de incógnitas, então a solução é única."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

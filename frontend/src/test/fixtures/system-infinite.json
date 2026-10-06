@@ -1,0 +1,38 @@
+{
+  "success": true,
+  "intent": "solve_system",
+  "input": "x + y = 3; 2x + 2y = 6",
+  "normalized_input": "x + y = 3; 2*x + 2*y = 6",
+  "result": {
+    "plain": "x = 3 - y; y ∈ ℝ",
+    "latex": "\\begin{cases} x = 3 - y \\\\ y \\in \\mathbb{R} \\end{cases}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variables": [
+      "x",
+      "y"
+    ],
+    "solution_set": "infinite",
+    "free_variables": [
+      "y"
+    ],
+    "solutions": {
+      "x": "3 - y",
+      "y": "y"
+    }
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "substitution+rank",
+    "checks": [
+      "Substituindo a solução em cada equação original, os dois lados ficam iguais.",
+      "O avaliador independente confirma em 6 ponto(s).",
+      "O posto é 1 com 2 incógnitas: sobram 1 variável(is) livre(s), então essa família descreve todas as soluções."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

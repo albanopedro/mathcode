@@ -1,11 +1,11 @@
 {
   "success": true,
   "intent": "solve_equation",
-  "input": "2x + 5 = 17",
-  "normalized_input": "2*x + 5 = 17",
+  "input": "sqrt(x + 2) = x",
+  "normalized_input": "sqrt(x + 2) = x",
   "result": {
-    "plain": "x = 6",
-    "latex": "x = 6",
+    "plain": "x = 2",
+    "latex": "x = 2",
     "approx": null
   },
   "steps": [],
@@ -13,20 +13,17 @@
     "variable": "x",
     "solution_set": "finite",
     "solutions": [
-      "6"
-    ],
-    "multiplicities": [
-      1
+      "2"
     ]
   },
   "verification": {
-    "status": "verified_symbolic",
-    "method": "substitution+sturm",
+    "status": "partial",
+    "method": "substitution",
     "checks": [
       "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
-      "Pelo teorema de Sturm, o polinômio 2*x - 12 tem exatamente 1 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      "Não foi provado que não existem outras soluções."
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Verificação parcial: o resultado encontrado foi confirmado, mas não foi provado que ele é completo."
   },
   "warnings": [],
   "error": null

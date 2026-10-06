@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "intent": "polynomial_division",
+  "input": "(x^3 - 1)/(x - 1)",
+  "normalized_input": "(x^3 - 1)/(x - 1)",
+  "result": {
+    "plain": "quociente: x^2 + x + 1; resto: 0",
+    "latex": "Q(x) = x^{2} + x + 1, \\quad R(x) = 0",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "quotient": "x^2 + x + 1",
+    "remainder": "0",
+    "exact": true
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "identity+numeric",
+    "checks": [
+      "Expandindo B·Q + R, obtém-se exatamente o dividendo A.",
+      "O resto é 0: a divisão é exata.",
+      "O avaliador independente confirma A = B·Q + R em 6 pontos sorteados."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

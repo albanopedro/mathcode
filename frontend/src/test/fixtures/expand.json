@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "intent": "expand",
+  "input": "(x + 1)^3",
+  "normalized_input": "(x + 1)^3",
+  "result": {
+    "plain": "x^3 + 3*x^2 + 3*x + 1",
+    "latex": "x^{3} + 3 x^{2} + 3 x + 1",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "changed": true
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "symbolic+numeric",
+    "checks": [
+      "Avaliador independente: a expressão original e o resultado coincidem em 6 ponto(s) sorteados.",
+      "A diferença entre a expressão original e a forma expandida se reduz a 0."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

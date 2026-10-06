@@ -1,5 +1,5 @@
 import { type HealthResponse, isHealthResponse } from "../types/health";
-import { isMathResult, type MathResult } from "../types/math";
+import { type IntentName, isMathResult, type MathResult } from "../types/math";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -34,11 +34,16 @@ export async function fetchHealth(signal?: AbortSignal): Promise<HealthResponse>
  * Asks the API to calculate. Every answer of the API is a MathResult, also on
  * HTTP 500 and 503 (docs/architecture.md, §5), so the body decides, not the status.
  */
-export async function calculate(input: string, signal?: AbortSignal): Promise<MathResult> {
+export async function calculate(
+  input: string,
+  intent: IntentName | null = null,
+  signal?: AbortSignal,
+): Promise<MathResult> {
   const response = await fetch("/api/calculate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ input }),
+    // Without an intent, the API detects the operation from the input.
+    body: JSON.stringify(intent ? { input, intent } : { input }),
     signal,
   });
 

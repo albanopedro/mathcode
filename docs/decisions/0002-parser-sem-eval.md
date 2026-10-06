@@ -59,6 +59,7 @@ texto → normalize → tokenize → parse (Pratt) → AST → build (SymPy)
 | Funções | `sqrt abs sin cos tan asin acos atan exp ln log`, sempre com parênteses |
 | Graus | `30°` → `30·pi/180` (pós-fixo; ver [ADR 0005](0005-dominio-e-exatidao.md)) |
 | Equação | um único `=` (ex.: `2x + 5 = 17`) |
+| Sistema (Fase 5) | equações separadas por `;` ou `, ` com espaço: `x + y = 3; x - y = 1` (até 10) |
 
 **Vírgula decimal:** uma vírgula entre dígitos, sem espaço e uma única vez no
 número, é decimal (`3,5` → `3.5`), e o resultado traz o aviso `DECIMAL_COMMA`.

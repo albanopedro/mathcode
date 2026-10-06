@@ -1,0 +1,35 @@
+{
+  "success": true,
+  "intent": "solve_equation",
+  "input": "x^2 - 5x + 6 = 0",
+  "normalized_input": "x^2 - 5*x + 6 = 0",
+  "result": {
+    "plain": "x = 2 ou x = 3",
+    "latex": "\\begin{aligned} x_{1} & = 2 \\\\ x_{2} & = 3 \\end{aligned}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "solution_set": "finite",
+    "solutions": [
+      "2",
+      "3"
+    ],
+    "multiplicities": [
+      1,
+      1
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "substitution+sturm",
+    "checks": [
+      "Substituindo cada uma das 2 soluções na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
+      "Pelo teorema de Sturm, o polinômio x^2 - 5*x + 6 tem exatamente 2 raiz(es) real(is) distinta(s), e todas foram consideradas."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

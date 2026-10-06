@@ -1,0 +1,40 @@
+{
+  "success": true,
+  "intent": "factor",
+  "input": "360",
+  "normalized_input": "360",
+  "result": {
+    "plain": "2^3 * 3^2 * 5",
+    "latex": "2^{3} \\cdot 3^{2} \\cdot 5",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "number": "360",
+    "prime_factors": [
+      {
+        "prime": "2",
+        "exponent": 3
+      },
+      {
+        "prime": "3",
+        "exponent": 2
+      },
+      {
+        "prime": "5",
+        "exponent": 1
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "exact_product+primality",
+    "checks": [
+      "Multiplicando os fatores com inteiros exatos, obtém-se 360.",
+      "Cada fator foi confirmado primo (teste determinístico)."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null
+}

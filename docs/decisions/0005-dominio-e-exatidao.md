@@ -25,7 +25,8 @@ avisar o usuário seria uma forma de esconder erro.
 | `log(x; b)` ou `log(x, b)` | base `b`, que precisa ser positiva e diferente de 1 | — |
 | Ângulos | **radianos** | `ANGLE_IN_RADIANS` quando uma função trigonométrica recebe um número puro; `30°` é aceito como graus |
 | Divisão por zero | erro `DIVISION_BY_ZERO` (não devolve `zoo`/`nan`) | — |
-| Sem solução | **sucesso** com conjunto vazio (`∅`), não erro | — |
+| Sem solução | **sucesso** com conjunto vazio (`∅`), não erro | `COMPLEX_SOLUTIONS_OMITTED` quando há raízes complexas (Fase 5) |
+| Todo real exceto pontos (`x/x = 1`) | `x ∈ ℝ \ {0}`: os zeros dos denominadores ficam de fora | — |
 
 ## Consequências
 

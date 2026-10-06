@@ -1,10 +1,19 @@
 import pytest
 
 from app.core.errors import ErrorCode, MathError
-from app.core.limits import MAX_NESTING
+from app.core.limits import MAX_NESTING, MAX_SYSTEM_EQUATIONS
 from app.core.notices import NoticeCode
 from app.parsing import parse
-from app.parsing.ast import Binary, Call, Equation, Negate, Number, Variable, variables
+from app.parsing.ast import (
+    Binary,
+    Call,
+    Equation,
+    Negate,
+    Number,
+    System,
+    Variable,
+    variables,
+)
 
 
 def canonical(source: str) -> str:
@@ -149,3 +158,24 @@ def test_nesting_limit_covers_signs_and_powers(source: str) -> None:
 
 def test_long_flat_sum_is_accepted() -> None:
     parse("+".join(["1"] * 240))
+
+
+def test_system_of_equations() -> None:
+    tree = parse("x + y = 3; x - y = 1").tree
+    assert isinstance(tree, System)
+    assert len(tree.equations) == 2
+    assert parse("x + y = 3, x - y = 1").canonical == "x + y = 3; x - y = 1"
+
+
+def test_system_parts_must_be_equations() -> None:
+    with pytest.raises(MathError) as exc:
+        parse("x + y = 3; x - y")
+    assert exc.value.code is ErrorCode.PARSE_ERROR
+    assert "equação" in exc.value.message
+
+
+def test_system_size_limit() -> None:
+    parse("; ".join(f"x = {n}" for n in range(MAX_SYSTEM_EQUATIONS)))
+    with pytest.raises(MathError) as exc:
+        parse("; ".join(f"x = {n}" for n in range(MAX_SYSTEM_EQUATIONS + 1)))
+    assert exc.value.code is ErrorCode.LIMIT_EXCEEDED

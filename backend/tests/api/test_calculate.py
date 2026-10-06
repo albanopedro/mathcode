@@ -52,6 +52,21 @@ def test_explicit_intent(api: TestClient) -> None:
     assert data["result"]["plain"] == "2*x"
 
 
+@pytest.mark.parametrize(
+    ("text", "intent", "plain"),
+    [
+        ("x^2 - 4", "factor", "(x - 2)*(x + 2)"),
+        ("(x + 1)^2", "expand", "x^2 + 2*x + 1"),
+        ("(x^3 - 1)/(x - 1)", "polynomial_division", "quociente: x^2 + x + 1; resto: 0"),
+        ("x + y = 3; x - y = 1", "solve_system", "x = 2; y = 1"),
+    ],
+)
+def test_phase_5_intents(api: TestClient, text: str, intent: str, plain: str) -> None:
+    status, data = post(api, {"input": text, "intent": intent})
+    assert status == 200
+    assert data["result"]["plain"] == plain
+
+
 def test_warnings_are_returned(api: TestClient) -> None:
     _, data = post(api, {"input": "log(100)"})
     assert [w["code"] for w in data["warnings"]] == ["LOG_BASE_10"]
@@ -64,7 +79,7 @@ def test_warnings_are_returned(api: TestClient) -> None:
         ("sqrt(-1)", "DOMAIN_ERROR"),
         ("2 +", "PARSE_ERROR"),
         ("", "EMPTY_INPUT"),
-        ("x^2 = 4", "UNSUPPORTED_FEATURE"),
+        ("sin(x) = 0", "UNSUPPORTED_FEATURE"),
         ("10^5000", "LIMIT_EXCEEDED"),
         ("1" * (MAX_INPUT_LENGTH + 1), "INPUT_TOO_LONG"),
         ("__import__('os')", "PARSE_ERROR"),

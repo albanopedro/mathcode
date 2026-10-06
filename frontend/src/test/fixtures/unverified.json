@@ -9,7 +9,9 @@
     "approx": null
   },
   "steps": [],
-  "details": {},
+  "details": {
+    "changed": false
+  },
   "verification": {
     "status": "unverified",
     "method": "independent_numeric",

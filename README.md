@@ -5,10 +5,11 @@ linguagem natural. Os cálculos são feitos por um motor determinístico (SymPy)
 e **todo resultado informa o quanto foi verificado**. A IA, quando existir,
 só interpreta o pedido: nunca é ela que calcula.
 
-> **Estado: Fase 4 (frontend básico).** Já é possível usar pelo navegador:
-> aritmética, simplificação e equações do 1º grau, com o resultado em LaTeX, a
-> verificação, os avisos e os erros apontando onde está o problema. Os próximos
-> passos estão no [roadmap](docs/roadmap.md).
+> **Estado: Fase 5 (álgebra).** Pelo navegador ou pela API, o Mathcode já:
+> calcula; simplifica, fatora e expande; resolve equações (polinomiais,
+> racionais e outras) e sistemas lineares; e divide polinômios. Tudo vem com
+> verificação independente, que diz quando provou que nenhuma solução faltou.
+> Os próximos passos estão no [roadmap](docs/roadmap.md).
 
 ## Princípios
 
@@ -46,9 +47,17 @@ npm install
 npm run dev
 ```
 
-Abra <http://localhost:5180> e digite, por exemplo, `2x + 5 = 17`,
-`x² + 2x + x²` ou `sen(30°)`. Em desenvolvimento, o Vite encaminha `/api` para
-o backend na porta 8100, então rode os dois juntos.
+Abra <http://localhost:5180> e experimente, por exemplo:
+
+| Operação | Entrada |
+|---|---|
+| Automático | `x² - 5x + 6 = 0`, `x + y = 3; x - y = 1`, `sen(30°)` |
+| Fatorar | `x^4 - 1` ou `360` |
+| Expandir | `(x + 1)^3` |
+| Dividir polinômios | `(x^3 - 1)/(x - 1)` |
+
+Em desenvolvimento, o Vite encaminha `/api` para o backend na porta 8100, então
+rode os dois juntos.
 
 ### Usar a API
 

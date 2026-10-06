@@ -4,7 +4,9 @@
 > `core/` e `models/` e a base do frontend. A Fase 2 criou `parsing/`,
 > `interpreter/`, `math_engine/`, `verification/`, `formatting/` e
 > `calculator.py`. A Fase 3 criou `POST /api/calculate` e o pool de workers
-> (`core/workers.py`). A Fase 4 criou a interface de cálculo (seção 6). As
+> (`core/workers.py`). A Fase 4 criou a interface de cálculo (seção 6). A
+> Fase 5 trouxe a álgebra: fatorar, expandir, equações gerais, sistemas lineares
+> e divisão de polinômios ([ADR 0006](decisions/0006-escopo-da-algebra.md)). As
 > demais pastas são criadas nas fases em que ganham código.
 
 ## 1. Princípios
@@ -59,10 +61,28 @@ Cada intent é registrado em `interpreter/registry.py` com:
 | `verify(outcome) → VerificationReport` | estratégia do ADR 0003 (`verification/`) |
 | `present(outcome) → Presentation` | `ResultValue` (plain/LaTeX/aproximação) + `details` (`formatting/results.py`) |
 
-Intents disponíveis: `arithmetic`, `simplify` e `solve_equation` (1º grau, uma
-variável). Sem intent explícito, a detecção por regras usa a forma da entrada:
-com `=`, é uma equação; com variável, é uma simplificação; caso contrário, é
-aritmética.
+Intents disponíveis (`models/intents.py`):
+
+- `arithmetic`, `simplify`, `factor` e `expand`;
+- `solve_equation` (polinomial, racional e outras, com uma variável);
+- `solve_system` (linear);
+- `polynomial_division` (`A / B`).
+
+Sem intent explícito, a detecção por regras usa a forma da entrada:
+
+- equações separadas por `;` formam um sistema;
+- com `=`, é uma equação;
+- com variável, é uma simplificação;
+- caso contrário, é aritmética.
+
+Fatorar, expandir e dividir só rodam quando pedidos (ADR 0006).
+
+| Intent | Executor | Verificador |
+|---|---|---|
+| arithmetic | `math_engine/arithmetic.py` | `verification/arithmetic.py` |
+| simplify, factor, expand, polynomial_division | `math_engine/algebra.py` | `verification/algebra.py` |
+| solve_equation | `math_engine/equations.py` (com `polynomials.py`) | `verification/equations.py` |
+| solve_system | `math_engine/systems.py` | `verification/equations.py` |
 
 Para adicionar um intent, cria-se um módulo e registra-se o intent. O fluxo
 principal não muda.
@@ -100,9 +120,21 @@ Códigos de erro (`core/errors.py`):
   uma expressão com variáveis), `VERIFICATION_FAILED`, `INTERNAL_ERROR`;
 - `TIMEOUT` e `SERVER_BUSY`, que vêm do pool de workers.
 
-Avisos (`core/notices.py`): `AMBIGUOUS_IMPLICIT_MULTIPLICATION`,
-`DECIMAL_COMMA`, `LOG_BASE_10`, `ANGLE_IN_RADIANS`, `REAL_ROOT` e
-`DOMAIN_CHANGED`. Cada aviso aparece uma vez por resultado.
+Avisos (`core/notices.py`), cada um uma vez por resultado:
+
+- `AMBIGUOUS_IMPLICIT_MULTIPLICATION`, `DECIMAL_COMMA`, `LOG_BASE_10`;
+- `ANGLE_IN_RADIANS`, `REAL_ROOT`, `DOMAIN_CHANGED`;
+- `COMPLEX_SOLUTIONS_OMITTED` e `ROOTS_SHOWN_APPROXIMATELY` (Fase 5).
+
+`details` depende do intent:
+
+| Intent | Campos |
+|---|---|
+| simplify, factor, expand | `changed` |
+| factor de um inteiro | `number`, `prime_factors` |
+| solve_equation | `variable`, `solution_set` (`finite`, `none` ou `all_reals`), `solutions`, `multiplicities`, `excluded` |
+| solve_system | `variables`, `solution_set` (`unique`, `infinite` ou `none`), `solutions`, `free_variables` |
+| polynomial_division | `variable`, `quotient`, `remainder`, `exact` |
 
 `error.position` é um índice no texto **original** digitado pelo usuário.
 
@@ -150,9 +182,10 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | Peça | Papel |
 |---|---|
 | `types/math.ts` | tipos que espelham o `MathResult` e `isMathResult()`, que valida cada resposta antes de usá-la, com a mesma regra de consistência do backend |
-| `services/api.ts` | `calculate(input)`: decide pelo **corpo**, não pelo status, porque 200, 500 e 503 trazem `MathResult`. Trata 502–504 sem corpo como API inacessível e 422 como pedido recusado |
+| `services/api.ts` | `calculate(input, intent?)`: decide pelo **corpo**, não pelo status, porque 200, 500 e 503 trazem `MathResult`. Trata 502–504 sem corpo como API inacessível e 422 como pedido recusado |
 | `hooks/useCalculator.ts` | estados `idle`, `loading`, `done` e `failed` (este último sem `MathResult`, ou seja, erro de rede); cancela o pedido anterior |
-| `components/Calculator.tsx` | formulário (Enter envia; botão desativado com o campo vazio ou durante o cálculo) e região `aria-live` |
+| `components/Calculator.tsx` | seletor de **operação** (`utils/operations.ts`: Automático ou um intent, com exemplo próprio), formulário (Enter envia; botão desativado com o campo vazio ou durante o cálculo) e região `aria-live` |
+| `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada |
 | `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
 | `components/ErrorView.tsx` | `role="alert"`, mensagem e a entrada com o caractere de `error.position` destacado (contando code points, como o Python) |
 | `components/Verification.tsx` | a mensagem do backend como título, com ícone e cor por status, e "Como foi verificado" (`<details>`) com os `checks` |
@@ -183,7 +216,7 @@ Mathcode/
 │   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build
 │   │   ├── interpreter/        registry + detecção por regras
 │   │   ├── planner/            ExecutionPlan (Fase 12)
-│   │   ├── math_engine/        arithmetic/ algebra/ calculus/ graphing/ ...
+│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials (depois: calculus, graphing...)
 │   │   ├── verification/       estratégias por intent
 │   │   ├── formatting/         plain/LaTeX/aproximação
 │   │   └── ai/                 AIProvider + provedores gratuitos (Fase 8)
@@ -247,3 +280,4 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0003](decisions/0003-verificacao.md) | Estratégia e níveis de verificação |
 | [0004](decisions/0004-ai-provider.md) | Camada de IA só com provedores gratuitos |
 | [0005](decisions/0005-dominio-e-exatidao.md) | Domínio ℝ, exatidão e convenções |
+| [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
