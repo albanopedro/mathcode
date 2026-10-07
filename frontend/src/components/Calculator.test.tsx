@@ -282,3 +282,85 @@ describe("Calculator", () => {
     expect(screen.getByText("A equação não tem solução real.")).toBeInTheDocument();
   });
 });
+
+describe("Calculator: calculus fields", () => {
+  it("shows only the fields of the chosen operation", async () => {
+    const user = userEvent.setup();
+    render(<Calculator />);
+    expect(screen.queryByLabelText("Ordem")).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Operação"), "Derivar");
+    expect(screen.getByLabelText("Variável")).toBeInTheDocument();
+    expect(screen.getByLabelText("Ordem")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Ponto")).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Operação"), "Integrar");
+    expect(screen.getByLabelText("De")).toBeInTheDocument();
+    expect(screen.getByLabelText("Até")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Ordem")).not.toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Operação"), "Limite");
+    expect(screen.getByLabelText("Ponto")).toBeInTheDocument();
+    expect(screen.getByLabelText("Lado")).toBeInTheDocument();
+  });
+
+  it("sends the fields as options", async () => {
+    answer(fixtures.integralDefinite);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Integrar");
+    await user.type(screen.getByLabelText("De"), "0");
+    await user.type(screen.getByLabelText("Até"), "1");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "x^2{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({
+      input: "x^2",
+      intent: "integral",
+      options: { lower: "0", upper: "1" },
+    });
+  });
+
+  it("sends the limit side and point", async () => {
+    answer(fixtures.limitOneSided);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Limite");
+    await user.type(screen.getByLabelText("Ponto"), "0");
+    await user.selectOptions(screen.getByLabelText("Lado"), "Pela direita");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "sqrt(x){Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body.options).toEqual({ point: "0", side: "right" });
+  });
+
+  it.each([
+    [fixtures.derivative, "Derivada"],
+    [fixtures.integralIndefinite, "Integral"],
+    [fixtures.limitFinite, "Limite"],
+  ])("labels and explains calculus results", async (fixture, label) => {
+    answer(fixture);
+    await calculateText(fixture.input);
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText(label)).toBeInTheDocument();
+  });
+
+  it("shows that a limit does not exist, with its sides", async () => {
+    answer(fixtures.limitSides);
+    await calculateText("abs(x)/x");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(result.querySelector("annotation")?.textContent).toBe(String.raw`\nexists`);
+    expect(within(result).getByText(/pela esquerda tende a -1/)).toBeInTheDocument();
+  });
+
+  it("explains an invalid option from the API", async () => {
+    answer(fixtures.invalidOrder);
+    await calculateText("x^2");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/ordem da derivada/);
+  });
+});

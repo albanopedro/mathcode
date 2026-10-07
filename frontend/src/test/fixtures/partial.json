@@ -23,7 +23,7 @@
       "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
       "Não foi provado que não existem outras soluções."
     ],
-    "message": "Verificação parcial: o resultado encontrado foi confirmado, mas não foi provado que ele é completo."
+    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
   },
   "warnings": [],
   "error": null

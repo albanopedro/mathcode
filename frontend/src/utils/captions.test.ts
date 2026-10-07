@@ -43,3 +43,23 @@ describe("captions", () => {
     expect(captions(odd)).toEqual([]);
   });
 });
+
+describe("calculus captions", () => {
+  it.each([
+    ["derivative", ["Derivada de ordem 2 em relação a x."]],
+    ["integralIndefinite", ["Primitiva em relação a x; C é uma constante qualquer."]],
+    ["integralDefinite", ["Integral de 0 a 1 em relação a x."]],
+    ["integralDivergent", ["Integral de 1 a ∞ em relação a x.", "A integral diverge."]],
+    ["limitFinite", ["Limite quando x → 0."]],
+    ["limitOneSided", ["Limite quando x → 0 pela direita."]],
+    ["limitSides", ["O limite não existe: pela esquerda tende a -1 e pela direita a 1."]],
+    ["limitOscillates", ["O limite não existe: a função oscila perto de x = 0."]],
+  ] as const)("explains %s", (name, expected) => {
+    expect(captions(fixtures[name])).toEqual(expected);
+  });
+
+  it("names a first derivative without its order", () => {
+    const first = { ...fixtures.derivative, details: { variable: "t", order: 1 } };
+    expect(captions(first)).toEqual(["Derivada em relação a t."]);
+  });
+});

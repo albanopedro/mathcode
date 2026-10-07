@@ -1,0 +1,36 @@
+{
+  "success": true,
+  "intent": "limit",
+  "input": "sqrt(x)",
+  "normalized_input": "sqrt(x)",
+  "result": {
+    "plain": "0",
+    "latex": "0",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "point": "0",
+    "side": "right",
+    "requested_side": "both",
+    "exists": true,
+    "oscillates": false
+  },
+  "verification": {
+    "status": "partial",
+    "method": "approach",
+    "checks": [
+      "Aproximando-se pela direita (x = 0 + 10^-24), a função vale 1.0e-12; o limite indicado é 0.",
+      "É evidência numérica, não prova: por isso a verificação é parcial."
+    ],
+    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
+  },
+  "warnings": [
+    {
+      "code": "ONE_SIDED_DOMAIN",
+      "message": "No domínio real, a função só existe à direita de x = 0; o limite é o lateral por esse lado."
+    }
+  ],
+  "error": null
+}

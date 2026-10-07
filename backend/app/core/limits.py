@@ -15,3 +15,6 @@ MAX_SYMBOLIC_EXPONENT = 1000
 
 # Equations in a system, and unknowns in it.
 MAX_SYSTEM_EQUATIONS = 10
+
+# Highest derivative order.
+MAX_DERIVATIVE_ORDER = 10

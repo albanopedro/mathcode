@@ -67,6 +67,35 @@ def test_phase_5_intents(api: TestClient, text: str, intent: str, plain: str) ->
     assert data["result"]["plain"] == plain
 
 
+def test_options_reach_the_engine(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "x^2", "intent": "integral", "options": {"lower": "0", "upper": "1"}}
+    )
+    assert status == 200
+    assert data["result"]["plain"] == "1/3"
+    assert data["details"]["definite"] is True
+
+
+def test_invalid_option_values_are_answers(api: TestClient) -> None:
+    status, data = post(api, {"input": "x^2", "intent": "derivative", "options": {"order": 50}})
+    assert status == 200
+    assert data["error"]["code"] == "INVALID_INPUT_FOR_INTENT"
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"order": [1]},  # not a text or a number
+        {"point": "1" * 101},  # too long (and must not become a huge int)
+        {"order": 10**6},  # number out of range
+        {f"k{n}": "x" for n in range(9)},  # too many
+    ],
+)
+def test_malformed_options_are_422(api: TestClient, options: dict) -> None:
+    status, _ = post(api, {"input": "x^2", "intent": "limit", "options": options})
+    assert status == 422
+
+
 def test_warnings_are_returned(api: TestClient) -> None:
     _, data = post(api, {"input": "log(100)"})
     assert [w["code"] for w in data["warnings"]] == ["LOG_BASE_10"]
@@ -111,7 +140,7 @@ def test_intent_mismatch_is_an_answer(api: TestClient) -> None:
         {},
         {"input": 42},
         {"input": None},
-        {"input": "2+2", "intent": "derivative"},
+        {"input": "2+2", "intent": "teleport"},
         {"input": "2+2", "extra": True},
         {"input": "1" * (MAX_REQUEST_INPUT_LENGTH + 1)},
         ["2+2"],

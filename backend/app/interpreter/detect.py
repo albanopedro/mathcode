@@ -1,16 +1,22 @@
 """Rule-based interpretation: which intent does this input ask for? (AI comes in Phase 8.)"""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from app.core.errors import ErrorCode, MathError
+from app.core.limits import MAX_DERIVATIVE_ORDER
 from app.models.intents import (
+    INTENT_OPTIONS,
     ArithmeticParams,
+    DerivativeParams,
     ExpandParams,
     FactorParams,
+    IntegralParams,
     IntentName,
     IntentParams,
+    LimitParams,
     PolynomialDivisionParams,
     SimplifyParams,
     SolveEquationParams,
@@ -19,15 +25,49 @@ from app.models.intents import (
 from app.parsing import parse
 from app.parsing.ast import Equation, System, variables
 
+type Options = Mapping[str, str | int]
+
+# The text goes into this field of each intent's params; options fill the rest.
+_TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
+    IntentName.ARITHMETIC: (ArithmeticParams, "expression"),
+    IntentName.SIMPLIFY: (SimplifyParams, "expression"),
+    IntentName.FACTOR: (FactorParams, "expression"),
+    IntentName.EXPAND: (ExpandParams, "expression"),
+    IntentName.SOLVE_EQUATION: (SolveEquationParams, "equation"),
+    IntentName.SOLVE_SYSTEM: (SolveSystemParams, "system"),
+    IntentName.POLYNOMIAL_DIVISION: (PolynomialDivisionParams, "division"),
+    IntentName.DERIVATIVE: (DerivativeParams, "expression"),
+    IntentName.INTEGRAL: (IntegralParams, "expression"),
+    IntentName.LIMIT: (LimitParams, "expression"),
+}
+
+# User-facing explanation of an invalid option.
+_OPTION_PROBLEMS = {
+    "variable": "A variável precisa ser uma única letra, como x.",
+    "order": f"A ordem da derivada precisa ser um número inteiro de 1 a {MAX_DERIVATIVE_ORDER}.",
+    "lower": "O limite inferior precisa ter de 1 a 100 caracteres.",
+    "upper": "O limite superior precisa ter de 1 a 100 caracteres.",
+    "point": "Informe o ponto do limite, como 0, pi/2 ou inf.",
+    "side": "O lado do limite precisa ser 'both', 'left' ou 'right'.",
+}
+
 
 @dataclass(frozen=True)
 class IntentRequest:
     intent: IntentName
-    params: IntentParams
+    params: IntentParams | BaseModel
 
 
-def interpret(text: str, intent: str | None = None) -> IntentRequest:
+def interpret(
+    text: str, intent: str | None = None, options: Options | None = None
+) -> IntentRequest:
+    options = dict(options or {})
     if intent is None:
+        if options:
+            raise MathError(
+                ErrorCode.INVALID_INPUT_FOR_INTENT,
+                "Parâmetros extras só valem quando a operação é escolhida.",
+            )
         name = _detect(text)
     else:
         try:
@@ -36,37 +76,37 @@ def interpret(text: str, intent: str | None = None) -> IntentRequest:
             raise MathError(
                 ErrorCode.UNSUPPORTED_INTENT, f"Operação desconhecida: '{intent}'."
             ) from None
-    try:
-        return IntentRequest(name, _params(name, text))
-    except ValidationError as exc:
+
+    unknown = sorted(set(options) - INTENT_OPTIONS.get(name, frozenset()))
+    if unknown:
         raise MathError(
-            ErrorCode.INVALID_INPUT_FOR_INTENT, "Parâmetros inválidos para a operação."
-        ) from exc
+            ErrorCode.INVALID_INPUT_FOR_INTENT,
+            f"Parâmetro não aceito por esta operação: {', '.join(unknown)}.",
+        )
+
+    model, field = _TEXT_FIELD[name]
+    try:
+        params = model.model_validate({field: text, **options})
+    except ValidationError as exc:
+        raise MathError(ErrorCode.INVALID_INPUT_FOR_INTENT, _explain(exc)) from None
+    return IntentRequest(name, params)
+
+
+def _explain(exc: ValidationError) -> str:
+    for error in exc.errors():
+        location = error["loc"][0] if error["loc"] else None
+        if isinstance(location, str) and location in _OPTION_PROBLEMS:
+            return _OPTION_PROBLEMS[location]
+        if "both_bounds" in str(error.get("msg", "")):
+            return "Informe os dois limites de integração, ou nenhum (integral indefinida)."
+    return "Parâmetros inválidos para a operação."
 
 
 def _detect(text: str) -> IntentName:
-    """From the shape of the input. Factor, expand and division must be asked for."""
+    """From the shape of the input. Factor, expand, division and calculus must be asked for."""
     tree = parse(text).tree
     if isinstance(tree, System):
         return IntentName.SOLVE_SYSTEM
     if isinstance(tree, Equation):
         return IntentName.SOLVE_EQUATION
     return IntentName.SIMPLIFY if variables(tree) else IntentName.ARITHMETIC
-
-
-def _params(name: IntentName, text: str) -> IntentParams:
-    match name:
-        case IntentName.ARITHMETIC:
-            return ArithmeticParams(expression=text)
-        case IntentName.SIMPLIFY:
-            return SimplifyParams(expression=text)
-        case IntentName.FACTOR:
-            return FactorParams(expression=text)
-        case IntentName.EXPAND:
-            return ExpandParams(expression=text)
-        case IntentName.SOLVE_EQUATION:
-            return SolveEquationParams(equation=text)
-        case IntentName.SOLVE_SYSTEM:
-            return SolveSystemParams(system=text)
-        case IntentName.POLYNOMIAL_DIVISION:
-            return PolynomialDivisionParams(division=text)

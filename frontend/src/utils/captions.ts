@@ -71,6 +71,58 @@ export function captions(result: MathResult): string[] {
         lines.push("A divisão é exata: o resto é 0.");
       }
       break;
+    case "derivative": {
+      const variable = text(details.variable, "x");
+      const order = typeof details.order === "number" ? details.order : 1;
+      lines.push(
+        order === 1
+          ? `Derivada em relação a ${variable}.`
+          : `Derivada de ordem ${order} em relação a ${variable}.`,
+      );
+      break;
+    }
+    case "integral": {
+      const variable = text(details.variable, "x");
+      if (details.definite === true) {
+        lines.push(
+          `Integral de ${text(details.lower, "?")} a ${text(details.upper, "?")} em relação a ${variable}.`,
+        );
+        if (details.converges === false) {
+          lines.push("A integral diverge.");
+        }
+      } else {
+        lines.push(`Primitiva em relação a ${variable}; C é uma constante qualquer.`);
+      }
+      break;
+    }
+    case "limit": {
+      const variable = text(details.variable, "x");
+      const point = text(details.point, "?");
+      const side = SIDE_WORDS[text(details.side, "both")] ?? "";
+      if (details.exists === false) {
+        if (details.oscillates === true) {
+          lines.push(`O limite não existe: a função oscila perto de ${variable} = ${point}.`);
+        } else if (typeof details.left === "string" && typeof details.right === "string") {
+          lines.push(
+            `O limite não existe: pela esquerda tende a ${details.left} e pela direita a ${details.right}.`,
+          );
+        } else {
+          lines.push("O limite não existe.");
+        }
+      } else {
+        lines.push(`Limite quando ${variable} → ${point}${side}.`);
+      }
+      break;
+    }
   }
   return lines;
 }
+
+const SIDE_WORDS: Record<string, string> = {
+  both: "",
+  left: " pela esquerda",
+  right: " pela direita",
+};
+
+const text = (value: unknown, fallback: string): string =>
+  typeof value === "string" ? value : fallback;

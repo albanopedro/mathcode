@@ -15,8 +15,8 @@ Regras gerais:
 | 2 | Core matemático | concluída |
 | 3 | API | concluída |
 | 4 | Frontend básico | concluída |
-| 5 | Álgebra | concluída (aguardando revisão) |
-| 6 | Cálculo | — |
+| 5 | Álgebra | concluída |
+| 6 | Cálculo | concluída (aguardando revisão) |
 | 7 | Gráficos | — |
 | 8 | Linguagem natural / IA | — |
 | 9 | Verification Engine | — |
@@ -149,6 +149,31 @@ racionais) e sistemas. Cada item tem testes e uma estratégia de verificação.
 
 Derivadas, integrais indefinidas e definidas, e limites. A verificação segue a
 tabela do ADR 0003.
+
+- **Decidido com o usuário:** os parâmetros vêm de **campos na interface**, não
+  de sintaxe no texto ([ADR 0007](decisions/0007-calculo.md)).
+- **Entregue:**
+  - `derivative` (ordem 1 a 10, qualquer variável);
+  - `integral`, indefinida (com ln|u| em ℝ) ou definida (limites infinitos,
+    divergência como resposta);
+  - `limit`, com lados, infinito, "não existe" e domínio real;
+  - `options` na API, com tipos estritos;
+  - campos condicionais na interface.
+- **Verificação:**
+  - diferenças finitas de 80 dígitos para derivadas;
+  - derivar a primitiva (e exigir que ela seja real) para integrais
+    indefinidas;
+  - quadratura tanh-sinh para integrais definidas;
+  - aproximação até 10⁻²⁴ para limites, com status no máximo `partial`.
+- **Testes:** 642 no backend (eram 507) e 137 no frontend (eram 105).
+- **Descoberto durante a fase:**
+  - o SymPy dá ∫1/x = log(x), que só vale para x > 0;
+  - o SymPy calcula √x à esquerda de 0 com números complexos;
+  - uma sondagem exata travava em (1 + 1/x)^x;
+  - o verificador aceitava a primitiva log(x), porque só conferia a derivada;
+  - a API aceitava um texto numérico longo como inteiro gigante;
+  - a mensagem de "verificação parcial" falava em completude, o que não serve
+    para limites.
 
 ## Fase 7 — Gráficos
 

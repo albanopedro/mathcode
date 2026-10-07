@@ -26,13 +26,13 @@ logger = logging.getLogger(__name__)
 
 _CONTEXT = multiprocessing.get_context("spawn")
 _STARTUP_TIMEOUT = 60.0  # seconds to import SymPy and answer the warm-up job
-_WARM_UP = ("1 + 1", None)
+_WARM_UP = ("1 + 1", None, None)
 
-type Job = tuple[str, str | None]
+type Job = tuple[str, str | None, dict[str, str | int] | None]
 
 
 def _serve(conn: Connection) -> None:
-    """Worker main loop: receive ``(text, intent)``, send back a MathResult as JSON data."""
+    """Worker main loop: receive ``(text, intent, options)``, send back a MathResult as JSON."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ctrl+C is handled by the server
     # Imported here, not at module level: the server process never loads SymPy.
     from app.calculator import calculate
@@ -44,8 +44,8 @@ def _serve(conn: Connection) -> None:
             return  # the server went away
         if job is None:
             return
-        text, intent = job
-        conn.send(calculate(text, intent).model_dump(mode="json"))
+        text, intent, options = job
+        conn.send(calculate(text, intent, options).model_dump(mode="json"))
 
 
 @dataclass(eq=False)
@@ -87,7 +87,12 @@ class WorkerPool:
         workers, self._workers = self._workers, set()
         await asyncio.to_thread(_shutdown, workers)
 
-    async def calculate(self, text: str, intent: IntentName | None) -> MathResult:
+    async def calculate(
+        self,
+        text: str,
+        intent: IntentName | None,
+        options: dict[str, str | int] | None = None,
+    ) -> MathResult:
         try:
             worker = await asyncio.wait_for(self._idle.get(), timeout=self._queue_timeout)
         except TimeoutError:
@@ -98,7 +103,7 @@ class WorkerPool:
                 "O servidor está ocupado com outros cálculos. Tente de novo em instantes.",
             )
 
-        job: Job = (text, intent.value if intent else None)
+        job: Job = (text, intent.value if intent else None, options)
         try:
             data = await asyncio.to_thread(self._roundtrip, worker, job)
         except _Timeout:

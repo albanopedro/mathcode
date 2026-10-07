@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-06, ao fim da Fase 5.
+> Última atualização: 2026-10-07, ao fim da Fase 6.
 
 ## O que é
 
@@ -50,7 +50,8 @@ A IA (Fase 8+) só interpreta o pedido: nunca calcula.
 | 2: Core matemático | concluída e commitada (`49fb79d`, junto com a 3) |
 | 3: API | concluída e commitada (`49fb79d`) |
 | 4: Frontend básico | concluída e commitada (`4052f9d`) |
-| 5: Álgebra | **concluída, aguardando revisão e commit do usuário** |
+| 5: Álgebra | concluída e commitada (`12fab27`) |
+| 6: Cálculo | **concluída, aguardando revisão e commit do usuário** |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -100,6 +101,8 @@ Frontend (`frontend/src/`, ver architecture §6):
 - `services/api.ts`: `calculate()` decide pelo **corpo**, porque 200, 500 e
   503 trazem `MathResult`.
 - `hooks/useCalculator.ts`: o estado da tela.
+- `utils/operations.ts`: as operações do seletor, os campos extras de cada uma
+  (`fields`) e `buildOptions`. `components/OperationFields.tsx` desenha esses campos.
 - Componentes: `Calculator`, `ResultView`, `ErrorView`, `Verification`,
   `MathFormula` (KaTeX) e `ApiStatus`.
 - `test/fixtures/*.json` são **respostas reais da API**. Se o `MathResult`
@@ -160,6 +163,16 @@ Backend, continuação:
   - fatoração sobre ℚ, e inteiros em primos (produto exato + `isprime`);
   - a divisão constrói A e B separados (A/B deixaria o SymPy cancelar) e
     verifica B·Q + R = A.
+- **Cálculo** ([ADR 0007](docs/decisions/0007-calculo.md)):
+  - os parâmetros vão em `options`, só com `intent` explícito (`INTENT_OPTIONS`);
+  - valor inválido dá 200 com `INVALID_INPUT_FOR_INTENT`; tipo errado dá 422
+    (StrictStr de até 100 caracteres, StrictInt de −1000 a 1000);
+  - primitivas usam ln|u|, e o verificador exige que a primitiva seja real onde
+    o integrando é;
+  - limites só pelos lados reais (`ONE_SIDED_DOMAIN`), com "não existe" quando
+    os laterais diferem ou há oscilação;
+  - derivadas: `verified_numeric` (diferenças finitas); integrais definidas:
+    `verified_numeric` (`mpmath.quad`); limites: no máximo `partial`.
 - **Passos de resolução:** a lista `steps` fica vazia até existirem regras
   reais. O SymPy não gera passos.
 - **Respostas HTTP** (architecture §5):
@@ -202,6 +215,10 @@ Backend, continuação:
   `\begin` via script, use raw strings e procure caracteres de controle no fim.
 - O SymPy já distribui `2(x + 3)` ao construir: não serve de exemplo de
   "expandir".
+- Ao sondar valores no SymPy, use ponto flutuante (`evalf(subs=...)`), nunca
+  `subs` exato com números grandes: (1 + 1/x)^x em x = 10¹² travava.
+- O Vite escuta em `localhost` (IPv6). Um `curl` para `127.0.0.1:5180` falha;
+  use `localhost:5180`.
 - Em React com Fast Refresh, arquivos de componente só exportam componentes.
   Constantes vão para `utils/`.
 - No Testing Library, `toHaveTextContent` remove espaços das pontas. Para
@@ -227,12 +244,11 @@ cd frontend && npm test && npm run build
 
 ## Próximos passos
 
-- Fase 6 (próxima, aguardando o "pode seguir"): cálculo. Derivadas, integrais
-  (indefinidas e definidas) e limites, cada um com a estratégia de verificação
-  do ADR 0003: diferença finita, derivar a primitiva, quadratura, e avaliação
-  pelos dois lados no caso de limites. A interface vai precisar de entrada para a
-  variável, a ordem e os limites de integração, o que é uma decisão a tomar no
-  início da fase.
+- Fase 7 (próxima, aguardando o "pode seguir"): gráficos. Funções cartesianas,
+  domínio, amostragem no backend (NumPy, ou o avaliador próprio), cortes nas
+  descontinuidades, várias funções, pontos relevantes e Plotly.js no frontend.
+  Decisões a tomar no início: biblioteca de gráfico (o Plotly.js está previsto
+  no ADR 0001, mas pesa cerca de 1 MB) e como informar a faixa de x.
 - Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
   resolução por regras; `docker-compose` quando houver Docker; servir os
   assets do Swagger localmente (hoje vêm do jsDelivr); ESLint no frontend;
@@ -255,3 +271,6 @@ cd frontend && npm test && npm run build
 - **Fase 5:** fatorar, expandir, equações gerais (Sturm), sistemas lineares e
   divisão de polinômios; seletor de operação; 507 testes no backend e 105 no
   frontend.
+- **Fase 6:** derivadas, integrais (ln|u|, infinitas, divergentes) e limites
+  (lados, domínio real), com campos na interface; 642 testes no backend e 137
+  no frontend.

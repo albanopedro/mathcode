@@ -5,10 +5,11 @@ linguagem natural. Os cálculos são feitos por um motor determinístico (SymPy)
 e **todo resultado informa o quanto foi verificado**. A IA, quando existir,
 só interpreta o pedido: nunca é ela que calcula.
 
-> **Estado: Fase 5 (álgebra).** Pelo navegador ou pela API, o Mathcode já:
+> **Estado: Fase 6 (cálculo).** Pelo navegador ou pela API, o Mathcode já:
 > calcula; simplifica, fatora e expande; resolve equações (polinomiais,
-> racionais e outras) e sistemas lineares; e divide polinômios. Tudo vem com
-> verificação independente, que diz quando provou que nenhuma solução faltou.
+> racionais e outras) e sistemas lineares; divide polinômios; e deriva, integra
+> e calcula limites. Tudo vem com verificação independente, que diz quando
+> provou o resultado, quando só tem evidência e quando não conseguiu conferir.
 > Os próximos passos estão no [roadmap](docs/roadmap.md).
 
 ## Princípios
@@ -55,6 +56,9 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Fatorar | `x^4 - 1` ou `360` |
 | Expandir | `(x + 1)^3` |
 | Dividir polinômios | `(x^3 - 1)/(x - 1)` |
+| Derivar (ordem 2) | `x² sen(x)` |
+| Integrar (de `-inf` até `inf`) | `e^(-x^2)` |
+| Limite (ponto `0`) | `sen(x)/x` ou `abs(x)/x` |
 
 Em desenvolvimento, o Vite encaminha `/api` para o backend na porta 8100, então
 rode os dois juntos.

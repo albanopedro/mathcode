@@ -8,6 +8,13 @@ import sympy as sp
 from app.formatting.expressions import approx, latex, plain
 from app.math_engine.algebra import DivisionOutcome, PrimeFactorization, RewriteOutcome
 from app.math_engine.arithmetic import ArithmeticOutcome
+from app.math_engine.calculus import (
+    DerivativeOutcome,
+    IntegralOutcome,
+    LimitKind,
+    LimitOutcome,
+    show_value,
+)
 from app.math_engine.equations import EquationOutcome, SolutionKind
 from app.math_engine.systems import SystemKind, SystemOutcome
 from app.models.result import ResultValue
@@ -168,3 +175,57 @@ def present_division(outcome: DivisionOutcome) -> Presentation:
             "exact": r == 0,
         },
     )
+
+
+# -- calculus -------------------------------------------------------------------------------
+
+
+def _value(value: sp.Expr) -> ResultValue:
+    """A number or ±∞, with its decimal approximation when useful."""
+    if value in (sp.oo, -sp.oo):
+        return ResultValue(plain=show_value(value), latex=latex(value))
+    return ResultValue(plain=plain(value), latex=latex(value), approx=approx(value))
+
+
+def present_derivative(outcome: DerivativeOutcome) -> Presentation:
+    result = outcome.result
+    return Presentation(
+        ResultValue(plain=plain(result), latex=latex(result), approx=approx(result)),
+        {"variable": outcome.variable.name, "order": outcome.order},
+    )
+
+
+def present_integral(outcome: IntegralOutcome) -> Presentation:
+    details: dict[str, Any] = {"variable": outcome.variable.name, "definite": outcome.definite}
+    if not outcome.definite or outcome.value is None:
+        antiderivative = outcome.antiderivative
+        if antiderivative is None:
+            raise AssertionError("an indefinite integral has an antiderivative")
+        return Presentation(
+            ResultValue(plain=f"{plain(antiderivative)} + C", latex=f"{latex(antiderivative)} + C"),
+            details,
+        )
+    if outcome.lower is None or outcome.upper is None:
+        raise AssertionError("a definite integral has bounds")
+    details |= {
+        "lower": show_value(outcome.lower),
+        "upper": show_value(outcome.upper),
+        "converges": outcome.converges,
+    }
+    return Presentation(_value(outcome.value), details)
+
+
+def present_limit(outcome: LimitOutcome) -> Presentation:
+    details: dict[str, Any] = {
+        "variable": outcome.variable.name,
+        "point": show_value(outcome.point),
+        "side": outcome.side,
+        "requested_side": outcome.requested_side,
+        "exists": outcome.kind is not LimitKind.NONEXISTENT,
+        "oscillates": outcome.oscillates,
+    }
+    if outcome.left is not None and outcome.right is not None:
+        details |= {"left": show_value(outcome.left), "right": show_value(outcome.right)}
+    if outcome.kind is LimitKind.NONEXISTENT or outcome.value is None:
+        return Presentation(ResultValue(plain="não existe", latex=r"\nexists"), details)
+    return Presentation(_value(outcome.value), details)

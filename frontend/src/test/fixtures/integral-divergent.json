@@ -1,0 +1,29 @@
+{
+  "success": true,
+  "intent": "integral",
+  "input": "1/x",
+  "normalized_input": "1/x",
+  "result": {
+    "plain": "∞",
+    "latex": "\\infty",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "definite": true,
+    "lower": "1",
+    "upper": "∞",
+    "converges": false
+  },
+  "verification": {
+    "status": "unverified",
+    "method": "quadrature",
+    "checks": [
+      "A divergência da integral não é conferida numericamente."
+    ],
+    "message": "Não foi possível verificar este resultado."
+  },
+  "warnings": [],
+  "error": null
+}

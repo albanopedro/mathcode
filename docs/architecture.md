@@ -6,7 +6,9 @@
 > `calculator.py`. A Fase 3 criou `POST /api/calculate` e o pool de workers
 > (`core/workers.py`). A Fase 4 criou a interface de cálculo (seção 6). A
 > Fase 5 trouxe a álgebra: fatorar, expandir, equações gerais, sistemas lineares
-> e divisão de polinômios ([ADR 0006](decisions/0006-escopo-da-algebra.md)). As
+> e divisão de polinômios ([ADR 0006](decisions/0006-escopo-da-algebra.md)). A
+> Fase 6 trouxe o cálculo: derivadas, integrais e limites
+> ([ADR 0007](decisions/0007-calculo.md)). As
 > demais pastas são criadas nas fases em que ganham código.
 
 ## 1. Princípios
@@ -66,7 +68,8 @@ Intents disponíveis (`models/intents.py`):
 - `arithmetic`, `simplify`, `factor` e `expand`;
 - `solve_equation` (polinomial, racional e outras, com uma variável);
 - `solve_system` (linear);
-- `polynomial_division` (`A / B`).
+- `polynomial_division` (`A / B`);
+- `derivative`, `integral` e `limit`, com parâmetros em `options` (ADR 0007).
 
 Sem intent explícito, a detecção por regras usa a forma da entrada:
 
@@ -75,7 +78,8 @@ Sem intent explícito, a detecção por regras usa a forma da entrada:
 - com variável, é uma simplificação;
 - caso contrário, é aritmética.
 
-Fatorar, expandir e dividir só rodam quando pedidos (ADR 0006).
+Fatorar, expandir, dividir e as operações de cálculo só rodam quando pedidos
+(ADRs 0006 e 0007).
 
 | Intent | Executor | Verificador |
 |---|---|---|
@@ -135,6 +139,9 @@ Avisos (`core/notices.py`), cada um uma vez por resultado:
 | solve_equation | `variable`, `solution_set` (`finite`, `none` ou `all_reals`), `solutions`, `multiplicities`, `excluded` |
 | solve_system | `variables`, `solution_set` (`unique`, `infinite` ou `none`), `solutions`, `free_variables` |
 | polynomial_division | `variable`, `quotient`, `remainder`, `exact` |
+| derivative | `variable`, `order` |
+| integral | `variable`, `definite`; se definida: `lower`, `upper`, `converges` |
+| limit | `variable`, `point`, `side` (o lado usado), `requested_side`, `exists`, `oscillates`; se os laterais diferem: `left`, `right` |
 
 `error.position` é um índice no texto **original** digitado pelo usuário.
 
@@ -152,10 +159,23 @@ Todas as rotas ficam sob `/api`. A documentação interativa fica em `/api/docs`
 | Rota | Função |
 |---|---|
 | `GET /api/health` | status, versão e ambiente |
-| `POST /api/calculate` | corpo `{"input": "2x + 5 = 17", "intent": null}`; responde um `MathResult` |
+| `POST /api/calculate` | corpo `{"input": "x^2", "intent": "integral", "options": {"lower": "0", "upper": "1"}}`; responde um `MathResult` |
 
-`intent` é opcional: `arithmetic`, `simplify` ou `solve_equation`. Sem ele, a
-operação é detectada pela entrada.
+`intent` é opcional (a lista está na seção 3). Sem ele, a operação é detectada
+pela entrada.
+
+`options` só vale com `intent` e leva os parâmetros da operação:
+
+| Intent | Opções |
+|---|---|
+| solve_equation | `variable` |
+| derivative | `variable`, `order` (1 a 10) |
+| integral | `variable`, `lower`, `upper` (os dois ou nenhum; aceitam `pi/2`, `inf`) |
+| limit | `variable`, `point` (obrigatório), `side` (`both`, `left` ou `right`) |
+
+Valores inválidos são respostas (200, `INVALID_INPUT_FOR_INTENT`, mensagem em
+português). Tipos fora do formato recebem 422: texto até 100 caracteres, número
+de −1000 a 1000, no máximo 8 opções.
 
 **Códigos HTTP**: a resposta é sempre um `MathResult`, exceto no 422.
 
@@ -185,7 +205,8 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | `services/api.ts` | `calculate(input, intent?)`: decide pelo **corpo**, não pelo status, porque 200, 500 e 503 trazem `MathResult`. Trata 502–504 sem corpo como API inacessível e 422 como pedido recusado |
 | `hooks/useCalculator.ts` | estados `idle`, `loading`, `done` e `failed` (este último sem `MathResult`, ou seja, erro de rede); cancela o pedido anterior |
 | `components/Calculator.tsx` | seletor de **operação** (`utils/operations.ts`: Automático ou um intent, com exemplo próprio), formulário (Enter envia; botão desativado com o campo vazio ou durante o cálculo) e região `aria-live` |
-| `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada |
+| `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
+| `components/OperationFields.tsx` | os campos extras da operação escolhida (variável, ordem, de/até, ponto, lado), descritos em `utils/operations.ts`; `buildOptions` envia só os preenchidos e não valida nada: a API explica o que estiver errado |
 | `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
 | `components/ErrorView.tsx` | `role="alert"`, mensagem e a entrada com o caractere de `error.position` destacado (contando code points, como o Python) |
 | `components/Verification.tsx` | a mensagem do backend como título, com ícone e cor por status, e "Como foi verificado" (`<details>`) com os `checks` |
@@ -281,3 +302,4 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0004](decisions/0004-ai-provider.md) | Camada de IA só com provedores gratuitos |
 | [0005](decisions/0005-dominio-e-exatidao.md) | Domínio ℝ, exatidão e convenções |
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
+| [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |

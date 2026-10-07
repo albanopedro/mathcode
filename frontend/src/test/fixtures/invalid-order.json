@@ -1,0 +1,16 @@
+{
+  "success": false,
+  "intent": null,
+  "input": "x^2",
+  "normalized_input": null,
+  "result": null,
+  "steps": [],
+  "details": {},
+  "verification": null,
+  "warnings": [],
+  "error": {
+    "code": "INVALID_INPUT_FOR_INTENT",
+    "message": "A ordem da derivada precisa ser um número inteiro de 1 a 10.",
+    "position": null
+  }
+}

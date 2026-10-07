@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, StringConstraints
 
 from app.core.errors import ErrorCode
 from app.core.limits import MAX_INPUT_LENGTH
@@ -23,6 +23,14 @@ _HTTP_STATUS = {
 }
 
 
+# An option value: a short text (variable, bound, point, side) or a small number
+# (order). Strict types: in lax mode a long numeric text would become a huge int.
+type OptionValue = (
+    Annotated[StrictStr, StringConstraints(max_length=100)]
+    | Annotated[StrictInt, Field(ge=-1000, le=1000)]
+)
+
+
 class CalculateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -33,6 +41,15 @@ class CalculateRequest(BaseModel):
     )
     intent: IntentName | None = Field(
         default=None, description="Operação desejada. Sem valor, é detectada pela entrada."
+    )
+    options: dict[str, OptionValue] | None = Field(
+        default=None,
+        max_length=8,
+        description=(
+            "Parâmetros da operação: variable; order (derivative); lower e upper (integral); "
+            "point e side (limit). São validados pelo schema da operação."
+        ),
+        examples=[{"variable": "x", "order": 2}],
     )
 
 
@@ -51,6 +68,6 @@ def get_pool(request: Request) -> WorkerPool:
 async def post_calculate(
     body: CalculateRequest, pool: Annotated[WorkerPool, Depends(get_pool)]
 ) -> JSONResponse:
-    result = await pool.calculate(body.input, body.intent)
+    result = await pool.calculate(body.input, body.intent, body.options)
     status = _HTTP_STATUS.get(result.error.code, 200) if result.error else 200
     return JSONResponse(status_code=status, content=result.model_dump(mode="json"))

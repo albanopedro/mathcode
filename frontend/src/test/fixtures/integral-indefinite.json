@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "intent": "integral",
+  "input": "1/x",
+  "normalized_input": "1/x",
+  "result": {
+    "plain": "log(abs(x)) + C",
+    "latex": "\\log{\\left(\\left|{x}\\right| \\right)} + C",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "definite": false
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "differentiation",
+    "checks": [
+      "Derivando a primitiva com ln(u), obtém-se exatamente o integrando; trocar ln(u) por ln|u| não muda a derivada (d/dx ln|u| = u'/u).",
+      "O avaliador independente confirma: a derivada da primitiva é igual ao integrando em 6 pontos sorteados."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [
+    {
+      "code": "ABSOLUTE_VALUE_IN_LOG",
+      "message": "No domínio real, ln(u) foi escrito como ln|u|: assim a primitiva vale também onde u < 0 (a derivada de ln|u| é u'/u)."
+    }
+  ],
+  "error": null
+}

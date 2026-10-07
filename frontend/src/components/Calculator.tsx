@@ -2,13 +2,15 @@ import { type FormEvent, useState } from "react";
 
 import { useCalculator } from "../hooks/useCalculator";
 import type { MathResult } from "../types/math";
-import { OPERATIONS } from "../utils/operations";
+import { buildOptions, EMPTY_FIELDS, type FieldValues, OPERATIONS } from "../utils/operations";
 import { ErrorView } from "./ErrorView";
+import { OperationFields } from "./OperationFields";
 import { ResultView } from "./ResultView";
 
 export function Calculator() {
   const [input, setInput] = useState("");
   const [operationIndex, setOperationIndex] = useState(0);
+  const [fields, setFields] = useState<FieldValues>(EMPTY_FIELDS);
   const operation = OPERATIONS[operationIndex] ?? OPERATIONS[0]!;
   const { state, submit } = useCalculator();
   const loading = state.status === "loading";
@@ -17,7 +19,7 @@ export function Calculator() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (canSubmit) {
-      void submit(input, operation.intent);
+      void submit(input, operation.intent, buildOptions(operation, fields));
     }
   }
 
@@ -41,6 +43,7 @@ export function Calculator() {
             ))}
           </select>
         </div>
+        <OperationFields operation={operation} values={fields} onChange={setFields} />
         <label htmlFor="expression" className="text-sm font-medium text-slate-700">
           Expressão ou equação
         </label>

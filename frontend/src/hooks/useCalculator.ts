@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { ApiError, calculate } from "../services/api";
 import type { IntentName, MathResult } from "../types/math";
+import type { CalculationOptions } from "../utils/operations";
 
 export type CalculatorState =
   | { status: "idle" }
@@ -16,26 +17,33 @@ export function useCalculator() {
 
   useEffect(() => () => controller.current?.abort(), []);
 
-  const submit = useCallback(async (input: string, intent: IntentName | null = null) => {
-    controller.current?.abort();
-    const current = new AbortController();
-    controller.current = current;
-    setState({ status: "loading" });
+  const submit = useCallback(
+    async (
+      input: string,
+      intent: IntentName | null = null,
+      options: CalculationOptions | null = null,
+    ) => {
+      controller.current?.abort();
+      const current = new AbortController();
+      controller.current = current;
+      setState({ status: "loading" });
 
-    try {
-      const result = await calculate(input, intent, current.signal);
-      if (!current.signal.aborted) {
-        setState({ status: "done", result });
+      try {
+        const result = await calculate(input, intent, options, current.signal);
+        if (!current.signal.aborted) {
+          setState({ status: "done", result });
+        }
+      } catch (error: unknown) {
+        if (current.signal.aborted) {
+          return;
+        }
+        const message =
+          error instanceof ApiError ? error.message : "Não foi possível conectar à API.";
+        setState({ status: "failed", message });
       }
-    } catch (error: unknown) {
-      if (current.signal.aborted) {
-        return;
-      }
-      const message =
-        error instanceof ApiError ? error.message : "Não foi possível conectar à API.";
-      setState({ status: "failed", message });
-    }
-  }, []);
+    },
+    [],
+  );
 
   return { state, submit };
 }

@@ -88,7 +88,7 @@ def test_explicit_intent() -> None:
 
 
 def test_unknown_intent() -> None:
-    result = calculate("2 + 2", intent="derivative")
+    result = calculate("2 + 2", intent="teleport")
     assert not result.success
     assert result.error is not None
     assert result.error.code is ErrorCode.UNSUPPORTED_INTENT
@@ -257,3 +257,99 @@ def test_several_roots_are_one_per_line_in_latex() -> None:
     assert result.result.latex == r"\begin{aligned} x_{1} & = 2 \\ x_{2} & = 3 \end{aligned}"
     single = calculate("2x + 5 = 17")
     assert single.result is not None and single.result.latex == "x = 6"
+
+
+# -- Phase 6: calculus -----------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "intent", "options", "plain", "latex", "status"),
+    [
+        (
+            "x^2 sin(x)",
+            "derivative",
+            {"order": 2},
+            "-x^2*sin(x) + 4*x*cos(x) + 2*sin(x)",
+            r"- x^{2} \sin{\left(x \right)} + 4 x \cos{\left(x \right)} + 2 \sin{\left(x \right)}",
+            VerificationStatus.VERIFIED_NUMERIC,
+        ),
+        (
+            "1/x",
+            "integral",
+            None,
+            "log(abs(x)) + C",
+            r"\log{\left(\left|{x}\right| \right)} + C",
+            VerificationStatus.VERIFIED_SYMBOLIC,
+        ),
+        (
+            "x^2",
+            "integral",
+            {"lower": "0", "upper": "1"},
+            "1/3",
+            r"\frac{1}{3}",
+            VerificationStatus.VERIFIED_NUMERIC,
+        ),
+        (
+            "1/x",
+            "integral",
+            {"lower": "1", "upper": "inf"},
+            "∞",
+            r"\infty",
+            VerificationStatus.UNVERIFIED,
+        ),
+        ("sin(x)/x", "limit", {"point": "0"}, "1", "1", VerificationStatus.PARTIAL),
+        ("1/x^2", "limit", {"point": "0"}, "∞", r"\infty", VerificationStatus.PARTIAL),
+        ("1/x", "limit", {"point": "0"}, "não existe", r"\nexists", VerificationStatus.PARTIAL),
+    ],
+)
+def test_calculus(
+    text: str,
+    intent: str,
+    options: dict | None,
+    plain: str,
+    latex: str,
+    status: VerificationStatus,
+) -> None:
+    result = calculate(text, intent, options)
+    assert result.success, result.error
+    assert result.result is not None
+    assert (result.result.plain, result.result.latex) == (plain, latex)
+    assert result.verification is not None
+    assert result.verification.status is status
+
+
+def test_calculus_details() -> None:
+    assert calculate("x^3", "derivative", {"order": 2}).details == {"variable": "x", "order": 2}
+    assert calculate("x^2", "integral").details == {"variable": "x", "definite": False}
+    assert calculate("x^2", "integral", {"lower": "0", "upper": "inf"}).details == {
+        "variable": "x",
+        "definite": True,
+        "lower": "0",
+        "upper": "∞",
+        "converges": False,
+    }
+    assert calculate("abs(x)/x", "limit", {"point": "0"}).details == {
+        "variable": "x",
+        "point": "0",
+        "side": "both",
+        "requested_side": "both",
+        "exists": False,
+        "oscillates": False,
+        "left": "-1",
+        "right": "1",
+    }
+
+
+def test_one_sided_domain_shows_in_details_and_warnings() -> None:
+    result = calculate("sqrt(x)", "limit", {"point": "0"})
+    assert result.details["side"] == "right"
+    assert result.details["requested_side"] == "both"
+    assert [w.code for w in result.warnings] == [NoticeCode.ONE_SIDED_DOMAIN]
+
+
+def test_invalid_options_are_answers() -> None:
+    result = calculate("x^2", "derivative", {"order": 99})
+    assert not result.success
+    assert result.error is not None
+    assert result.error.code is ErrorCode.INVALID_INPUT_FOR_INTENT
+    assert "ordem" in result.error.message

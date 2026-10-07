@@ -14,21 +14,28 @@ from app.core.notices import Notice
 from app.formatting.results import (
     Presentation,
     present_arithmetic,
+    present_derivative,
     present_division,
     present_equation,
     present_factor,
+    present_integral,
+    present_limit,
     present_rewrite,
     present_system,
 )
 from app.math_engine.algebra import divide, expand, factor, simplify
 from app.math_engine.arithmetic import evaluate
+from app.math_engine.calculus import derivative, integral, limit
 from app.math_engine.equations import solve_equation
 from app.math_engine.systems import solve_system
 from app.models.intents import (
     ArithmeticParams,
+    DerivativeParams,
     ExpandParams,
     FactorParams,
+    IntegralParams,
     IntentName,
+    LimitParams,
     PolynomialDivisionParams,
     SimplifyParams,
     SolveEquationParams,
@@ -38,6 +45,7 @@ from app.models.result import VerificationReport
 from app.parsing import ParseResult
 from app.verification.algebra import verify_division, verify_factor, verify_rewrite
 from app.verification.arithmetic import verify_arithmetic
+from app.verification.calculus import verify_derivative, verify_integral, verify_limit
 from app.verification.equations import verify_equation, verify_system
 
 
@@ -84,5 +92,16 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
             verify_division,
             present_division,
         ),
+        IntentSpec(
+            IntentName.DERIVATIVE,
+            DerivativeParams,
+            derivative,
+            verify_derivative,
+            present_derivative,
+        ),
+        IntentSpec(
+            IntentName.INTEGRAL, IntegralParams, integral, verify_integral, present_integral
+        ),
+        IntentSpec(IntentName.LIMIT, LimitParams, limit, verify_limit, present_limit),
     )
 }

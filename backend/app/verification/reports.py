@@ -8,8 +8,8 @@ _MESSAGES = {
         "Resultado conferido numericamente por um avaliador independente."
     ),
     VerificationStatus.PARTIAL: (
-        "Verificação parcial: o resultado encontrado foi confirmado, mas não foi "
-        "provado que ele é completo."
+        "Verificação parcial: há evidência a favor do resultado, mas não uma prova "
+        "completa. Veja como foi verificado."
     ),
     VerificationStatus.UNVERIFIED: "Não foi possível verificar este resultado.",
     VerificationStatus.FAILED: "A verificação independente contradiz o resultado.",

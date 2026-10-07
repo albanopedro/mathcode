@@ -39,10 +39,10 @@ feitos e um texto curto para o usuário. A palavra "garantido" nunca é usada.
 | factor / expand | `expand(resultado) − expand(original) == 0` + pontos numéricos | `verified_symbolic` |
 | fatoração de inteiros | Produto exato dos fatores + primalidade de cada um (determinística abaixo de 2⁶⁴; BPSW acima) | `verified_symbolic` |
 | polynomial_division | `B·Q + R = A` exato, `grau R < grau B`, mais pontos sorteados | `verified_symbolic` |
-| derivative | Diferença finita central em pontos aleatórios (mpmath) | `verified_numeric` |
-| integral indefinida | `diff(F) − f == 0` (derivar é um algoritmo diferente de integrar) + pontos | `verified_symbolic` |
-| integral definida | Comparar com quadratura numérica (`scipy.integrate.quad` ou `mpmath.quad`) | `verified_numeric` |
-| limit | Avaliação numérica aproximando-se pelos dois lados | `partial` |
+| derivative | Diferenças finitas com 80 dígitos (`mpmath.diff`) sobre o avaliador independente, em 6 pontos sorteados; erro relativo até 1e-8 ([ADR 0007](0007-calculo.md)) | `verified_numeric` |
+| integral indefinida | A primitiva precisa ser real onde o integrando é definido; `diff(F) − f == 0` (derivar é um algoritmo diferente de integrar) + pontos | `verified_symbolic` |
+| integral definida | Quadratura tanh-sinh (`mpmath.quad`, sem SciPy), erro até 1e-10; divergente: `unverified` | `verified_numeric` |
+| limit | Avaliação aproximando-se do ponto até 1e-24 (ou até 1e24) por cada lado pedido; `failed` só se a sequência estabiliza longe do valor | `partial` |
 | solve_system (linear) | Substituição (simbólica e pelo avaliador independente) + **postos** da matriz dos coeficientes e da ampliada, para única, infinitas e nenhuma | `verified_symbolic` |
 | graph | — | `not_applicable` |
 

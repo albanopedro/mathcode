@@ -1,0 +1,34 @@
+{
+  "success": true,
+  "intent": "limit",
+  "input": "abs(x)/x",
+  "normalized_input": "abs(x)/x",
+  "result": {
+    "plain": "não existe",
+    "latex": "\\nexists",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "point": "0",
+    "side": "both",
+    "requested_side": "both",
+    "exists": false,
+    "oscillates": false,
+    "left": "-1",
+    "right": "1"
+  },
+  "verification": {
+    "status": "partial",
+    "method": "approach",
+    "checks": [
+      "Aproximando-se pela esquerda (x = 0 - 10^-24), a função vale -1; o limite indicado é -1.",
+      "Aproximando-se pela direita (x = 0 + 10^-24), a função vale 1; o limite indicado é 1.",
+      "É evidência numérica, não prova: por isso a verificação é parcial."
+    ],
+    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
+  },
+  "warnings": [],
+  "error": null
+}

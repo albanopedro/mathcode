@@ -14,7 +14,7 @@ describe("isMathResult", () => {
     ["null", null],
     ["an array", [valid]],
     ["a missing field", { ...valid, warnings: undefined }],
-    ["an unknown intent", { ...valid, intent: "derivative" }],
+    ["an unknown intent", { ...valid, intent: "teleport" }],
     ["an unknown verification status", { ...valid, verification: { ...valid.verification, status: "ok" } }],
     ["a result without latex", { ...valid, result: { plain: "x = 6", approx: null } }],
     ["a success with an error", { ...valid, error: { code: "X", message: "y", position: null } }],

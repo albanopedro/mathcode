@@ -8,6 +8,15 @@ import type { MathResult } from "../../types/math";
 import allReals from "./all-reals.json";
 import allRealsExcept from "./all-reals-except.json";
 import arithmetic from "./arithmetic.json";
+import derivative from "./derivative.json";
+import integralDefinite from "./integral-definite.json";
+import integralDivergent from "./integral-divergent.json";
+import integralIndefinite from "./integral-indefinite.json";
+import invalidOrder from "./invalid-order.json";
+import limitFinite from "./limit-finite.json";
+import limitOneSided from "./limit-one-sided.json";
+import limitOscillates from "./limit-oscillates.json";
+import limitSides from "./limit-sides.json";
 import complexOmitted from "./complex-omitted.json";
 import division from "./division.json";
 import divisionByZero from "./division-by-zero.json";
@@ -30,6 +39,15 @@ import unverified from "./unverified.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  derivative,
+  integralDefinite,
+  integralDivergent,
+  integralIndefinite,
+  invalidOrder,
+  limitFinite,
+  limitOneSided,
+  limitOscillates,
+  limitSides,
   allReals,
   allRealsExcept,
   arithmetic,

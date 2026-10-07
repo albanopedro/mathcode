@@ -8,7 +8,7 @@ import logging
 
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import unique
-from app.interpreter.detect import interpret
+from app.interpreter.detect import Options, interpret
 from app.interpreter.registry import REGISTRY
 from app.models.intents import IntentName
 from app.models.result import (
@@ -22,11 +22,11 @@ from app.models.result import (
 logger = logging.getLogger(__name__)
 
 
-def calculate(text: str, intent: str | None = None) -> MathResult:
+def calculate(text: str, intent: str | None = None, options: Options | None = None) -> MathResult:
     name: IntentName | None = None
     normalized: str | None = None
     try:
-        request = interpret(text, intent)
+        request = interpret(text, intent, options)
         name = request.intent
         spec = REGISTRY[name]
         outcome = spec.execute(request.params)

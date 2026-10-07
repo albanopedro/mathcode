@@ -1,0 +1,26 @@
+{
+  "success": true,
+  "intent": "derivative",
+  "input": "x^2 sin(x)",
+  "normalized_input": "x^2*sin(x)",
+  "result": {
+    "plain": "-x^2*sin(x) + 4*x*cos(x) + 2*sin(x)",
+    "latex": "- x^{2} \\sin{\\left(x \\right)} + 4 x \\cos{\\left(x \\right)} + 2 \\sin{\\left(x \\right)}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "order": 2
+  },
+  "verification": {
+    "status": "verified_numeric",
+    "method": "finite_differences",
+    "checks": [
+      "A derivada numérica (diferenças finitas com 80 dígitos, calculada sobre a expressão original por um avaliador independente) coincide com o resultado em 6 pontos sorteados, com erro relativo menor que 10⁻⁸."
+    ],
+    "message": "Resultado conferido numericamente por um avaliador independente."
+  },
+  "warnings": [],
+  "error": null
+}

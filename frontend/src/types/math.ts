@@ -10,7 +10,10 @@ export type IntentName =
   | "expand"
   | "solve_equation"
   | "solve_system"
-  | "polynomial_division";
+  | "polynomial_division"
+  | "derivative"
+  | "integral"
+  | "limit";
 
 export type VerificationStatus =
   | "verified_symbolic"
@@ -71,6 +74,9 @@ const INTENTS: readonly string[] = [
   "solve_equation",
   "solve_system",
   "polynomial_division",
+  "derivative",
+  "integral",
+  "limit",
 ];
 const STATUSES: readonly string[] = [
   "verified_symbolic",

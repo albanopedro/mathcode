@@ -1,5 +1,6 @@
 import { type HealthResponse, isHealthResponse } from "../types/health";
 import { type IntentName, isMathResult, type MathResult } from "../types/math";
+import type { CalculationOptions } from "../utils/operations";
 
 export class ApiError extends Error {
   override name = "ApiError";
@@ -37,13 +38,21 @@ export async function fetchHealth(signal?: AbortSignal): Promise<HealthResponse>
 export async function calculate(
   input: string,
   intent: IntentName | null = null,
+  options: CalculationOptions | null = null,
   signal?: AbortSignal,
 ): Promise<MathResult> {
+  // Without an intent, the API detects the operation from the input.
+  const body: Record<string, unknown> = { input };
+  if (intent) {
+    body.intent = intent;
+  }
+  if (options) {
+    body.options = options;
+  }
   const response = await fetch("/api/calculate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    // Without an intent, the API detects the operation from the input.
-    body: JSON.stringify(intent ? { input, intent } : { input }),
+    body: JSON.stringify(body),
     signal,
   });
 
