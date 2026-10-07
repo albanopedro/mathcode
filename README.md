@@ -5,11 +5,11 @@ cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
 informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
 pedido: nunca é ela que calcula.
 
-> **Estado: Fase 9 (Verification Engine).** Pelo navegador ou pela API, o
-> Mathcode já: calcula; simplifica, fatora e expande; resolve equações
+> **Estado: Fase 10 (matemática avançada), com estatística descritiva.**
+> Pelo navegador ou pela API, o Mathcode já: calcula; simplifica, fatora e expande; resolve equações
 > (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
 > deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;
-> e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
+> calcula média, mediana, moda e desvio padrão de uma lista; e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
 > mais livres são traduzidas por um modelo gratuito. Tudo vem com verificação
 > independente, que diz quando provou o resultado, quando só tem evidência e
 > quando não conseguiu conferir, e mostra cada checagem feita: substituição,
@@ -67,7 +67,8 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Limite (ponto `0`) | `sen(x)/x` ou `abs(x)/x` |
 | Automático (vira gráfico) | `y = x² - 4x + 3` ou `sen(x); cos(x)` |
 | Gráfico (x de `-2pi` até `2pi`) | `tan(x)` |
-| Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1` |
+| Estatística | `2, 4, 4, 4, 5, 5, 7, 9` (resumo completo) |
+| Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1`, `qual a média de 10, 20 e 30?` |
 
 Em desenvolvimento, o Vite encaminha `/api` para o backend na porta 8100, então
 rode os dois juntos.

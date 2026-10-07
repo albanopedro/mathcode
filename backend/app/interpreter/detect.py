@@ -23,6 +23,7 @@ from app.models.intents import (
     SimplifyParams,
     SolveEquationParams,
     SolveSystemParams,
+    StatisticsParams,
 )
 from app.parsing import parse
 from app.parsing.ast import Equation, System, variables
@@ -42,6 +43,7 @@ _TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
     IntentName.INTEGRAL: (IntegralParams, "expression"),
     IntentName.LIMIT: (LimitParams, "expression"),
     IntentName.GRAPH: (GraphParams, "expression"),
+    IntentName.STATISTICS: (StatisticsParams, "data"),
 }
 
 # User-facing explanation of an invalid option.
@@ -54,6 +56,10 @@ _OPTION_PROBLEMS = {
     "side": "O lado do limite precisa ser 'both', 'left' ou 'right'.",
     "x_min": "O início da faixa de x precisa ter de 1 a 100 caracteres.",
     "x_max": "O fim da faixa de x precisa ter de 1 a 100 caracteres.",
+    "measure": (
+        "Medida desconhecida. Use count, sum, mean, median, mode, min, max, range, variance, "
+        "std, sample_variance ou sample_std."
+    ),
 }
 
 

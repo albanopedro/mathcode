@@ -60,6 +60,12 @@ export const OPERATIONS: readonly Operation[] = [
     placeholder: "Ex.: x² - 4x + 3 ou sen(x); cos(x)",
     fields: ["x_range"],
   },
+  {
+    intent: "statistics",
+    label: "Estatística",
+    placeholder: "Ex.: 2, 4, 4, 4, 5, 5, 7, 9",
+    fields: [],
+  },
 ];
 
 /** Short name shown next to a result. */
@@ -75,6 +81,7 @@ export const INTENT_LABELS: Record<IntentName, string> = {
   integral: "Integral",
   limit: "Limite",
   graph: "Gráfico",
+  statistics: "Estatística",
 };
 
 /** What the extra inputs hold; empty texts mean "not given". */

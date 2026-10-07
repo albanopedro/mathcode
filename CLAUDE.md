@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-07, ao fim da Fase 9 (aguardando revisão).
+> Última atualização: 2026-10-07, Fase 10: estatística concluída (aguardando revisão).
 
 ## O que é
 
@@ -54,8 +54,8 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 6: Cálculo | concluída e commitada (`b172eb8`) |
 | 7: Gráficos | concluída e commitada (`978dab5`) |
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
-| 9: Verification Engine | **concluída, aguardando revisão e commit** |
-| 10: Matemática avançada | próxima |
+| 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
+| 10: Matemática avançada | **estatística concluída, aguardando revisão e commit**; próximos domínios a escolher |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -220,6 +220,19 @@ Backend, continuação:
     → `verified_symbolic`; integrais definidas: `mpmath.quad`, e Newton–Leibniz
     em polinômios/racionais; limites: `partial`, ou `verified_symbolic` por
     continuidade.
+- **Estatística** ([ADR 0011](docs/decisions/0011-estatistica-descritiva.md)):
+  - intent `statistics`, `StatisticsParams(data, measure?)`; sem `measure`, o
+    resumo (12 medidas em `details.measures`);
+  - dados: racionais separados por `; ` ou `, `; `parse(texto,
+    number_list=True)`; até 200 valores; sem operação, lista de números é erro
+    que aponta a Estatística;
+  - cálculo com `Fraction`; σ/σ² populacionais (resposta), s/s² amostrais
+    (n ≥ 2); moda = maior frequência, sem moda se nada repete; mediana par =
+    média dos centrais;
+  - verificação: releitura por `exact_value`, módulo `statistics` do Python,
+    soma dos desvios = 0, mediana divide, σ² = variância;
+  - frases em `language.py` (`statistics` antes de `future`; "máximo de
+    x^2…" segue futuro; sem números → orientação de formato).
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -358,9 +371,19 @@ cd frontend && npm test && npm run build
      verificador → `unverified`. Trocar a substituição lenta de raízes
      `CRootOf` (sp.simplify → minpoly, >20 s em `x^20 - 3x^7 + 1 = 0`) por
      divisibilidade de polinômios.
-- Fase 9 concluída; aguardando a revisão e o "pode seguir" para a Fase 10
-  (Matemática avançada: estatística, probabilidade, matrizes, vetores,
-  geometria, trigonometria — **um domínio por alteração**).
+- Fase 10 (em andamento): **um domínio por alteração**, cada um com parada e
+  relatório. Decisões do usuário (2026-10-07):
+  1. 1º domínio: **estatística descritiva** (matrizes, geometria,
+     probabilidade, vetores e trigonometria ficam para as próximas etapas);
+  2. medidas: média, mediana, moda, variância, desvio padrão, mínimo, máximo,
+     amplitude, soma e n. Quartis ficam como sugestão (convenções diferentes);
+  3. resposta principal: **σ populacional (÷ n)**, com o amostral s (÷ n − 1)
+     junto, rotulado, e um aviso explicando a diferença;
+  4. operação "Estatística" + lista → **resumo** com todas as medidas; frase
+     ("média de 10, 20, 30") → a medida pedida em destaque, com o resumo.
+- Estatística concluída (ADR 0011); aguardando a revisão e a escolha do
+  próximo domínio (matrizes, geometria, probabilidade/combinatória, vetores ou
+  trigonometria), um por vez.
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -374,7 +397,9 @@ cd frontend && npm test && npm run build
   trigonométricas; divisão com várias variáveis; provedor Ollama (quando
   instalado); regras locais para "o dobro de" e "a metade de"; comparação de
   métodos para integrais com limites irracionais e trigonométricas;
-  continuidade lateral em pontos de borda; texto simples de ln.
+  continuidade lateral em pontos de borda; texto simples de ln; estatística:
+  quartis/IQR, média ponderada, tabela de frequências, dados irracionais,
+  rótulo "Dados" no campo de entrada.
 
 ## Histórico
 
@@ -405,3 +430,7 @@ cd frontend && npm test && npm run build
   Newton–Leibniz), prazos aninhados (não verificável não vira erro), raízes
   `CRootOf` por divisibilidade, diferenças finitas de ordem alta corrigidas,
   matriz de adulteração; 950 testes no backend e 189 no frontend.
+- **Fase 10.1 (estatística descritiva):** intent `statistics`, operação e
+  frases; cálculo exato com frações; verificação pelo módulo `statistics` do
+  Python e por propriedades; tabela de resumo; 1 016 testes no backend e 201
+  no frontend.

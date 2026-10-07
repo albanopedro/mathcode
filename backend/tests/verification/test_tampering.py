@@ -51,6 +51,11 @@ CASES: dict[IntentName, tuple[str, dict[str, str | int] | None, Tamper]] = {
         ),
     ),
     IntentName.LIMIT: ("sin(x)/x", {"point": "0"}, lambda o: replace(o, value=sp.Integer(2))),
+    IntentName.STATISTICS: (
+        "2, 4, 4, 4, 5, 5, 7, 9",
+        None,
+        lambda o: replace(o, median=o.median + 1),
+    ),
     IntentName.GRAPH: (
         "x^2 - 4x + 3",
         None,

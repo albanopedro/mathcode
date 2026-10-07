@@ -3,7 +3,7 @@
 from dataclasses import replace
 
 from app.core.errors import ErrorCode, MathError
-from app.core.limits import MAX_NESTING, MAX_SYSTEM_EQUATIONS
+from app.core.limits import MAX_DATA_VALUES, MAX_NESTING, MAX_SYSTEM_EQUATIONS
 from app.core.notices import Notice, NoticeCode
 from app.parsing.ast import (
     Binary,
@@ -37,16 +37,24 @@ _DEGREE_BP = 50
 _STARTS_IMPLICIT_FACTOR = {TokenKind.IDENT, TokenKind.LPAREN, TokenKind.SQRT}
 
 
-def parse_tokens(tokens: list[Token], notices: list[Notice]) -> Tree:
-    return _Parser(tokens, notices).parse()
+# "1, 2" with no intent is most likely a decimal comma typed with a space.
+_NUMBERS_NEED_STATISTICS = (
+    "Lista de números: para estatística, escolha a operação Estatística ou escreva "
+    "'média de 10, 20, 30'. Para número decimal, escreva sem espaço: 3,5."
+)
+
+
+def parse_tokens(tokens: list[Token], notices: list[Notice], number_list: bool = False) -> Tree:
+    return _Parser(tokens, notices, number_list).parse()
 
 
 class _Parser:
-    def __init__(self, tokens: list[Token], notices: list[Notice]) -> None:
+    def __init__(self, tokens: list[Token], notices: list[Notice], number_list: bool) -> None:
         self._tokens = tokens
         self._index = 0
         self._depth = 0
         self._notices = notices
+        self._number_list = number_list  # data for statistics: "10, 20, 30" is a list
 
     def parse(self) -> Tree:
         first = self._item()
@@ -61,18 +69,27 @@ class _Parser:
             items.append(self._item())
         self._expect_end()
         if any(isinstance(item, Equation) for item in items):
+            if self._number_list:
+                raise MathError(
+                    ErrorCode.PARSE_ERROR,
+                    "Os dados são números separados por '; ' ou ', ', como 10, 20, 30, sem '='.",
+                    separator.position,
+                )
             return self._system(items, separator)
         return self._expression_list(items, separator)
 
     def _expression_list(self, items: list[Node | Equation], separator: Token) -> ExpressionList:
         expressions = [item for item in items if not isinstance(item, Equation)]
-        # Only numbers, as in "1, 2": most likely a decimal comma typed with a space.
+        if self._number_list:
+            if len(expressions) > MAX_DATA_VALUES:
+                raise MathError(
+                    ErrorCode.LIMIT_EXCEEDED,
+                    f"A lista tem mais de {MAX_DATA_VALUES} valores.",
+                    separator.position,
+                )
+            return ExpressionList(tuple(expressions), separator.position)
         if not any(variables(item) for item in expressions):
-            raise MathError(
-                ErrorCode.PARSE_ERROR,
-                "Vírgula fora de uma função. Para número decimal, escreva sem espaço: 3,5.",
-                separator.position,
-            )
+            raise MathError(ErrorCode.PARSE_ERROR, _NUMBERS_NEED_STATISTICS, separator.position)
         if len(expressions) > MAX_SYSTEM_EQUATIONS:
             raise MathError(
                 ErrorCode.LIMIT_EXCEEDED,

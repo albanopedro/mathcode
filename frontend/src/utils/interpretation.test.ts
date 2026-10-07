@@ -44,4 +44,10 @@ describe("describeInterpretation", () => {
       "other: ?",
     ]);
   });
+
+  it("names the statistics measure in Portuguese", () => {
+    const text = describeInterpretation(fixtures.statisticsPhrase.interpretation!);
+    expect(text.operation).toBe("Estatística");
+    expect(text.options).toEqual(["medida: desvio padrão populacional"]);
+  });
 });

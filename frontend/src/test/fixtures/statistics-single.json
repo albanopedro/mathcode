@@ -1,0 +1,169 @@
+{
+  "success": true,
+  "intent": "statistics",
+  "input": "5",
+  "normalized_input": "5",
+  "result": {
+    "plain": "média = 5",
+    "latex": "\\bar{x} = 5",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "measure": null,
+    "count": 1,
+    "data": [
+      "5"
+    ],
+    "sorted": [
+      "5"
+    ],
+    "modes": [],
+    "measures": [
+      {
+        "name": "count",
+        "label": "Quantidade de valores",
+        "symbol": "n",
+        "plain": "1",
+        "latex": "1",
+        "approx": null
+      },
+      {
+        "name": "sum",
+        "label": "Soma",
+        "symbol": "\\sum x",
+        "plain": "5",
+        "latex": "5",
+        "approx": null
+      },
+      {
+        "name": "mean",
+        "label": "Média",
+        "symbol": "\\bar{x}",
+        "plain": "5",
+        "latex": "5",
+        "approx": null
+      },
+      {
+        "name": "median",
+        "label": "Mediana",
+        "symbol": "\\mathrm{Md}",
+        "plain": "5",
+        "latex": "5",
+        "approx": null
+      },
+      {
+        "name": "mode",
+        "label": "Moda",
+        "symbol": "\\mathrm{Mo}",
+        "plain": "nenhuma",
+        "latex": "\\text{nenhuma}",
+        "approx": null
+      },
+      {
+        "name": "min",
+        "label": "Mínimo",
+        "symbol": "\\min",
+        "plain": "5",
+        "latex": "5",
+        "approx": null
+      },
+      {
+        "name": "max",
+        "label": "Máximo",
+        "symbol": "\\max",
+        "plain": "5",
+        "latex": "5",
+        "approx": null
+      },
+      {
+        "name": "range",
+        "label": "Amplitude",
+        "symbol": "\\mathrm{A}",
+        "plain": "0",
+        "latex": "0",
+        "approx": null
+      },
+      {
+        "name": "variance",
+        "label": "Variância populacional",
+        "symbol": "\\sigma^{2}",
+        "plain": "0",
+        "latex": "0",
+        "approx": null
+      },
+      {
+        "name": "std",
+        "label": "Desvio padrão populacional",
+        "symbol": "\\sigma",
+        "plain": "0",
+        "latex": "0",
+        "approx": null
+      },
+      {
+        "name": "sample_variance",
+        "label": "Variância amostral",
+        "symbol": "s^{2}",
+        "plain": null,
+        "latex": null,
+        "approx": null
+      },
+      {
+        "name": "sample_std",
+        "label": "Desvio padrão amostral",
+        "symbol": "s",
+        "plain": null,
+        "latex": null,
+        "approx": null
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os 1 valores, relidos da expressão com frações exatas (sem o SymPy), são os mesmos usados no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, moda, variâncias, mínimo, máximo, amplitude e soma."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A soma dos desvios em relação à média é exatamente 0."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A mediana divide os dados: 1 valor(es) são ≤ a ela e 1 são ≥ a ela, de 1."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Os desvios padrão são as raízes não negativas das variâncias: σ² e s² são exatamente as variâncias."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [
+    {
+      "code": "POPULATION_AND_SAMPLE",
+      "message": "σ e σ² são populacionais (dividem por n), para quando os dados são o grupo inteiro; s e s² são amostrais (dividem por n − 1), para quando os dados são uma amostra de um grupo maior."
+    },
+    {
+      "code": "SINGLE_VALUE",
+      "message": "Com um só valor, a variância e o desvio padrão amostrais não são definidos (dividem por n − 1 = 0)."
+    }
+  ],
+  "error": null,
+  "interpretation": null
+}

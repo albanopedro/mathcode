@@ -16,6 +16,9 @@ MAX_SYMBOLIC_EXPONENT = 1000
 # Equations in a system, and unknowns in it.
 MAX_SYSTEM_EQUATIONS = 10
 
+# Values in one statistics request (Phase 10); "1;" repeated fits 250 in 500 characters.
+MAX_DATA_VALUES = 200
+
 # Highest derivative order.
 MAX_DERIVATIVE_ORDER = 10
 

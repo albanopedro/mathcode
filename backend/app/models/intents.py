@@ -30,6 +30,7 @@ class IntentName(StrEnum):
     INTEGRAL = "integral"
     LIMIT = "limit"
     GRAPH = "graph"
+    STATISTICS = "statistics"
 
 
 class _Params(BaseModel):
@@ -101,6 +102,31 @@ class GraphParams(_Params):
     x_max: str | None = Field(default=None, min_length=1, max_length=100)
 
 
+# Descriptive statistics (Phase 10, ADR 0011). Variance and standard deviation are
+# the population ones (÷ n); the sample ones (÷ n − 1) have names of their own.
+type Measure = Literal[
+    "count",
+    "sum",
+    "mean",
+    "median",
+    "mode",
+    "min",
+    "max",
+    "range",
+    "variance",
+    "std",
+    "sample_variance",
+    "sample_std",
+]
+
+
+class StatisticsParams(_Params):
+    """A list of numbers ("10, 20, 30"); ``measure`` None asks for the whole summary."""
+
+    data: str
+    measure: Measure | None = None
+
+
 type IntentParams = (
     ArithmeticParams
     | SimplifyParams
@@ -113,6 +139,7 @@ type IntentParams = (
     | IntegralParams
     | LimitParams
     | GraphParams
+    | StatisticsParams
 )
 
 # Options a request may carry for each intent, besides the input text.
@@ -122,6 +149,7 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.INTEGRAL: frozenset({"variable", "lower", "upper"}),
     IntentName.LIMIT: frozenset({"variable", "point", "side"}),
     IntentName.GRAPH: frozenset({"x_min", "x_max"}),
+    IntentName.STATISTICS: frozenset({"measure"}),
 }
 
 # An option value: a short text (variable, bound, point, side) or a small number

@@ -3,9 +3,11 @@ import { captions } from "../utils/captions";
 import { LONG_RESULT_CHARS } from "../utils/display";
 import { graphDetails } from "../utils/graph";
 import { INTENT_LABELS } from "../utils/operations";
+import { statisticsDetails } from "../utils/statistics";
 import { GraphView } from "./GraphView";
 import { InterpretationNote } from "./InterpretationNote";
 import { MathFormula } from "./MathFormula";
+import { StatisticsView } from "./StatisticsView";
 import { Verification } from "./Verification";
 
 interface ResultViewProps {
@@ -17,6 +19,7 @@ interface ResultViewProps {
 export function ResultView({ result, value, verification }: ResultViewProps) {
   const lines = captions(result);
   const graph = graphDetails(result);
+  const statistics = statisticsDetails(result);
 
   return (
     <section
@@ -59,6 +62,8 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
           {line}
         </p>
       ))}
+
+      {statistics && <StatisticsView details={statistics} />}
 
       {result.interpretation && <InterpretationNote interpretation={result.interpretation} />}
 

@@ -77,6 +77,7 @@ _LEADS = re.compile(
 _KEYWORD = (
     r"(?:derivada|integral|primitiva|limite|grafico|raizes|raiz|zeros|zero|fatoracao"
     r"|simplificacao|segunda|terceira|quarta|quinta|media|mediana|moda|desvio|variancia"
+    r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor"
     r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo)"
 )
 _ARTICLE = re.compile(rf"(?:o|a|os|as)\s+(?={_KEYWORD})")
@@ -200,22 +201,71 @@ def _percent(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     return LanguageMatch(IntentName.ARITHMETIC, text, rule=rule)
 
 
+# -- statistics (Phase 10, ADR 0011) -------------------------------------------------------------
+
+_NUMBER = r"[-+\u2212]?\s*\d+(?:[.,]\d+)?(?:\s*/\s*\d+(?:[.,]\d+)?)?"
+# Values separated by "; ", ", " (with a space: "1,5" is a decimal) or a final " e ".
+_DATA = rf"(?P<data>{_NUMBER}(?:\s*(?:;|,\s|\se\s)\s*{_NUMBER})*)"
+_MEASURE = (
+    r"(?:(?P<std>desvio[\s-]+padrao(?:\s+(?P<std_kind>amostral|populacional))?)"
+    r"|(?P<variance>variancia(?:\s+(?P<variance_kind>amostral|populacional))?)"
+    r"|(?P<median>mediana)"
+    r"|(?P<mean>media(?:\s+aritmetica)?)"
+    r"|(?P<mode>moda)"
+    r"|(?P<range>amplitude(?:\s+total)?)"
+    r"|(?P<sum>soma)"
+    r"|(?P<max>(?:valor\s+)?maximo|maior\s+valor)"
+    r"|(?P<min>(?:valor\s+)?minimo|menor\s+valor)"
+    r"|(?P<summary>resumo\s+estatistico|estatisticas?|medidas\s+estatisticas))"
+)
+# Up to four words between the measure and the numbers: "média das notas 7, 8 e 9,5".
+_FILLER = r"(?:\s+(?!e\b)[a-z]+){0,4}?\s*:?"
+
+
+def _statistics(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    measure: str | None = None
+    for name in ("std", "variance", "median", "mean", "mode", "range", "sum", "max", "min"):
+        if found.group(name):
+            measure = name
+    if measure in ("std", "variance") and found.group(f"{measure}_kind") == "amostral":
+        measure = f"sample_{measure}"
+    data = _grab(found, request, "data") or ""
+    listed = re.sub(r"\s+e\s+", "; ", data)  # "10, 20 e 30"
+    options: Options = {} if measure is None else {"measure": measure}
+    offset = found.start("data") if listed == data else None
+    return LanguageMatch(IntentName.STATISTICS, listed, options, offset=offset, rule=rule)
+
+
+def _statistics_without_data(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    raise MathError(
+        ErrorCode.INVALID_INPUT_FOR_INTENT,
+        "Para estatística, escreva os números separados por '; ' ou ', ', como em "
+        "'média de 10, 20, 30' ou 'desvio padrão de 2; 4; 4; 5'.",
+    )
+
+
 def _future(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     raise MathError(
         ErrorCode.UNSUPPORTED_FEATURE,
-        "Estatística, matrizes, geometria e pontos como vértice e máximo ainda não são "
-        "suportados; eles estão previstos para fases futuras.",
+        "Matrizes, geometria, probabilidade e pontos como vértice e máximo de uma função "
+        "ainda não são suportados; eles estão previstos para as próximas etapas.",
     )
 
 
 # -- rules, in order ------------------------------------------------------------------------------
 
 _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], LanguageMatch]]] = [
+    ("statistics", re.compile(rf"{_MEASURE}{_FILLER}\s+{_DATA}"), _statistics),
+    (
+        "statistics_without_data",
+        re.compile(r"(?:media|mediana|moda|variancia|desvio[\s-]+padrao|amplitude)\b.*"),
+        _statistics_without_data,
+    ),
     (
         "future",
         re.compile(
-            r"(?:media|mediana|moda|desvio|variancia|determinante|matriz|area|perimetro"
-            r"|volume|probabilidade|vertice|maximo|minimo)\b.*"
+            r"(?:determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo)"
+            r"\b.*"
         ),
         _future,
     ),

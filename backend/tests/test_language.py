@@ -109,7 +109,7 @@ def test_the_math_text_is_cut_from_what_was_typed() -> None:
 @pytest.mark.parametrize(
     "text",
     [
-        "qual a média de 10, 20, 30?",
+        "qual a área de um círculo de raio 5?",
         "calcule o determinante dessa matriz",
         "qual o vértice dessa função?",
     ],
@@ -162,3 +162,69 @@ def test_explicit_operation_skips_the_rules() -> None:
 
 def test_plain_math_has_no_interpretation() -> None:
     assert calculate("2 + 2").interpretation is None
+
+
+# -- statistics (Phase 10) ------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "data", "measure"),
+    [
+        ("qual a média de 10, 20, 30?", "10, 20, 30", "mean"),
+        ("média de 10, 20 e 30", "10, 20; 30", "mean"),  # the final "e" is a separator
+        ("calcule a média das notas 7, 8 e 9,5", "7, 8; 9,5", "mean"),
+        ("a mediana dos números 3; 1; 2", "3; 1; 2", "median"),
+        ("moda de 1, 1, 2", "1, 1, 2", "mode"),
+        ("desvio padrão de 2, 4, 4", "2, 4, 4", "std"),
+        ("desvio-padrão amostral de 1, 2, 3", "1, 2, 3", "sample_std"),
+        ("variância populacional de 1, 2", "1, 2", "variance"),
+        ("variância amostral de 1, 2", "1, 2", "sample_variance"),
+        ("amplitude de 4, 9, 1", "4, 9, 1", "range"),
+        ("qual o maior valor de 3, -7, 2", "3, -7, 2", "max"),
+        ("mínimo de 3, 7, 2", "3, 7, 2", "min"),
+        ("soma de 1/2, 1/3", "1/2, 1/3", "sum"),
+        ("média: 2, 4", "2, 4", "mean"),
+    ],
+)
+def test_statistics_phrases(text: str, data: str, measure: str) -> None:
+    found = match_language(text)
+    assert found is not None
+    assert found.intent is I.STATISTICS
+    assert found.text == data
+    assert found.options == {"measure": measure}
+
+
+def test_statistics_summary_phrase() -> None:
+    found = match_language("estatísticas de 10, 20, 30")
+    assert found is not None and found.intent is I.STATISTICS and found.options == {}
+
+
+def test_maximum_of_a_function_is_still_future() -> None:
+    with pytest.raises(MathError) as exc:
+        match_language("máximo de x^2 - 4x")
+    assert exc.value.code is ErrorCode.UNSUPPORTED_FEATURE
+
+
+def test_statistics_without_numbers_explains_the_format() -> None:
+    with pytest.raises(MathError) as exc:
+        match_language("média das idades da turma")
+    assert "média de 10, 20, 30" in exc.value.message
+
+
+def test_statistics_phrase_through_the_pipeline() -> None:
+    result = calculate("qual a média de 10, 20, 30?")
+    assert result.success and result.intent is I.STATISTICS
+    assert result.result is not None and result.result.plain == "média = 20"
+    assert result.interpretation is not None and result.interpretation.method == "rules"
+
+
+def test_statistics_error_points_into_the_phrase() -> None:
+    result = calculate("média de 10, 20, 1/0")
+    assert result.error is not None and result.error.code is ErrorCode.DIVISION_BY_ZERO
+    assert result.error.position == "média de 10, 20, 1/0".index("/")
+
+
+def test_statistics_phrase_with_a_variable_explains_the_format() -> None:
+    result = calculate("média de 10, 20, x")
+    assert result.error is not None
+    assert "média de 10, 20, 30" in result.error.message

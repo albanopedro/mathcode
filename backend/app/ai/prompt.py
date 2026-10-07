@@ -18,6 +18,9 @@ Operations (intent) and their options:
 - "integral": options: variable; lower and upper (both or none), e.g. "0", "pi", "inf".
 - "limit": options: variable, point (e.g. "0", "inf", "-inf"), side ("both", "left", "right").
 - "graph": functions separated by ";", e.g. "sin(x); cos(x)". Options: x_min, x_max.
+- "statistics": numbers separated by "; ", e.g. "10; 20; 30". Option: measure (count, sum,
+  mean, median, mode, min, max, range, variance, std, sample_variance, sample_std); no
+  measure for the whole summary. variance and std are the population ones.
 
 Expression syntax: ^ for powers, sqrt(x), abs(x), sin cos tan asin acos atan, exp, ln
 (natural log), log (base 10), pi, e, ° for degrees. Single-letter variables only.
@@ -27,7 +30,7 @@ never the answer.
 If the request is not math, is ambiguous, or needs information that is missing,
 set "intent" to null, "expression" to "" and ask in "clarification".
 If it asks for something that is not in the list above (double integrals, partial
-derivatives, matrices, statistics, geometry, complex numbers...), do NOT turn it into
+derivatives, matrices, geometry, probability, complex numbers...), do NOT turn it into
 a similar operation: set "intent" to null and say in "clarification" that it is not
 supported yet.
 

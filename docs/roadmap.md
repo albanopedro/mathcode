@@ -19,8 +19,8 @@ Regras gerais:
 | 6 | Cálculo | concluída |
 | 7 | Gráficos | concluída |
 | 8 | Linguagem natural / IA | concluída |
-| 9 | Verification Engine | concluída (aguardando revisão) |
-| 10 | Matemática avançada | — |
+| 9 | Verification Engine | concluída |
+| 10 | Matemática avançada | em andamento: estatística feita (aguardando revisão) |
 | 11 | UX e histórico | — |
 | 12 | Assistente matemático | — |
 
@@ -272,6 +272,24 @@ detalhados e cobertura de todos os intents.
 Estatística, probabilidade, matrizes/vetores, geometria e trigonometria, **um
 domínio por alteração**.
 
+### 10.1 — Estatística descritiva (feita)
+
+- **Decidido com o usuário** ([ADR 0011](decisions/0011-estatistica-descritiva.md)):
+  estatística primeiro; média, mediana, moda, variância, desvio, mínimo,
+  máximo, amplitude, soma e n; σ populacional como resposta, com s amostral
+  junto; resumo completo pela operação, medida destacada pela frase.
+- **Entregue:**
+  - intent `statistics` (opção `measure`) e operação "Estatística";
+  - listas de números no parser só nesse modo;
+  - frases ("qual a média de 10, 20 e 30?", "desvio padrão amostral de…",
+    "maior valor de…");
+  - cálculo exato com frações; verificação por releitura dos valores, pelo
+    módulo `statistics` do Python e por propriedades exatas;
+  - tabela de resumo na interface.
+- **Testes:** 1 016 no backend (eram 950) e 201 no frontend (eram 189).
+- **Próximos domínios:** matrizes, geometria, probabilidade/combinatória,
+  vetores e trigonometria, um por vez, com a ordem decidida pelo usuário.
+
 ## Fase 11 — UX e histórico
 
 Histórico local, copiar resultado, alternar entre exato e aproximado, teclado
@@ -296,5 +314,7 @@ determinística.
   funções trigonométricas; continuidade lateral em pontos de borda (`sqrt(x)`
   em 0⁺).
 - Corrigir o texto simples do logaritmo natural (`log` → `ln`).
+- Estatística: quartis e IQR (com convenção explicada), média ponderada,
+  tabela de frequências, dados irracionais, rótulo "Dados" no campo de entrada.
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

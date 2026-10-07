@@ -525,3 +525,51 @@ describe("Calculator: phrases and AI", () => {
     expect(within(alert).queryByLabelText("Interpretação da frase")).not.toBeInTheDocument();
   });
 });
+
+describe("Calculator: statistics", () => {
+  it("offers the operation and sends the data", async () => {
+    answer(fixtures.statisticsSummary);
+    await calculateText("2, 4, 4, 4, 5, 5, 7, 9", "Estatística");
+
+    await screen.findByRole("region", { name: "Resultado" });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({ input: "2, 4, 4, 4, 5, 5, 7, 9", intent: "statistics" });
+  });
+
+  it("shows the whole summary as a table", async () => {
+    answer(fixtures.statisticsSummary);
+    await calculateText("2, 4, 4, 4, 5, 5, 7, 9", "Estatística");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Estatística")).toBeInTheDocument();
+    const table = within(result).getByRole("table", { name: "Resumo estatístico" });
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(13); // header + 12 measures
+    expect(within(table).getByRole("rowheader", { name: /Desvio padrão populacional/ })).toBeInTheDocument();
+    expect(within(result).getByText(/Dados em ordem \(n = 8\)/)).toHaveTextContent(
+      "2; 4; 4; 4; 5; 5; 7; 9",
+    );
+    expect(within(result).getByText(/σ e σ² são populacionais/)).toBeInTheDocument();
+  });
+
+  it("highlights the measure asked for in a phrase", async () => {
+    answer(fixtures.statisticsPhrase);
+    await calculateText("qual o desvio padrão de 2, 4, 4, 4, 5, 5, 7, 9?");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const asked = within(result)
+      .getAllByRole("row")
+      .filter((row) => row.getAttribute("aria-current") === "true");
+    expect(asked).toHaveLength(1);
+    expect(asked[0]).toHaveTextContent("Desvio padrão populacional");
+  });
+
+  it("shows undefined sample measures as a dash", async () => {
+    answer(fixtures.statisticsSingle);
+    await calculateText("5", "Estatística");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getAllByTitle("Não definido para estes dados")).toHaveLength(2);
+    expect(within(result).getByText(/Com um só valor/)).toBeInTheDocument();
+  });
+});

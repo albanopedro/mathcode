@@ -193,3 +193,16 @@ def test_list_of_numbers_is_still_a_comma_mistake() -> None:
     with pytest.raises(MathError) as exc:
         parse("1, 2")
     assert "decimal" in exc.value.message
+    assert "Estatística" in exc.value.message  # Phase 10: where lists of numbers go
+
+
+def test_list_of_numbers_as_data() -> None:
+    tree = parse("10, 20; -3, 1,5, 1/2", number_list=True).tree
+    assert isinstance(tree, ExpressionList)
+    assert parse("10, 20; -3, 1,5, 1/2", number_list=True).canonical == "10; 20; -3; 1.5; 1/2"
+
+
+def test_too_many_data_values() -> None:
+    with pytest.raises(MathError) as exc:
+        parse(";".join(["1"] * 201), number_list=True)
+    assert exc.value.code is ErrorCode.LIMIT_EXCEEDED

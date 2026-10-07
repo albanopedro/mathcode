@@ -1,6 +1,7 @@
 """Outcome of each intent -> the ``result`` and ``details`` of a MathResult."""
 
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Any
 
 import sympy as sp
@@ -17,7 +18,9 @@ from app.math_engine.calculus import (
 )
 from app.math_engine.equations import EquationOutcome, SolutionKind
 from app.math_engine.graphing import GraphOutcome
+from app.math_engine.statistics import StatisticsOutcome, rational
 from app.math_engine.systems import SystemKind, SystemOutcome
+from app.models.intents import Measure
 from app.models.result import ResultValue
 
 _EMPTY = ResultValue(plain="∅", latex=r"\varnothing")
@@ -273,3 +276,103 @@ def present_graph(outcome: GraphOutcome) -> Presentation:
 
 def _short_float(value: float) -> str:
     return f"{value:.10g}"
+
+
+# -- statistics (Phase 10) ---------------------------------------------------------------------
+
+# measure -> (label, LaTeX symbol, plain name)
+_MEASURES: dict[Measure, tuple[str, str, str]] = {
+    "count": ("Quantidade de valores", "n", "n"),
+    "sum": ("Soma", r"\sum x", "soma"),
+    "mean": ("Média", r"\bar{x}", "média"),
+    "median": ("Mediana", r"\mathrm{Md}", "mediana"),
+    "mode": ("Moda", r"\mathrm{Mo}", "moda"),
+    "min": ("Mínimo", r"\min", "mínimo"),
+    "max": ("Máximo", r"\max", "máximo"),
+    "range": ("Amplitude", r"\mathrm{A}", "amplitude"),
+    "variance": ("Variância populacional", r"\sigma^{2}", "σ²"),
+    "std": ("Desvio padrão populacional", r"\sigma", "σ"),
+    "sample_variance": ("Variância amostral", r"s^{2}", "s²"),
+    "sample_std": ("Desvio padrão amostral", "s", "s"),
+}
+
+
+def _statistics_value(outcome: StatisticsOutcome, measure: Measure) -> sp.Expr | None:
+    values: dict[Measure, sp.Expr | None] = {
+        "count": sp.Integer(outcome.count),
+        "sum": rational(outcome.total),
+        "mean": rational(outcome.mean),
+        "median": rational(outcome.median),
+        "min": rational(outcome.minimum),
+        "max": rational(outcome.maximum),
+        "range": rational(outcome.spread),
+        "variance": rational(outcome.variance),
+        "std": outcome.std,
+        "sample_variance": (
+            None if outcome.sample_variance is None else rational(outcome.sample_variance)
+        ),
+        "sample_std": outcome.sample_std,
+    }
+    return values[measure]
+
+
+def _statistics_entry(outcome: StatisticsOutcome, measure: Measure) -> dict[str, Any]:
+    label, symbol, _ = _MEASURES[measure]
+    entry: dict[str, Any] = {"name": measure, "label": label, "symbol": symbol}
+    if measure == "mode":
+        modes = [rational(m) for m in outcome.modes]
+        if not modes:
+            return entry | {"plain": "nenhuma", "latex": r"\text{nenhuma}", "approx": None}
+        return entry | {
+            "plain": "; ".join(plain(m) for m in modes),
+            "latex": r";\ ".join(latex(m) for m in modes),
+            "approx": None,
+        }
+    value = _statistics_value(outcome, measure)
+    if value is None:
+        return entry | {"plain": None, "latex": None, "approx": None}
+    return entry | {"plain": plain(value), "latex": latex(value), "approx": approx(value)}
+
+
+def _data_text(value: Fraction) -> str:
+    """A value of the data as typed: 9.5, not 19/2, when the decimal is finite."""
+    rest, twos, fives = value.denominator, 0, 0
+    while rest % 2 == 0:
+        rest, twos = rest // 2, twos + 1
+    while rest % 5 == 0:
+        rest, fives = rest // 5, fives + 1
+    places = max(twos, fives)
+    if rest != 1 or places == 0:
+        return str(value)  # 1/3, or an integer
+    digits = str(abs(value.numerator) * 10**places // value.denominator).rjust(places + 1, "0")
+    sign = "-" if value < 0 else ""
+    return f"{sign}{digits[:-places]}.{digits[-places:]}"
+
+
+def present_statistics(outcome: StatisticsOutcome) -> Presentation:
+    measures = [_statistics_entry(outcome, measure) for measure in _MEASURES]
+    shown = outcome.measure or "mean"
+    entry = next(m for m in measures if m["name"] == shown)
+    _, symbol, name = _MEASURES[shown]
+    if shown == "mode" and not outcome.modes:
+        result = ResultValue(
+            plain="moda: nenhuma (nenhum valor se repete)",
+            latex=r"\text{Sem moda: nenhum valor se repete}",
+        )
+    else:
+        result = ResultValue(
+            plain=f"{name} = {entry['plain']}",
+            latex=f"{symbol} = {entry['latex']}",
+            approx=entry["approx"],
+        )
+    return Presentation(
+        result,
+        {
+            "measure": outcome.measure,
+            "count": outcome.count,
+            "data": [_data_text(v) for v in outcome.values],
+            "sorted": [_data_text(v) for v in sorted(outcome.values)],
+            "modes": [_data_text(m) for m in outcome.modes],
+            "measures": measures,
+        },
+    )

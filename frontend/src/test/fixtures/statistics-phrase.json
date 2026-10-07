@@ -1,0 +1,190 @@
+{
+  "success": true,
+  "intent": "statistics",
+  "input": "qual o desvio padrão de 2, 4, 4, 4, 5, 5, 7, 9?",
+  "normalized_input": "2; 4; 4; 4; 5; 5; 7; 9",
+  "result": {
+    "plain": "σ = 2",
+    "latex": "\\sigma = 2",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "measure": "std",
+    "count": 8,
+    "data": [
+      "2",
+      "4",
+      "4",
+      "4",
+      "5",
+      "5",
+      "7",
+      "9"
+    ],
+    "sorted": [
+      "2",
+      "4",
+      "4",
+      "4",
+      "5",
+      "5",
+      "7",
+      "9"
+    ],
+    "modes": [
+      "4"
+    ],
+    "measures": [
+      {
+        "name": "count",
+        "label": "Quantidade de valores",
+        "symbol": "n",
+        "plain": "8",
+        "latex": "8",
+        "approx": null
+      },
+      {
+        "name": "sum",
+        "label": "Soma",
+        "symbol": "\\sum x",
+        "plain": "40",
+        "latex": "40",
+        "approx": null
+      },
+      {
+        "name": "mean",
+        "label": "Média",
+        "symbol": "\\bar{x}",
+        "plain": "5",
+        "latex": "5",
+        "approx": null
+      },
+      {
+        "name": "median",
+        "label": "Mediana",
+        "symbol": "\\mathrm{Md}",
+        "plain": "9/2",
+        "latex": "\\frac{9}{2}",
+        "approx": "4.5"
+      },
+      {
+        "name": "mode",
+        "label": "Moda",
+        "symbol": "\\mathrm{Mo}",
+        "plain": "4",
+        "latex": "4",
+        "approx": null
+      },
+      {
+        "name": "min",
+        "label": "Mínimo",
+        "symbol": "\\min",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "max",
+        "label": "Máximo",
+        "symbol": "\\max",
+        "plain": "9",
+        "latex": "9",
+        "approx": null
+      },
+      {
+        "name": "range",
+        "label": "Amplitude",
+        "symbol": "\\mathrm{A}",
+        "plain": "7",
+        "latex": "7",
+        "approx": null
+      },
+      {
+        "name": "variance",
+        "label": "Variância populacional",
+        "symbol": "\\sigma^{2}",
+        "plain": "4",
+        "latex": "4",
+        "approx": null
+      },
+      {
+        "name": "std",
+        "label": "Desvio padrão populacional",
+        "symbol": "\\sigma",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "sample_variance",
+        "label": "Variância amostral",
+        "symbol": "s^{2}",
+        "plain": "32/7",
+        "latex": "\\frac{32}{7}",
+        "approx": "4.57142857142857"
+      },
+      {
+        "name": "sample_std",
+        "label": "Desvio padrão amostral",
+        "symbol": "s",
+        "plain": "4*sqrt(14)/7",
+        "latex": "\\frac{4 \\sqrt{14}}{7}",
+        "approx": "2.1380899352994"
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os 8 valores, relidos da expressão com frações exatas (sem o SymPy), são os mesmos usados no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, moda, variâncias, mínimo, máximo, amplitude e soma."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A soma dos desvios em relação à média é exatamente 0."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A mediana divide os dados: 4 valor(es) são ≤ a ela e 4 são ≥ a ela, de 8."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Os desvios padrão são as raízes não negativas das variâncias: σ² e s² são exatamente as variâncias."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [
+    {
+      "code": "POPULATION_AND_SAMPLE",
+      "message": "σ e σ² são populacionais (dividem por n), para quando os dados são o grupo inteiro; s e s² são amostrais (dividem por n − 1), para quando os dados são uma amostra de um grupo maior."
+    }
+  ],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "statistics",
+    "expression": "2, 4, 4, 4, 5, 5, 7, 9",
+    "options": {
+      "measure": "std"
+    },
+    "provider": null,
+    "model": null
+  }
+}

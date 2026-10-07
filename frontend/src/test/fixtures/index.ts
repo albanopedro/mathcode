@@ -46,6 +46,10 @@ import phraseRules from "./phrase-rules.json";
 import primeFactors from "./prime-factors.json";
 import quadratic from "./quadratic.json";
 import simplifyDomain from "./simplify-domain.json";
+import statisticsNoMode from "./statistics-no-mode.json";
+import statisticsPhrase from "./statistics-phrase.json";
+import statisticsSingle from "./statistics-single.json";
+import statisticsSummary from "./statistics-summary.json";
 import systemInfinite from "./system-infinite.json";
 import systemNone from "./system-none.json";
 import systemUnique from "./system-unique.json";
@@ -54,6 +58,10 @@ import unverified from "./unverified.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  statisticsNoMode,
+  statisticsPhrase,
+  statisticsSingle,
+  statisticsSummary,
   aiClarification,
   aiEquation,
   aiUnavailable,

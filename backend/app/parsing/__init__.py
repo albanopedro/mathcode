@@ -25,8 +25,9 @@ class ParseResult:
         return to_text(self.tree)
 
 
-def parse(source: str) -> ParseResult:
+def parse(source: str, number_list: bool = False) -> ParseResult:
+    """``number_list``: the input is data for statistics, so "10, 20, 30" is a list."""
     notices: list[Notice] = []
     tokens = tokenize(normalize(source), notices)
-    tree = parse_tokens(tokens, notices)
+    tree = parse_tokens(tokens, notices, number_list)
     return ParseResult(source=source, tree=tree, notices=tuple(notices))

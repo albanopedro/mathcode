@@ -193,3 +193,42 @@ def test_documented_in_openapi(api: TestClient) -> None:
     schema = api.get("/api/openapi.json").json()
     operation = schema["paths"]["/api/calculate"]["post"]
     assert {"200", "422", "500", "503"} <= set(operation["responses"])
+
+
+# -- statistics (Phase 10) ------------------------------------------------------------------------
+
+
+def test_statistics_summary(api: TestClient) -> None:
+    status, data = post(api, {"input": "2, 4, 4, 4, 5, 5, 7, 9", "intent": "statistics"})
+
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.success and result.intent == "statistics"
+    assert result.result is not None and result.result.plain == "média = 5"
+    assert data["details"]["measure"] is None
+    assert len(data["details"]["measures"]) == 12
+    assert data["verification"]["status"] == "verified_symbolic"
+
+
+def test_statistics_measure_option(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {"input": "2, 4, 4, 4, 5, 5, 7, 9", "intent": "statistics", "options": {"measure": "std"}},
+    )
+    assert status == 200
+    assert data["result"]["plain"] == "σ = 2"
+
+
+def test_statistics_unknown_measure_is_explained(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "1, 2", "intent": "statistics", "options": {"measure": "average"}}
+    )
+    assert status == 200
+    assert data["error"]["code"] == "INVALID_INPUT_FOR_INTENT"
+    assert "Medida desconhecida" in data["error"]["message"]
+
+
+def test_a_list_of_numbers_without_operation_points_to_statistics(api: TestClient) -> None:
+    status, data = post(api, {"input": "10; 20; 30"})
+    assert status == 200
+    assert "Estatística" in data["error"]["message"]

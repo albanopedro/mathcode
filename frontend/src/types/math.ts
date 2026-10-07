@@ -14,7 +14,8 @@ export type IntentName =
   | "derivative"
   | "integral"
   | "limit"
-  | "graph";
+  | "graph"
+  | "statistics";
 
 export type VerificationStatus =
   | "verified_symbolic"
@@ -125,6 +126,7 @@ const INTENTS: readonly string[] = [
   "integral",
   "limit",
   "graph",
+  "statistics",
 ];
 const STATUSES: readonly string[] = [
   "verified_symbolic",
