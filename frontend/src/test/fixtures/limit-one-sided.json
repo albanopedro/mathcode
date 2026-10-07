@@ -32,5 +32,6 @@
       "message": "No domínio real, a função só existe à direita de x = 0; o limite é o lateral por esse lado."
     }
   ],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

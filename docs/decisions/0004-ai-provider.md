@@ -1,7 +1,12 @@
 # ADR 0004 — Camada de IA (`AIProvider`)
 
-- **Status:** aceita (implementação na Fase 8)
+- **Status:** aceita; implementada na Fase 8, com os ajustes do
+  [ADR 0009](0009-linguagem-natural-e-ia.md)
 - **Data:** 2026-10-06
+
+> Este é o desenho original. O que foi implementado (interface, campos,
+> provedores e comportamento em falhas) está no ADR 0009, seção "Diferenças em
+> relação ao ADR 0004".
 
 ## Contexto
 

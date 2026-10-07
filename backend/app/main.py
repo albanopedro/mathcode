@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import __version__
+from app.ai import build_provider
+from app.ai.service import AIService
 from app.api import calculate, health
 from app.core.config import Settings, get_settings
 from app.core.workers import WorkerPool
@@ -21,6 +23,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
         await pool.start()
         app.state.pool = pool
+        app.state.ai = AIService(build_provider(settings), settings.ai_timeout)
         try:
             yield
         finally:

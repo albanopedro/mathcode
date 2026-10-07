@@ -1,16 +1,18 @@
 # Mathcode
 
-Calculadora matemática que entende expressões e, mais adiante, perguntas em
-linguagem natural. Os cálculos são feitos por um motor determinístico (SymPy)
-e **todo resultado informa o quanto foi verificado**. A IA, quando existir,
-só interpreta o pedido: nunca é ela que calcula.
+Calculadora matemática que entende expressões e frases em português. Os
+cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
+informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
+pedido: nunca é ela que calcula.
 
-> **Estado: Fase 7 (gráficos).** Pelo navegador ou pela API, o Mathcode já:
-> calcula; simplifica, fatora e expande; resolve equações (polinomiais,
-> racionais e outras) e sistemas lineares; divide polinômios; deriva, integra
-> e calcula limites; e desenha gráficos com raízes e intercepto. Tudo vem com
-> verificação independente, que diz quando
-> provou o resultado, quando só tem evidência e quando não conseguiu conferir.
+> **Estado: Fase 8 (linguagem natural e IA).** Pelo navegador ou pela API, o
+> Mathcode já: calcula; simplifica, fatora e expande; resolve equações
+> (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
+> deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;
+> e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
+> mais livres são traduzidas por um modelo gratuito. Tudo vem com verificação
+> independente, que diz quando provou o resultado, quando só tem evidência e
+> quando não conseguiu conferir.
 > Os próximos passos estão no [roadmap](docs/roadmap.md).
 
 ## Princípios
@@ -62,6 +64,7 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Limite (ponto `0`) | `sen(x)/x` ou `abs(x)/x` |
 | Automático (vira gráfico) | `y = x² - 4x + 3` ou `sen(x); cos(x)` |
 | Gráfico (x de `-2pi` até `2pi`) | `tan(x)` |
+| Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1` |
 
 Em desenvolvimento, o Vite encaminha `/api` para o backend na porta 8100, então
 rode os dois juntos.
@@ -81,6 +84,28 @@ estão em [docs/architecture.md](docs/architecture.md), seção 5.
 ### Configuração
 
 Copie `.env.example` para `.env` na raiz. Todas as variáveis são opcionais.
+
+### IA opcional (gratuita)
+
+Por padrão, tudo roda localmente: frases comuns são entendidas por regras
+próprias. Para frases mais livres ("resolva x mais 3 igual a 10"), dá para
+ligar um modelo **gratuito** do [OpenCode](https://opencode.ai), já instalado e
+com login feito:
+
+```bash
+MATHCODE_AI_PROVIDER=opencode .venv/bin/uvicorn app.main:app --port 8100
+```
+
+- A IA só é consultada nos pedidos em que o usuário marca **"Permitir IA"**.
+  Nesses casos, a frase vai para o serviço do modelo.
+- Só são aceitos modelos gratuitos (`opencode/<nome>-free`); o padrão é
+  `opencode/space-bunny-free`.
+- O OpenCode roda num diretório vazio, sem permissão para ler arquivos ou
+  executar comandos.
+- A resposta da IA passa pelo mesmo parser e pela mesma verificação, e a tela
+  mostra como a frase foi interpretada.
+
+Detalhes em [ADR 0009](docs/decisions/0009-linguagem-natural-e-ia.md).
 
 ## Testes e verificações
 

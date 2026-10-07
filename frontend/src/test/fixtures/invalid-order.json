@@ -12,5 +12,6 @@
     "code": "INVALID_INPUT_FOR_INTENT",
     "message": "A ordem da derivada precisa ser um número inteiro de 1 a 10.",
     "position": null
-  }
+  },
+  "interpretation": null
 }

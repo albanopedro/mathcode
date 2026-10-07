@@ -30,5 +30,6 @@
     "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
   },
   "warnings": [],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

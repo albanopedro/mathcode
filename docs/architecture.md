@@ -31,8 +31,8 @@ Entrada (texto; LaTeX/MathJSON do MathLive na Fase 11)
   │
   ▼  parsing/normalize     Unicode, aliases PT (sen→sin), x²→x^2, vírgula decimal
   ▼  parsing/parser        tokenizer + Pratt → AST própria (sem eval)
-  ▼  interpreter/          detecta o intent + extrai parâmetros
-  │                        (regras; IA opcional na Fase 8)
+  ▼  interpreter/          frases em PT (language.py) → detecta o intent +
+  │                        extrai parâmetros; IA opcional antes, na API (ai/)
   ▼  planner/              ExecutionPlan: lista de passos tipados (Fase 12;
   │                        até lá, cada pedido é um passo só e não há planner)
   ▼  math_engine/<domínio> executor do intent (SymPy), num worker isolado com
@@ -46,6 +46,15 @@ Entrada (texto; LaTeX/MathJSON do MathLive na Fase 11)
 
 Onde a IA atua: interpretação, desambiguação, planejamento (Fase 12) e,
 opcionalmente, explicação. Ela **nunca** atua no cálculo nem na verificação.
+
+**Frases** ([ADR 0009](decisions/0009-linguagem-natural-e-ia.md)): sem
+`intent`, o `calculator.py` tenta primeiro as regras de `interpreter/language.py`
+("qual a derivada de x^3?" vira `derivative` de `x^3`). Se elas não resolvem, o
+pedido traz `allow_ai: true` e há palavras que o parser não conhece, a API
+consulta a IA **antes** do pool (`ai/service.py`: no máximo 2 consultas
+simultâneas, timeout próprio). A resposta da IA vira um pedido comum (intent,
+expressão e opções) e passa pelo mesmo parser, schema e verificação. Os dois
+caminhos preenchem `interpretation` no resultado.
 
 Quem amarra as etapas é `app/calculator.py`: `calculate(texto, intent=None)`
 devolve sempre um `MathResult`. Um `MathError` (erro esperado) vira uma resposta
@@ -115,7 +124,13 @@ MathResult
 │   ├── checks: list[str]
 │   └── message: str
 ├── warnings: list[{code, message}]
-└── error: {code, message, position?} | null
+├── error: {code, message, position?} | null
+└── interpretation: Interpretation | null     só quando a entrada era uma frase
+    ├── method: rules | ai
+    ├── intent: str | null
+    ├── expression: str             o texto matemático que foi calculado
+    ├── options: dict
+    └── provider, model: str | null só com a IA (ex.: opencode, opencode/space-bunny-free)
 ```
 
 Códigos de erro (`core/errors.py`):
@@ -125,7 +140,10 @@ Códigos de erro (`core/errors.py`):
 - `DIVISION_BY_ZERO`, `DOMAIN_ERROR`, `LIMIT_EXCEEDED`;
 - `UNSUPPORTED_INTENT`, `INVALID_INPUT_FOR_INTENT` (ex.: pedir aritmética de
   uma expressão com variáveis), `VERIFICATION_FAILED`, `INTERNAL_ERROR`;
-- `TIMEOUT` e `SERVER_BUSY`, que vêm do pool de workers.
+- `TIMEOUT` e `SERVER_BUSY`, que vêm do pool de workers;
+- `AI_UNAVAILABLE` (pediu IA, mas o servidor está sem provedor) e `AI_FAILED`
+  (a IA falhou ou respondeu fora do formato). Quando a IA responde com uma
+  pergunta, o erro é `AMBIGUOUS_INPUT`, com a pergunta como mensagem.
 
 Avisos (`core/notices.py`), cada um uma vez por resultado:
 
@@ -147,7 +165,8 @@ Avisos (`core/notices.py`), cada um uma vez por resultado:
 | limit | `variable`, `point`, `side` (o lado usado), `requested_side`, `exists`, `oscillates`; se os laterais diferem: `left`, `right` |
 | graph | `variable`, `x_range` (números), `x_range_text` (como digitado), `y_range`, `y_clipped`, `functions` (`label`, `latex`, `x`, `y` com `null` nos cortes) e `points` (`function`, `kind`: `root` ou `y_intercept`, `x`, `y`, `x_value`, `y_value`, `exact`) |
 
-`error.position` é um índice no texto **original** digitado pelo usuário.
+`error.position` é um índice no texto **original** digitado pelo usuário. Num
+cálculo vindo da IA, ele é `null`, porque apontaria para o texto da IA.
 
 "Sem solução" **não** é erro: é um sucesso com conjunto vazio.
 
@@ -166,7 +185,11 @@ Todas as rotas ficam sob `/api`. A documentação interativa fica em `/api/docs`
 | `POST /api/calculate` | corpo `{"input": "x^2", "intent": "integral", "options": {"lower": "0", "upper": "1"}}`; responde um `MathResult` |
 
 `intent` é opcional (a lista está na seção 3). Sem ele, a operação é detectada
-pela entrada.
+pela entrada, inclusive em frases como "derivada de x^3".
+
+`allow_ai` (booleano, padrão `false`) permite que uma frase que as regras não
+entendem seja enviada ao modelo de IA configurado no servidor. Só vale sem
+`intent` e sem `options` (ADR 0009).
 
 `options` só vale com `intent` e leva os parâmetros da operação:
 
@@ -207,14 +230,15 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | Peça | Papel |
 |---|---|
 | `types/math.ts` | tipos que espelham o `MathResult` e `isMathResult()`, que valida cada resposta antes de usá-la, com a mesma regra de consistência do backend |
-| `services/api.ts` | `calculate(input, intent?)`: decide pelo **corpo**, não pelo status, porque 200, 500 e 503 trazem `MathResult`. Trata 502–504 sem corpo como API inacessível e 422 como pedido recusado |
+| `services/api.ts` | `calculate(input, intent?, options?, allowAi?)`: decide pelo **corpo**, não pelo status, porque 200, 500 e 503 trazem `MathResult`. Trata 502–504 sem corpo como API inacessível e 422 como pedido recusado |
 | `hooks/useCalculator.ts` | estados `idle`, `loading`, `done` e `failed` (este último sem `MathResult`, ou seja, erro de rede); cancela o pedido anterior |
-| `components/Calculator.tsx` | seletor de **operação** (`utils/operations.ts`: Automático ou um intent, com exemplo próprio), formulário (Enter envia; botão desativado com o campo vazio ou durante o cálculo) e região `aria-live` |
+| `components/Calculator.tsx` | seletor de **operação** (`utils/operations.ts`: Automático ou um intent, com exemplo próprio), formulário (Enter envia; botão desativado com o campo vazio ou durante o cálculo), caixa **"Permitir IA"** (só no Automático, desmarcada, com o aviso de que a frase vai para um serviço externo) e região `aria-live` |
+| `components/InterpretationNote.tsx` | como a frase foi lida: pelas regras locais (discreto) ou pela IA (destacado, com o modelo e "Confira se é o que você pediu"); textos montados em `utils/interpretation.ts` |
 | `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
 | `components/GraphView.tsx` | carrega o Plotly **sob demanda** (`import()`), desenha linhas (cortes como `null`, `connectgaps: false`) e pontos; sem envio à nuvem; `utils/graph.ts` valida os `details` e monta traços e layout |
 | `components/OperationFields.tsx` | os campos extras da operação escolhida (variável, ordem, de/até, ponto, lado), descritos em `utils/operations.ts`; `buildOptions` envia só os preenchidos e não valida nada: a API explica o que estiver errado |
-| `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
-| `components/ErrorView.tsx` | `role="alert"`, mensagem e a entrada com o caractere de `error.position` destacado (contando code points, como o Python) |
+| `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, interpretação da frase, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
+| `components/ErrorView.tsx` | `role="alert"`, mensagem e a entrada com o caractere de `error.position` destacado (contando code points, como o Python) e, se houver, a interpretação da frase |
 | `components/Verification.tsx` | a mensagem do backend como título, com ícone e cor por status, e "Como foi verificado" (`<details>`) com os `checks` |
 | `components/MathFormula.tsx` | `katex.render` num `ref` (sem `innerHTML` vindo do React); gera HTML e MathML, que é o que leitores de tela leem |
 
@@ -241,12 +265,12 @@ Mathcode/
 │   │   ├── core/               config, erros, avisos, limites, workers (pool)
 │   │   ├── models/             schemas Pydantic (MathResult...)
 │   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build
-│   │   ├── interpreter/        registry + detecção por regras
+│   │   ├── interpreter/        registry + detecção + frases em PT (language.py)
 │   │   ├── planner/            ExecutionPlan (Fase 12)
 │   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials (depois: calculus, graphing...)
 │   │   ├── verification/       estratégias por intent
 │   │   ├── formatting/         plain/LaTeX/aproximação
-│   │   └── ai/                 AIProvider + provedores gratuitos (Fase 8)
+│   │   └── ai/                 AIProvider, OpenCode (só modelos gratuitos), mock, prompt e serviço
 │   ├── tests/                  parsing/ math_engine/ verification/ api/ + integração
 │   └── pyproject.toml
 ├── frontend/
@@ -310,3 +334,4 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0009](decisions/0009-linguagem-natural-e-ia.md) | Linguagem natural e IA (Fase 8): regras em PT, "Permitir IA", OpenCode isolado, só modelos gratuitos |

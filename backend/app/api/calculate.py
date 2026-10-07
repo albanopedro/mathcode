@@ -2,12 +2,14 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, StringConstraints
+from pydantic import BaseModel, ConfigDict, Field
 
+from app.ai import needs_ai
+from app.ai.service import AIService
 from app.core.errors import ErrorCode
 from app.core.limits import MAX_INPUT_LENGTH
 from app.core.workers import WorkerPool
-from app.models.intents import IntentName
+from app.models.intents import IntentName, OptionValue
 from app.models.result import MathResult
 
 router = APIRouter(tags=["calculate"])
@@ -21,14 +23,6 @@ _HTTP_STATUS = {
     ErrorCode.INTERNAL_ERROR: 500,
     ErrorCode.SERVER_BUSY: 503,
 }
-
-
-# An option value: a short text (variable, bound, point, side) or a small number
-# (order). Strict types: in lax mode a long numeric text would become a huge int.
-type OptionValue = (
-    Annotated[StrictStr, StringConstraints(max_length=100)]
-    | Annotated[StrictInt, Field(ge=-1000, le=1000)]
-)
 
 
 class CalculateRequest(BaseModel):
@@ -51,10 +45,21 @@ class CalculateRequest(BaseModel):
         ),
         examples=[{"variable": "x", "order": 2}],
     )
+    allow_ai: bool = Field(
+        default=False,
+        description=(
+            "Permite que uma frase que as regras locais não entendem seja interpretada por "
+            "IA (o texto é enviado ao modelo configurado no servidor). A IA nunca calcula."
+        ),
+    )
 
 
 def get_pool(request: Request) -> WorkerPool:
     return request.app.state.pool
+
+
+def get_ai(request: Request) -> AIService:
+    return request.app.state.ai
 
 
 @router.post(
@@ -66,8 +71,13 @@ def get_pool(request: Request) -> WorkerPool:
     },
 )
 async def post_calculate(
-    body: CalculateRequest, pool: Annotated[WorkerPool, Depends(get_pool)]
+    body: CalculateRequest,
+    pool: Annotated[WorkerPool, Depends(get_pool)],
+    ai: Annotated[AIService, Depends(get_ai)],
 ) -> JSONResponse:
-    result = await pool.calculate(body.input, body.intent, body.options)
+    if body.allow_ai and body.intent is None and body.options is None and needs_ai(body.input):
+        result = await ai.calculate(body.input, pool)
+    else:
+        result = await pool.calculate(body.input, body.intent, body.options)
     status = _HTTP_STATUS.get(result.error.code, 200) if result.error else 200
     return JSONResponse(status_code=status, content=result.model_dump(mode="json"))

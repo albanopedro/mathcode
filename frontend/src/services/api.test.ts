@@ -55,6 +55,23 @@ describe("calculate", () => {
     await expect(calculate("2 + 2")).rejects.toThrow(/HTTP 422/);
   });
 
+  it("sends allow_ai only when asked to", async () => {
+    // A new Response each time: a body can be read only once.
+    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse(fixtures.aiEquation)));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await calculate("resolva x mais 3 igual a 10", null, null, true);
+    await calculate("resolva x mais 3 igual a 10", null, null, false);
+
+    const bodies = vi
+      .mocked(fetch)
+      .mock.calls.map((call) => JSON.parse(call[1]!.body as string) as unknown);
+    expect(bodies).toEqual([
+      { input: "resolva x mais 3 igual a 10", allow_ai: true },
+      { input: "resolva x mais 3 igual a 10" },
+    ]);
+  });
+
   it("does not trust an unexpected body", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ answer: 4 })));
 

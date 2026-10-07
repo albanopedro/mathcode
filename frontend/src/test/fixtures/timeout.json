@@ -12,5 +12,6 @@
     "code": "TIMEOUT",
     "message": "O cálculo passou de 5 s e foi interrompido.",
     "position": null
-  }
+  },
+  "interpretation": null
 }

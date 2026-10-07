@@ -8,7 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -34,6 +34,21 @@ class Settings(BaseSettings):
     calculation_timeout: float = Field(default=5.0, gt=0, le=60)
     # Seconds a request may wait for a free worker before getting HTTP 503.
     queue_timeout: float = Field(default=10.0, gt=0, le=120)
+
+    # Optional AI interpretation of requests in words (ADR 0004). "none" keeps
+    # everything local; "opencode" uses a free OpenCode model, only for requests
+    # whose user ticked "Permitir IA".
+    ai_provider: Literal["none", "opencode"] = "none"
+    ai_model: str = "opencode/space-bunny-free"
+    ai_timeout: float = Field(default=90.0, ge=5, le=300)
+
+    @field_validator("ai_model")
+    @classmethod
+    def _only_free_models(cls, model: str) -> str:
+        # Imported here: app.ai imports this module (import cycle at load time).
+        from app.ai.opencode import free_model
+
+        return free_model(model)
 
     @property
     def show_docs(self) -> bool:

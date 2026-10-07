@@ -19,5 +19,6 @@
     "message": "Resultado conferido numericamente por um avaliador independente."
   },
   "warnings": [],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

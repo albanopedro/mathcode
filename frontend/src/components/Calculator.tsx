@@ -11,6 +11,7 @@ export function Calculator() {
   const [input, setInput] = useState("");
   const [operationIndex, setOperationIndex] = useState(0);
   const [fields, setFields] = useState<FieldValues>(EMPTY_FIELDS);
+  const [allowAi, setAllowAi] = useState(false);
   const operation = OPERATIONS[operationIndex] ?? OPERATIONS[0]!;
   const { state, submit } = useCalculator();
   const loading = state.status === "loading";
@@ -19,7 +20,9 @@ export function Calculator() {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (canSubmit) {
-      void submit(input, operation.intent, buildOptions(operation, fields));
+      // The AI only reads phrases whose operation is detected (Automático).
+      const ai = operation.intent === null && allowAi;
+      void submit(input, operation.intent, buildOptions(operation, fields), ai);
     }
   }
 
@@ -71,7 +74,30 @@ export function Calculator() {
         <p id="expression-help" className="text-sm text-slate-500">
           Use ^ para potência, sqrt(x) ou √ para raiz e ° para graus. Separe argumentos
           e as equações de um sistema com ;, como em log(8; 2) ou x + y = 3; x - y = 1.
+          Frases simples também funcionam, como "derivada de x^3" ou "15% de 780".
         </p>
+        {operation.intent === null && (
+          <div className="flex items-start gap-2 text-sm">
+            <input
+              id="allow-ai"
+              type="checkbox"
+              checked={allowAi}
+              onChange={(event) => setAllowAi(event.target.checked)}
+              aria-describedby="allow-ai-help"
+              className="mt-0.5 size-4 accent-slate-900"
+            />
+            <div>
+              <label htmlFor="allow-ai" className="font-medium text-slate-700">
+                Permitir IA
+              </label>
+              <p id="allow-ai-help" className="text-slate-500">
+                Se as regras locais não entenderem a frase, ela é enviada a um modelo de IA
+                gratuito, num serviço externo. A IA só traduz a frase; a conta e a verificação
+                são feitas pelo Mathcode.
+              </p>
+            </div>
+          </div>
+        )}
       </form>
 
       <div aria-live="polite" aria-busy={loading}>

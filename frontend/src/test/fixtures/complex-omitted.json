@@ -28,5 +28,6 @@
       "message": "A equação também tem 2 solução(ões) complexa(s), omitida(s) porque o domínio é ℝ."
     }
   ],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

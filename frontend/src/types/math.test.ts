@@ -22,6 +22,10 @@ describe("isMathResult", () => {
     ["a failure without error", { ...fixtures.parseError, error: null }],
     ["a failure with a value", { ...fixtures.parseError, result: valid.result }],
     ["a non-numeric position", { ...fixtures.parseError, error: { code: "X", message: "y", position: "3" } }],
+    ["a missing interpretation", { ...valid, interpretation: undefined }],
+    ["an unknown interpretation method", { ...fixtures.aiEquation, interpretation: { ...fixtures.aiEquation.interpretation, method: "magic" } }],
+    ["an interpretation with an unknown intent", { ...fixtures.aiEquation, interpretation: { ...fixtures.aiEquation.interpretation, intent: "teleport" } }],
+    ["an interpretation with an object option", { ...fixtures.aiEquation, interpretation: { ...fixtures.aiEquation.interpretation, options: { variable: { x: 1 } } } }],
   ])("rejects %s", (_label, value) => {
     expect(isMathResult(value)).toBe(false);
   });

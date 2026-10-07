@@ -22,5 +22,6 @@
     "message": "Resultado verificado simbolicamente."
   },
   "warnings": [],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

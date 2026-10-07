@@ -1,0 +1,34 @@
+{
+  "success": true,
+  "intent": "derivative",
+  "input": "qual a derivada de x^3 - 2x?",
+  "normalized_input": "x^3 - 2*x",
+  "result": {
+    "plain": "3*x^2 - 2",
+    "latex": "3 x^{2} - 2",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "order": 1
+  },
+  "verification": {
+    "status": "verified_numeric",
+    "method": "finite_differences",
+    "checks": [
+      "A derivada numérica (diferenças finitas com 80 dígitos, calculada sobre a expressão original por um avaliador independente) coincide com o resultado em 6 pontos sorteados, com erro relativo menor que 10⁻⁸."
+    ],
+    "message": "Resultado conferido numericamente por um avaliador independente."
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "derivative",
+    "expression": "x^3 - 2x",
+    "options": {},
+    "provider": null,
+    "model": null
+  }
+}

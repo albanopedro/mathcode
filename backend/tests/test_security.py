@@ -9,8 +9,27 @@ from app.calculator import calculate
 
 APP = Path(__file__).resolve().parents[1] / "app"
 
-# Calls that execute text, directly or through SymPy.
-FORBIDDEN = re.compile(r"\b(eval|exec|compile|sympify|parse_expr|lambdify|__import__)\s*\(")
+# Calls that execute text, directly or through SymPy. The builtins count only
+# when called bare: re.compile(...) builds a regex and executes nothing.
+FORBIDDEN = re.compile(
+    r"(?<![\w.])(eval|exec|compile|__import__)\s*\("
+    r"|\b(sympify|parse_expr|lambdify)\s*\("
+)
+
+
+def test_the_guard_itself() -> None:
+    for bad in [
+        "eval(x)",
+        "exec (code)",
+        "compile(src, 'f', 'exec')",
+        "sp.sympify(t)",
+        "sympy.parse_expr(t)",
+        "lambdify(x, e)",
+        "__import__('os')",
+    ]:
+        assert FORBIDDEN.search(bad), bad
+    for fine in ["re.compile(r'x')", "pattern.compile(", "evaluate(tree)", "medieval(x)"]:
+        assert not FORBIDDEN.search(fine), fine
 
 
 def test_no_code_executing_calls_in_the_app() -> None:

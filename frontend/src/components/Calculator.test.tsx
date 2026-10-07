@@ -399,3 +399,97 @@ describe("Calculator: graphs", () => {
     expect(within(result).getByText("Raízes: x = 1; x = 3.")).toBeInTheDocument();
   });
 });
+
+describe("Calculator: phrases and AI", () => {
+  it("offers 'Permitir IA' only when the operation is detected, unticked", async () => {
+    const user = userEvent.setup();
+    render(<Calculator />);
+
+    const box = screen.getByRole("checkbox", { name: "Permitir IA" });
+    expect(box).not.toBeChecked();
+    expect(box).toHaveAccessibleDescription(/serviço externo/);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Derivar");
+    expect(screen.queryByRole("checkbox", { name: "Permitir IA" })).not.toBeInTheDocument();
+  });
+
+  it("sends allow_ai only when ticked", async () => {
+    // A new Response each time: a body can be read only once.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse(fixtures.aiEquation))),
+    );
+    const user = userEvent.setup();
+    render(<Calculator />);
+    const input = screen.getByLabelText("Expressão ou equação");
+
+    await user.type(input, "resolva x mais 3 igual a 10{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+    await user.click(screen.getByRole("checkbox", { name: "Permitir IA" }));
+    await user.click(screen.getByRole("button", { name: "Calcular" }));
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const bodies = vi
+      .mocked(fetch)
+      .mock.calls.map((call) => JSON.parse(call[1]!.body as string) as unknown);
+    expect(bodies).toEqual([
+      { input: "resolva x mais 3 igual a 10" },
+      { input: "resolva x mais 3 igual a 10", allow_ai: true },
+    ]);
+  });
+
+  it("never sends allow_ai with a chosen operation", async () => {
+    answer(fixtures.derivative);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.click(screen.getByRole("checkbox", { name: "Permitir IA" }));
+    await user.selectOptions(screen.getByLabelText("Operação"), "Derivar");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "x^2{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body.allow_ai).toBeUndefined();
+  });
+
+  it("shows what the AI understood and asks the user to check it", async () => {
+    answer(fixtures.aiEquation);
+    await calculateText("resolva x mais 3 igual a 10");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const note = within(result).getByLabelText("Interpretação da frase");
+    expect(note).toHaveTextContent(
+      "Frase interpretada pela IA (opencode/space-bunny-free) como Equação: x + 3 = 10 (variável: x).",
+    );
+    expect(note).toHaveTextContent(/Confira se é o que você pediu/);
+    expect(result.querySelector("annotation")).toHaveTextContent("x = 7");
+  });
+
+  it("shows a phrase read by the local rules, without the AI warning", async () => {
+    answer(fixtures.phraseRules);
+    await calculateText("qual a derivada de x^3 - 2x?");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const note = within(result).getByLabelText("Interpretação da frase");
+    expect(note).toHaveTextContent("Frase interpretada pelas regras locais como Derivada: x^3 - 2x.");
+    expect(note).not.toHaveTextContent(/Confira/);
+  });
+
+  it("shows the AI's question as the error", async () => {
+    answer(fixtures.aiClarification);
+    await calculateText("integral dupla de x");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("A integral dupla ainda não é suportada.");
+    expect(within(alert).getByLabelText("Interpretação da frase")).toHaveTextContent(
+      "Frase lida pela IA (mock), sem uma conta para calcular.",
+    );
+  });
+
+  it("explains when the server has no AI", async () => {
+    answer(fixtures.aiUnavailable);
+    await calculateText("quanto vale o dobro de sete");
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/A IA não está ativada neste servidor/);
+    expect(within(alert).queryByLabelText("Interpretação da frase")).not.toBeInTheDocument();
+  });
+});

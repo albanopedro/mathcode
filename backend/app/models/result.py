@@ -1,7 +1,7 @@
 """The single response shape of the math pipeline (docs/architecture.md, section 4)."""
 
 from enum import StrEnum
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -48,6 +48,17 @@ class ResultError(BaseModel):
     position: int | None = None  # index into ``input``
 
 
+class Interpretation(BaseModel):
+    """How a request in words was understood, so the user can check it."""
+
+    method: Literal["rules", "ai"]
+    intent: IntentName | None = None
+    expression: str  # the math text that was calculated
+    options: dict[str, str | int] = Field(default_factory=dict)
+    provider: str | None = None  # AI only, e.g. "opencode"
+    model: str | None = None  # AI only
+
+
 class MathResult(BaseModel):
     success: bool
     intent: IntentName | None = None
@@ -60,6 +71,8 @@ class MathResult(BaseModel):
     verification: VerificationReport | None = None
     warnings: list[ResultWarning] = Field(default_factory=list)
     error: ResultError | None = None
+    # Set when the request was a phrase (Phase 8); None for plain math.
+    interpretation: Interpretation | None = None
 
     @model_validator(mode="after")
     def _consistent(self) -> Self:

@@ -27,5 +27,6 @@
       "message": "A expressão original não é definida para x = 1; o resultado só equivale a ela para x ≠ 1."
     }
   ],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

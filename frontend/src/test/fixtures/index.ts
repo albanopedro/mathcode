@@ -3,8 +3,15 @@
  * They keep the frontend types honest: if the backend changes the shape,
  * re-capture them (one POST per file, with the API running) and the type
  * guard tests will say what broke.
+ *
+ * ai-equation came from the real free model (opencode/space-bunny-free).
+ * ai-clarification is that model's real answer to "integral dupla de x",
+ * replayed through the API with the mock provider (so it names "mock").
  */
 import type { MathResult } from "../../types/math";
+import aiClarification from "./ai-clarification.json";
+import aiEquation from "./ai-equation.json";
+import aiUnavailable from "./ai-unavailable.json";
 import allReals from "./all-reals.json";
 import allRealsExcept from "./all-reals-except.json";
 import arithmetic from "./arithmetic.json";
@@ -32,6 +39,7 @@ import factorUnchanged from "./factor-unchanged.json";
 import noSolution from "./no-solution.json";
 import parseError from "./parse-error.json";
 import partial from "./partial.json";
+import phraseRules from "./phrase-rules.json";
 import primeFactors from "./prime-factors.json";
 import quadratic from "./quadratic.json";
 import simplifyDomain from "./simplify-domain.json";
@@ -43,6 +51,10 @@ import unverified from "./unverified.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  aiClarification,
+  aiEquation,
+  aiUnavailable,
+  phraseRules,
   graphNoPoints,
   graphParabola,
   graphTan,

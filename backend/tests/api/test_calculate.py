@@ -40,7 +40,9 @@ def test_json_shape(api: TestClient) -> None:
         "verification",
         "warnings",
         "error",
+        "interpretation",
     }
+    assert data["interpretation"] is None  # plain math, not a phrase
     assert data["result"] == {"plain": "3/10", "latex": r"\frac{3}{10}", "approx": "0.3"}
     assert data["verification"]["status"] == "verified_numeric"
 

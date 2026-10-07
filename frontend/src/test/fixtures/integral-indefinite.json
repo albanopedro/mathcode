@@ -28,5 +28,6 @@
       "message": "No domínio real, ln(u) foi escrito como ln|u|: assim a primitiva vale também onde u < 0 (a derivada de ln|u| é u'/u)."
     }
   ],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

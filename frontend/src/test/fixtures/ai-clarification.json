@@ -1,0 +1,24 @@
+{
+  "success": false,
+  "intent": null,
+  "input": "integral dupla de x",
+  "normalized_input": null,
+  "result": null,
+  "steps": [],
+  "details": {},
+  "verification": null,
+  "warnings": [],
+  "error": {
+    "code": "AMBIGUOUS_INPUT",
+    "message": "A integral dupla ainda não é suportada.",
+    "position": null
+  },
+  "interpretation": {
+    "method": "ai",
+    "intent": null,
+    "expression": "",
+    "options": {},
+    "provider": "mock",
+    "model": "mock"
+  }
+}

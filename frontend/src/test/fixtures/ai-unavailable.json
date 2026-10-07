@@ -1,0 +1,17 @@
+{
+  "success": false,
+  "intent": null,
+  "input": "quanto vale o dobro de sete",
+  "normalized_input": null,
+  "result": null,
+  "steps": [],
+  "details": {},
+  "verification": null,
+  "warnings": [],
+  "error": {
+    "code": "AI_UNAVAILABLE",
+    "message": "A IA não está ativada neste servidor (MATHCODE_AI_PROVIDER). Escreva a expressão ou use frases como \"derivada de x^2\".",
+    "position": null
+  },
+  "interpretation": null
+}

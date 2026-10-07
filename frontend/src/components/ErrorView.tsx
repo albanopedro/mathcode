@@ -1,4 +1,5 @@
 import type { MathResult, ResultError } from "../types/math";
+import { InterpretationNote } from "./InterpretationNote";
 import { Verification } from "./Verification";
 
 interface ErrorViewProps {
@@ -15,6 +16,7 @@ export function ErrorView({ result, error }: ErrorViewProps) {
       <h2 className="font-medium">Não foi possível calcular</h2>
       <p>{error.message}</p>
       {error.position !== null && <InputMarker input={result.input} position={error.position} />}
+      {result.interpretation && <InterpretationNote interpretation={result.interpretation} />}
       {result.verification && <Verification report={result.verification} />}
     </div>
   );

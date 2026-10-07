@@ -28,5 +28,6 @@
       "message": "log(x) é o logaritmo na base 10. Para o logaritmo natural, use ln(x)."
     }
   ],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

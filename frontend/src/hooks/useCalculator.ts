@@ -22,6 +22,7 @@ export function useCalculator() {
       input: string,
       intent: IntentName | null = null,
       options: CalculationOptions | null = null,
+      allowAi = false,
     ) => {
       controller.current?.abort();
       const current = new AbortController();
@@ -29,7 +30,7 @@ export function useCalculator() {
       setState({ status: "loading" });
 
       try {
-        const result = await calculate(input, intent, options, current.signal);
+        const result = await calculate(input, intent, options, allowAi, current.signal);
         if (!current.signal.aborted) {
           setState({ status: "done", result });
         }

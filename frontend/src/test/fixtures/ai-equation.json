@@ -1,0 +1,43 @@
+{
+  "success": true,
+  "intent": "solve_equation",
+  "input": "resolva x mais 3 igual a 10",
+  "normalized_input": "x + 3 = 10",
+  "result": {
+    "plain": "x = 7",
+    "latex": "x = 7",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "solution_set": "finite",
+    "solutions": [
+      "7"
+    ],
+    "multiplicities": [
+      1
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "method": "substitution+sturm",
+    "checks": [
+      "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
+      "Pelo teorema de Sturm, o polinômio x - 7 tem exatamente 1 raiz(es) real(is) distinta(s), e todas foram consideradas."
+    ],
+    "message": "Resultado verificado simbolicamente."
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": {
+    "method": "ai",
+    "intent": "solve_equation",
+    "expression": "x + 3 = 10",
+    "options": {
+      "variable": "x"
+    },
+    "provider": "opencode",
+    "model": "opencode/space-bunny-free"
+  }
+}

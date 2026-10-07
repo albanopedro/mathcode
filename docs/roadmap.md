@@ -17,8 +17,8 @@ Regras gerais:
 | 4 | Frontend básico | concluída |
 | 5 | Álgebra | concluída |
 | 6 | Cálculo | concluída |
-| 7 | Gráficos | concluída (aguardando revisão) |
-| 8 | Linguagem natural / IA | — |
+| 7 | Gráficos | concluída |
+| 8 | Linguagem natural / IA | concluída (aguardando revisão) |
 | 9 | Verification Engine | — |
 | 10 | Matemática avançada | — |
 | 11 | UX e histórico | — |
@@ -208,6 +208,33 @@ tabela do ADR 0003.
 - Interpretador por regras para frases comuns em português.
 - Testes só com o mock. Uma chamada real só acontece com autorização.
 
+- **Decidido com o usuário** ([ADR 0009](decisions/0009-linguagem-natural-e-ia.md)):
+  caixa "Permitir IA" por pedido, desmarcada por padrão; poucas chamadas reais
+  com frases fictícias; Ollama adiado até ser instalado.
+- **Entregue:**
+  - regras locais em português (derivada, integral, limite, raízes, resolver,
+    fatorar, expandir, simplificar, gráfico, dividir, porcentagem e o aviso de
+    "ainda não suportado"), com a posição dos erros no texto digitado;
+  - provedor `opencode` isolado (diretório vazio, agente sem permissões, só
+    modelos gratuitos) e `mock` para os testes;
+  - IA no processo da API, com no máximo 2 consultas simultâneas e timeout
+    próprio; a resposta passa pelo mesmo parser, schema e verificação;
+  - campo `interpretation` no `MathResult`, mostrado na interface (com
+    "Confira" quando veio da IA);
+  - erros `AI_UNAVAILABLE` e `AI_FAILED`, e `AMBIGUOUS_INPUT` com a pergunta
+    da IA.
+- **Testes:** 822 no backend (eram 696) e 181 no frontend (eram 162). Foram 5
+  chamadas reais autorizadas.
+- **Descoberto durante a fase:**
+  - o OpenCode v2 não tem mais `--dir` (agora há `--standalone`) e não informou
+    custo nos eventos;
+  - no prompt inicial, o modelo **calculou** a resposta, em vez de traduzir;
+  - frases que só começam com "qual" ou "quanto vale" nunca chegariam à IA
+    (corrigido: o que precisa passar no parser é a parte matemática);
+  - "integral dupla de x" não é barrada pelas regras (a regra de integral
+    fica com "dupla de x"); com a IA, o prompt agora manda recusar o que não é
+    suportado, em vez de trocar por uma operação parecida.
+
 ## Fase 9 — Verification Engine
 
 Formalizar e expandir a verificação: comparação de métodos, relatórios
@@ -236,5 +263,7 @@ determinística.
   divisão de polinômios com várias variáveis.
 - Passos de resolução gerados por regras próprias.
 - `docker-compose.yml`, quando houver Docker para testar.
+- Provedor de IA Ollama (local), quando estiver instalado.
+- Regras locais para frases frequentes ("o dobro de", "a metade de").
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

@@ -21,5 +21,6 @@
     "message": "Não foi possível verificar este resultado."
   },
   "warnings": [],
-  "error": null
+  "error": null,
+  "interpretation": null
 }

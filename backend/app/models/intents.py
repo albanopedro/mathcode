@@ -1,9 +1,17 @@
 """Typed input of each intent. Interpretation produces these; execution consumes them."""
 
 from enum import StrEnum
-from typing import Literal, Self
+from typing import Annotated, Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StrictInt,
+    StrictStr,
+    StringConstraints,
+    model_validator,
+)
 
 from app.core.limits import MAX_DERIVATIVE_ORDER
 
@@ -115,3 +123,10 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.LIMIT: frozenset({"variable", "point", "side"}),
     IntentName.GRAPH: frozenset({"x_min", "x_max"}),
 }
+
+# An option value: a short text (variable, bound, point, side) or a small number
+# (order). Strict types: in lax mode a long numeric text would become a huge int.
+type OptionValue = (
+    Annotated[StrictStr, StringConstraints(max_length=100)]
+    | Annotated[StrictInt, Field(ge=-1000, le=1000)]
+)

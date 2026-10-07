@@ -2,14 +2,14 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-07, ao fim da Fase 7.
+> Última atualização: 2026-10-07, ao fim da Fase 8 (aguardando revisão).
 
 ## O que é
 
 Calculadora matemática ("assistente matemático universal") que recebe
-expressões e, mais adiante, linguagem natural. Os cálculos são feitos por um
-motor determinístico (SymPy), e **todo resultado diz o quanto foi verificado**.
-A IA (Fase 8+) só interpreta o pedido: nunca calcula.
+expressões e frases em português. Os cálculos são feitos por um motor
+determinístico (SymPy), e **todo resultado diz o quanto foi verificado**.
+A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 
 - Backend: Python 3.14, FastAPI, Pydantic, SymPy e mpmath, em `backend/`.
 - Frontend: React 19, TypeScript, Vite 8 e Tailwind 4, em `frontend/`.
@@ -52,7 +52,9 @@ A IA (Fase 8+) só interpreta o pedido: nunca calcula.
 | 4: Frontend básico | concluída e commitada (`4052f9d`) |
 | 5: Álgebra | concluída e commitada (`12fab27`) |
 | 6: Cálculo | concluída e commitada (`b172eb8`) |
-| 7: Gráficos | **concluída, aguardando revisão e commit do usuário** |
+| 7: Gráficos | concluída e commitada (`978dab5`) |
+| 8: Linguagem natural / IA | **concluída, aguardando revisão e commit** |
+| 9: Verification Engine | próxima |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -62,15 +64,17 @@ um repositório embutido (gitlink). A correção sugerida é
 ## Arquitetura em uma tela
 
 ```
-texto → parsing/ (normalize → tokenizer → parser Pratt → AST → build SymPy)
+[API] allow_ai + needs_ai → ai/service.py (OpenCode, fora do pool) → IntentCandidate
+texto → interpreter/language.py (frases em PT → intent + texto matemático)
+      → parsing/ (normalize → tokenizer → parser Pratt → AST → build SymPy)
       → interpreter/ (detect: ";" → solve_system; "=" → solve_equation; com variável → simplify;
                       senão arithmetic. factor/expand/polynomial_division só por intent explícito)
       → math_engine/ (arithmetic, algebra [simplify/factor/expand/divide], equations, systems,
                       polynomials [forma pela AST, real_roots, Sturm])
       → verification/ (avaliador mpmath independente da AST + checagens simbólicas)
       → formatting/ (plain / LaTeX / aproximação)
-      → MathResult (models/result.py)
-calculator.py: calculate(text, intent=None) -> MathResult  (nunca lança exceção)
+      → MathResult (models/result.py), com `interpretation` quando era frase
+calculator.py: calculate(text, intent=None, options=None) -> MathResult  (nunca lança exceção)
 api/calculate.py: POST /api/calculate -> WorkerPool (core/workers.py) -> calculate() num processo
 interpreter/registry.py: intent -> (params_model, execute, verify, present)
 ```
@@ -94,7 +98,21 @@ Arquivos-chave do backend (`backend/app/`):
 - `verification/numeric.py`: o avaliador independente, com precisão adaptativa
   e limite de erro.
 - `api/`: rotas sob `/api`, que são `health` e `calculate`. O corpo é
-  `{input, intent?}`, com `extra="forbid"` e `input` de até 2 000 caracteres.
+  `{input, intent?, options?, allow_ai?}`, com `extra="forbid"` e `input` de
+  até 2 000 caracteres. `OptionValue` (tipos estritos) fica em
+  `models/intents.py` e vale também para a resposta da IA.
+- `interpreter/language.py`: regras de frases em PT (`match_language`), que
+  rodam no worker; `_fold` tira acentos sem mudar o comprimento.
+- `ai/`:
+  - `base.py`: `AIProvider`, `IntentCandidate` e `AIError`;
+  - `opencode.py`: o provedor OpenCode v2 isolado e `free_model`;
+  - `prompt.py`: o prompt (só traduzir, nunca calcular, recusar o que não é
+    suportado);
+  - `mock.py`: o provedor dos testes;
+  - `service.py`: o `AIService` (semáforo de 2, timeout) e o fluxo
+    IA → pool → `interpretation`;
+  - `__init__.py`: `build_provider` e `needs_ai`.
+
 Frontend (`frontend/src/`, ver architecture §6):
 
 - `types/math.ts`: os tipos do `MathResult` e `isMathResult()`, que valida
@@ -104,6 +122,9 @@ Frontend (`frontend/src/`, ver architecture §6):
 - `hooks/useCalculator.ts`: o estado da tela.
 - `utils/operations.ts`: as operações do seletor, os campos extras de cada uma
   (`fields`) e `buildOptions`. `components/OperationFields.tsx` desenha esses campos.
+- `components/InterpretationNote.tsx` + `utils/interpretation.ts`: como a
+  frase foi lida (regras ou IA, com "Confira"). A caixa "Permitir IA" fica no
+  `Calculator`, só no Automático.
 - Componentes: `Calculator`, `ResultView`, `ErrorView`, `Verification`,
   `MathFormula` (KaTeX) e `ApiStatus`.
 - `test/fixtures/*.json` são **respostas reais da API**. Se o `MathResult`
@@ -199,8 +220,23 @@ Backend, continuação:
   - o título da verificação é a mensagem do backend;
   - a posição do erro é destacada contando code points (`Array.from`);
   - nada de dark mode, histórico, copiar ou MathLive antes da Fase 11.
+- **Linguagem natural e IA** ([ADR 0009](docs/decisions/0009-linguagem-natural-e-ia.md)):
+  - regras locais primeiro, sempre; a IA só com `allow_ai`, sem `intent` e sem
+    `options`, quando a parte matemática não passa no parser e tem palavras
+    desconhecidas (`needs_ai`);
+  - a IA roda no processo da API, nunca no pool; no máximo 2 consultas
+    simultâneas; `MATHCODE_AI_TIMEOUT` (90 s);
+  - OpenCode v2: `run --standalone`, diretório temporário vazio,
+    `OPENCODE_CONFIG_CONTENT` com o agente `mathcode` sem permissões;
+  - **só modelos gratuitos** (`opencode/*-free` ou `opencode/big-pickle`);
+    outro valor impede o servidor de iniciar; custo > 0 descarta a resposta;
+  - a resposta da IA é validada (Pydantic, `extra="forbid"`) e calculada como
+    um pedido comum; o erro dela fica sem `position`;
+  - erros: `AI_UNAVAILABLE`, `AI_FAILED` e `AMBIGUOUS_INPUT` (pergunta da IA).
 - **Configuração:** `MATHCODE_WORKERS` (2), `MATHCODE_CALCULATION_TIMEOUT`
-  (5 s) e `MATHCODE_QUEUE_TIMEOUT` (10 s).
+  (5 s), `MATHCODE_QUEUE_TIMEOUT` (10 s), `MATHCODE_AI_PROVIDER` (`none`),
+  `MATHCODE_AI_MODEL` (`opencode/space-bunny-free`) e `MATHCODE_AI_TIMEOUT`
+  (90 s).
 
 ## Armadilhas conhecidas
 
@@ -236,7 +272,7 @@ Backend, continuação:
 - Nos testes de componentes, o Plotly é simulado com `vi.mock`, porque o jsdom
   não desenha.
 - O build do frontend avisa que há pedaços acima de 500 KB: o do Plotly
-  (intencional, sob demanda) e o principal (503 KB). A correção pendente é
+  (intencional, sob demanda) e o principal (506 KB). A correção pendente é
   carregar o KaTeX sob demanda.
 - Em React com Fast Refresh, arquivos de componente só exportam componentes.
   Constantes vão para `utils/`.
@@ -244,6 +280,15 @@ Backend, continuação:
   conferir um `\u00a0`, compare o `textContent`.
 - O `npm install` mostra um aviso sobre o install script do `fsevents`. É
   inofensivo: o npm 11 bloqueia scripts por padrão.
+- **Chamadas reais à IA só com autorização do usuário**, com frases fictícias.
+  As 5 autorizadas na Fase 8 já foram usadas. Nos testes, use o `MockProvider`
+  ou o opencode falso de `tests/ai/test_opencode_provider.py`.
+- Scripts que sobem o app com `TestClient` (workers `spawn`) precisam de
+  `if __name__ == "__main__":`; sem isso, os workers não iniciam (`EOFError`).
+- Nos testes do Vitest, um `Response` só pode ser lido uma vez. Para várias
+  requisições, use `vi.fn(() => Promise.resolve(jsonResponse(...)))`.
+- O OpenCode v2 não informou custo (`step_finish`) nos eventos; a resposta vem
+  em eventos `text` (`part.text`).
 - O `ruff` tem `allowed-confusables` para `× · − º ℝ` etc. Em testes, caracteres
   de largura total vão como escapes `\uXXXX`.
 
@@ -263,20 +308,19 @@ cd frontend && npm test && npm run build
 
 ## Próximos passos
 
-- Fase 8 (próxima, aguardando o "pode seguir"): linguagem natural e IA.
-  - `AIProvider` (ADR 0004), com provedores `none` (padrão), `mock`,
-    `opencode` (gratuito) e `ollama`.
-  - Interpretador por regras para frases em português, como "fatore x² - 4" e
-    "derive x² + 3x".
-  - A IA só produz `intent` + `options` validados; nunca calcula.
-  - Testes só com o mock; qualquer chamada real exige autorização prévia.
+- Fase 8 concluída; aguardando a revisão e o "pode seguir" para a Fase 9
+  (Verification Engine). Decisões do usuário na Fase 8: caixa "Permitir IA"
+  por pedido; poucas chamadas reais com frases fictícias; Ollama adiado.
+- Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
+  `--dir`). O DevAI foi feito na v1.18 e pode ter quebrado.
 - Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
   resolução por regras; `docker-compose` quando houver Docker; servir os
   assets do Swagger localmente (hoje vêm do jsDelivr); ESLint no frontend;
   limite de tamanho do corpo HTTP antes da leitura; carregar o KaTeX sob
   demanda (o JS tem 490 kB); exibir decimais com vírgula; seletor de operação
   na interface (feito na Fase 5); sistemas não lineares; equações
-  trigonométricas; divisão com várias variáveis.
+  trigonométricas; divisão com várias variáveis; provedor Ollama (quando
+  instalado); regras locais para "o dobro de" e "a metade de".
 
 ## Histórico
 
@@ -298,3 +342,7 @@ cd frontend && npm test && npm run build
 - **Fase 7:** gráficos cartesianos (várias funções, cortes, eixo robusto,
   raízes e intercepto conferidos) com Plotly sob demanda; 696 testes no backend
   e 162 no frontend.
+- **Fase 8:** frases em português por regras locais; IA opcional ("Permitir
+  IA") pelo OpenCode, só com modelos gratuitos, isolada e validada pelo mesmo
+  pipeline; campo `interpretation`; 5 chamadas reais autorizadas; 822 testes
+  no backend e 181 no frontend.

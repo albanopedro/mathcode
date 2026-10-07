@@ -54,6 +54,18 @@ export interface ResultError {
   position: number | null;
 }
 
+/** How a request in words was read (docs/architecture.md, §4). */
+export interface Interpretation {
+  /** "rules": the local rules; "ai": an AI model, which only translated the phrase. */
+  method: "rules" | "ai";
+  intent: IntentName | null;
+  /** The math text that was calculated. */
+  expression: string;
+  options: Record<string, string | number>;
+  provider: string | null;
+  model: string | null;
+}
+
 export interface MathResult {
   success: boolean;
   intent: IntentName | null;
@@ -65,6 +77,8 @@ export interface MathResult {
   verification: VerificationReport | null;
   warnings: ResultWarning[];
   error: ResultError | null;
+  /** Null for plain math; set when the input was a phrase. */
+  interpretation: Interpretation | null;
 }
 
 const INTENTS: readonly string[] = [
@@ -121,6 +135,18 @@ const isError = (value: unknown): value is ResultError =>
   isString(value.message) &&
   (value.position === null || typeof value.position === "number");
 
+const isIntent = (value: unknown) => isString(value) && INTENTS.includes(value);
+
+const isInterpretation = (value: unknown): value is Interpretation =>
+  isObject(value) &&
+  (value.method === "rules" || value.method === "ai") &&
+  (value.intent === null || isIntent(value.intent)) &&
+  isString(value.expression) &&
+  isObject(value.options) &&
+  Object.values(value.options).every((option) => isString(option) || typeof option === "number") &&
+  isNullableString(value.provider) &&
+  isNullableString(value.model);
+
 /** Runtime check of an API response: the frontend never trusts the shape blindly. */
 export function isMathResult(value: unknown): value is MathResult {
   if (!isObject(value)) {
@@ -128,7 +154,7 @@ export function isMathResult(value: unknown): value is MathResult {
   }
   const shapeOk =
     typeof value.success === "boolean" &&
-    (value.intent === null || (isString(value.intent) && INTENTS.includes(value.intent))) &&
+    (value.intent === null || isIntent(value.intent)) &&
     isString(value.input) &&
     isNullableString(value.normalized_input) &&
     (value.result === null || isResultValue(value.result)) &&
@@ -136,7 +162,8 @@ export function isMathResult(value: unknown): value is MathResult {
     isObject(value.details) &&
     (value.verification === null || isVerification(value.verification)) &&
     isArrayOf(value.warnings, isMessage) &&
-    (value.error === null || isError(value.error));
+    (value.error === null || isError(value.error)) &&
+    (value.interpretation === null || isInterpretation(value.interpretation));
   if (!shapeOk) {
     return false;
   }

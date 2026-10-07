@@ -12,5 +12,6 @@
     "code": "PARSE_ERROR",
     "message": "A expressão está incompleta.",
     "position": 3
-  }
+  },
+  "interpretation": null
 }

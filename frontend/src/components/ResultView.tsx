@@ -4,6 +4,7 @@ import { LONG_RESULT_CHARS } from "../utils/display";
 import { graphDetails } from "../utils/graph";
 import { INTENT_LABELS } from "../utils/operations";
 import { GraphView } from "./GraphView";
+import { InterpretationNote } from "./InterpretationNote";
 import { MathFormula } from "./MathFormula";
 import { Verification } from "./Verification";
 
@@ -58,6 +59,8 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
           {line}
         </p>
       ))}
+
+      {result.interpretation && <InterpretationNote interpretation={result.interpretation} />}
 
       {result.normalized_input && (
         <p className="text-sm text-slate-500">

@@ -34,11 +34,15 @@ export async function fetchHealth(signal?: AbortSignal): Promise<HealthResponse>
 /**
  * Asks the API to calculate. Every answer of the API is a MathResult, also on
  * HTTP 500 and 503 (docs/architecture.md, §5), so the body decides, not the status.
+ *
+ * `allowAi` lets the API send a phrase its rules do not understand to an AI
+ * model (ADR 0009); it only applies without an intent.
  */
 export async function calculate(
   input: string,
   intent: IntentName | null = null,
   options: CalculationOptions | null = null,
+  allowAi = false,
   signal?: AbortSignal,
 ): Promise<MathResult> {
   // Without an intent, the API detects the operation from the input.
@@ -48,6 +52,9 @@ export async function calculate(
   }
   if (options) {
     body.options = options;
+  }
+  if (allowAi) {
+    body.allow_ai = true;
   }
   const response = await fetch("/api/calculate", {
     method: "POST",
