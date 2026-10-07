@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-07, ao fim da Fase 6.
+> Última atualização: 2026-10-07, ao fim da Fase 7.
 
 ## O que é
 
@@ -51,7 +51,8 @@ A IA (Fase 8+) só interpreta o pedido: nunca calcula.
 | 3: API | concluída e commitada (`49fb79d`) |
 | 4: Frontend básico | concluída e commitada (`4052f9d`) |
 | 5: Álgebra | concluída e commitada (`12fab27`) |
-| 6: Cálculo | **concluída, aguardando revisão e commit do usuário** |
+| 6: Cálculo | concluída e commitada (`b172eb8`) |
+| 7: Gráficos | **concluída, aguardando revisão e commit do usuário** |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -173,6 +174,17 @@ Backend, continuação:
     os laterais diferem ou há oscilação;
   - derivadas: `verified_numeric` (diferenças finitas); integrais definidas:
     `verified_numeric` (`mpmath.quad`); limites: no máximo `partial`.
+- **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
+  - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
+    como `graph`;
+  - 801 amostras por função pelo avaliador independente (sem NumPy);
+  - cortes (`null`) no domínio e em saltos maiores que a faixa visível;
+  - eixo y pelos percentis 2–98;
+  - raízes exatas pelo motor de equações, ou numéricas por sinal + bisseção;
+    um "zero" é relativo à escala **visível**, não ao maior |y|;
+  - no frontend, o Plotly básico é carregado via `import()`, com
+    `showSendToCloud: false` (vinha ligado por padrão e enviaria o gráfico
+    à nuvem).
 - **Passos de resolução:** a lista `steps` fica vazia até existirem regras
   reais. O SymPy não gera passos.
 - **Respostas HTTP** (architecture §5):
@@ -219,6 +231,13 @@ Backend, continuação:
   `subs` exato com números grandes: (1 + 1/x)^x em x = 10¹² travava.
 - O Vite escuta em `localhost` (IPv6). Um `curl` para `127.0.0.1:5180` falha;
   use `localhost:5180`.
+- Todo `VerificationStatus` precisa de mensagem em `verification/reports.py`;
+  um teste garante isso (o `not_applicable` sem mensagem já quebrou o pipeline).
+- Nos testes de componentes, o Plotly é simulado com `vi.mock`, porque o jsdom
+  não desenha.
+- O build do frontend avisa que há pedaços acima de 500 KB: o do Plotly
+  (intencional, sob demanda) e o principal (503 KB). A correção pendente é
+  carregar o KaTeX sob demanda.
 - Em React com Fast Refresh, arquivos de componente só exportam componentes.
   Constantes vão para `utils/`.
 - No Testing Library, `toHaveTextContent` remove espaços das pontas. Para
@@ -244,11 +263,13 @@ cd frontend && npm test && npm run build
 
 ## Próximos passos
 
-- Fase 7 (próxima, aguardando o "pode seguir"): gráficos. Funções cartesianas,
-  domínio, amostragem no backend (NumPy, ou o avaliador próprio), cortes nas
-  descontinuidades, várias funções, pontos relevantes e Plotly.js no frontend.
-  Decisões a tomar no início: biblioteca de gráfico (o Plotly.js está previsto
-  no ADR 0001, mas pesa cerca de 1 MB) e como informar a faixa de x.
+- Fase 8 (próxima, aguardando o "pode seguir"): linguagem natural e IA.
+  - `AIProvider` (ADR 0004), com provedores `none` (padrão), `mock`,
+    `opencode` (gratuito) e `ollama`.
+  - Interpretador por regras para frases em português, como "fatore x² - 4" e
+    "derive x² + 3x".
+  - A IA só produz `intent` + `options` validados; nunca calcula.
+  - Testes só com o mock; qualquer chamada real exige autorização prévia.
 - Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
   resolução por regras; `docker-compose` quando houver Docker; servir os
   assets do Swagger localmente (hoje vêm do jsDelivr); ESLint no frontend;
@@ -274,3 +295,6 @@ cd frontend && npm test && npm run build
 - **Fase 6:** derivadas, integrais (ln|u|, infinitas, divergentes) e limites
   (lados, domínio real), com campos na interface; 642 testes no backend e 137
   no frontend.
+- **Fase 7:** gráficos cartesianos (várias funções, cortes, eixo robusto,
+  raízes e intercepto conferidos) com Plotly sob demanda; 696 testes no backend
+  e 162 no frontend.

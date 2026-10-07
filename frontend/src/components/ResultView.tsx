@@ -1,7 +1,9 @@
 import type { MathResult, ResultValue, VerificationReport } from "../types/math";
 import { captions } from "../utils/captions";
 import { LONG_RESULT_CHARS } from "../utils/display";
+import { graphDetails } from "../utils/graph";
 import { INTENT_LABELS } from "../utils/operations";
+import { GraphView } from "./GraphView";
 import { MathFormula } from "./MathFormula";
 import { Verification } from "./Verification";
 
@@ -13,6 +15,7 @@ interface ResultViewProps {
 
 export function ResultView({ result, value, verification }: ResultViewProps) {
   const lines = captions(result);
+  const graph = graphDetails(result);
 
   return (
     <section
@@ -42,6 +45,8 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
           <MathFormula latex={value.latex} display />
         </div>
       )}
+
+      {graph && <GraphView details={graph} />}
 
       {value.approx !== null && (
         <p className="font-mono text-slate-700">

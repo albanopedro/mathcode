@@ -1,15 +1,25 @@
 from app.core.errors import ErrorCode, MathError
 from app.parsing import ParseResult
-from app.parsing.ast import Equation, Node, System
+from app.parsing.ast import Equation, ExpressionList, Node, System
 
 
-def require_expression(parsed: ParseResult) -> Node:
+def _reject_lists(parsed: ParseResult) -> None:
     if isinstance(parsed.tree, System):
         raise MathError(
             ErrorCode.INVALID_INPUT_FOR_INTENT,
             "Isto é um sistema de equações. Para resolvê-lo, use a operação de resolver sistemas.",
             parsed.tree.position,
         )
+    if isinstance(parsed.tree, ExpressionList):
+        raise MathError(
+            ErrorCode.INVALID_INPUT_FOR_INTENT,
+            "Isto é uma lista de expressões. Para desenhá-las juntas, use a operação Gráfico.",
+            parsed.tree.position,
+        )
+
+
+def require_expression(parsed: ParseResult) -> Node:
+    _reject_lists(parsed)
     if isinstance(parsed.tree, Equation):
         raise MathError(
             ErrorCode.INVALID_INPUT_FOR_INTENT,
@@ -20,12 +30,7 @@ def require_expression(parsed: ParseResult) -> Node:
 
 
 def require_equation(parsed: ParseResult) -> Equation:
-    if isinstance(parsed.tree, System):
-        raise MathError(
-            ErrorCode.INVALID_INPUT_FOR_INTENT,
-            "Isto é um sistema de equações. Para resolvê-lo, use a operação de resolver sistemas.",
-            parsed.tree.position,
-        )
+    _reject_lists(parsed)
     if not isinstance(parsed.tree, Equation):
         raise MathError(
             ErrorCode.INVALID_INPUT_FOR_INTENT,

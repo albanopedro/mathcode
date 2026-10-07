@@ -7,6 +7,11 @@ import type { MathResult } from "../types/math";
 import { LONG_RESULT_CHARS } from "../utils/display";
 import { Calculator } from "./Calculator";
 
+// The graph component is tested in GraphView.test.tsx; here Plotly stays out.
+vi.mock("plotly.js-basic-dist-min", () => ({
+  default: { newPlot: () => Promise.resolve(), purge: () => {} },
+}));
+
 function answer(result: MathResult, status = 200) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(result, status)));
 }
@@ -362,5 +367,35 @@ describe("Calculator: calculus fields", () => {
     await calculateText("x^2");
 
     expect(await screen.findByRole("alert")).toHaveTextContent(/ordem da derivada/);
+  });
+});
+
+describe("Calculator: graphs", () => {
+  it("offers the x range fields and sends them", async () => {
+    answer(fixtures.graphParabola);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Gráfico");
+    await user.type(screen.getByLabelText("x de"), "-2pi");
+    await user.type(screen.getByLabelText("x até"), "2pi");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "sen(x){Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({
+      input: "sen(x)",
+      intent: "graph",
+      options: { x_min: "-2pi", x_max: "2pi" },
+    });
+  });
+
+  it("shows the graph area, the points and the verification", async () => {
+    answer(fixtures.graphParabola);
+    await calculateText("y = x^2 - 4x + 3");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Gráfico")).toBeInTheDocument();
+    expect(within(result).getByRole("img", { name: /Gráfico de y = x\^2/ })).toBeInTheDocument();
+    expect(within(result).getByText("Raízes: x = 1; x = 3.")).toBeInTheDocument();
   });
 });

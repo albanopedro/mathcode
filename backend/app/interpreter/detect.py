@@ -7,12 +7,14 @@ from pydantic import BaseModel, ValidationError
 
 from app.core.errors import ErrorCode, MathError
 from app.core.limits import MAX_DERIVATIVE_ORDER
+from app.math_engine.graphing import is_graph_input
 from app.models.intents import (
     INTENT_OPTIONS,
     ArithmeticParams,
     DerivativeParams,
     ExpandParams,
     FactorParams,
+    GraphParams,
     IntegralParams,
     IntentName,
     IntentParams,
@@ -39,6 +41,7 @@ _TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
     IntentName.DERIVATIVE: (DerivativeParams, "expression"),
     IntentName.INTEGRAL: (IntegralParams, "expression"),
     IntentName.LIMIT: (LimitParams, "expression"),
+    IntentName.GRAPH: (GraphParams, "expression"),
 }
 
 # User-facing explanation of an invalid option.
@@ -49,6 +52,8 @@ _OPTION_PROBLEMS = {
     "upper": "O limite superior precisa ter de 1 a 100 caracteres.",
     "point": "Informe o ponto do limite, como 0, pi/2 ou inf.",
     "side": "O lado do limite precisa ser 'both', 'left' ou 'right'.",
+    "x_min": "O início da faixa de x precisa ter de 1 a 100 caracteres.",
+    "x_max": "O fim da faixa de x precisa ter de 1 a 100 caracteres.",
 }
 
 
@@ -105,6 +110,8 @@ def _explain(exc: ValidationError) -> str:
 def _detect(text: str) -> IntentName:
     """From the shape of the input. Factor, expand, division and calculus must be asked for."""
     tree = parse(text).tree
+    if is_graph_input(tree):  # "x^2; 2x + 1" or "y = x^2"
+        return IntentName.GRAPH
     if isinstance(tree, System):
         return IntentName.SOLVE_SYSTEM
     if isinstance(tree, Equation):

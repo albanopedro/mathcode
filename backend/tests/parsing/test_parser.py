@@ -8,6 +8,7 @@ from app.parsing.ast import (
     Binary,
     Call,
     Equation,
+    ExpressionList,
     Negate,
     Number,
     System,
@@ -179,3 +180,16 @@ def test_system_size_limit() -> None:
     with pytest.raises(MathError) as exc:
         parse("; ".join(f"x = {n}" for n in range(MAX_SYSTEM_EQUATIONS + 1)))
     assert exc.value.code is ErrorCode.LIMIT_EXCEEDED
+
+
+def test_list_of_expressions() -> None:
+    tree = parse("x^2; 2x + 1").tree
+    assert isinstance(tree, ExpressionList)
+    assert len(tree.expressions) == 2
+    assert parse("x^2, 2x + 1").canonical == "x^2; 2*x + 1"
+
+
+def test_list_of_numbers_is_still_a_comma_mistake() -> None:
+    with pytest.raises(MathError) as exc:
+        parse("1, 2")
+    assert "decimal" in exc.value.message

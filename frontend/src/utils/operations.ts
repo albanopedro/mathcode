@@ -1,7 +1,7 @@
 import type { IntentName } from "../types/math";
 
 /** Extra inputs an operation asks for, besides the expression. */
-export type OperationField = "variable" | "order" | "bounds" | "point" | "side";
+export type OperationField = "variable" | "order" | "bounds" | "point" | "side" | "x_range";
 
 export interface Operation {
   /** `null` lets the API detect the operation from the input. */
@@ -54,6 +54,12 @@ export const OPERATIONS: readonly Operation[] = [
     placeholder: "Ex.: sen(x)/x",
     fields: ["variable", "point", "side"],
   },
+  {
+    intent: "graph",
+    label: "Gráfico",
+    placeholder: "Ex.: x² - 4x + 3 ou sen(x); cos(x)",
+    fields: ["x_range"],
+  },
 ];
 
 /** Short name shown next to a result. */
@@ -68,6 +74,7 @@ export const INTENT_LABELS: Record<IntentName, string> = {
   derivative: "Derivada",
   integral: "Integral",
   limit: "Limite",
+  graph: "Gráfico",
 };
 
 /** What the extra inputs hold; empty texts mean "not given". */
@@ -79,6 +86,8 @@ export interface FieldValues {
   upper: string;
   point: string;
   side: "both" | "left" | "right";
+  x_min: string;
+  x_max: string;
 }
 
 export const EMPTY_FIELDS: FieldValues = {
@@ -88,6 +97,8 @@ export const EMPTY_FIELDS: FieldValues = {
   upper: "",
   point: "",
   side: "both",
+  x_min: "",
+  x_max: "",
 };
 
 export type CalculationOptions = Record<string, string | number>;
@@ -125,6 +136,14 @@ export function buildOptions(operation: Operation, values: FieldValues): Calcula
         break;
       case "side":
         options.side = values.side;
+        break;
+      case "x_range":
+        if (values.x_min.trim()) {
+          options.x_min = values.x_min.trim();
+        }
+        if (values.x_max.trim()) {
+          options.x_max = values.x_max.trim();
+        }
         break;
     }
   }

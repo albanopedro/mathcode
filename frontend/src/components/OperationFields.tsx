@@ -77,6 +77,35 @@ export function OperationFields({ operation, values, onChange }: OperationFields
           </p>
         </>
       )}
+      {has("x_range") && (
+        <>
+          <label className={LABEL_CLASS}>
+            x de
+            <input
+              type="text"
+              value={values.x_min}
+              onChange={(event) => set({ x_min: event.target.value })}
+              placeholder="-10"
+              autoComplete="off"
+              className={`${INPUT_CLASS} w-28`}
+            />
+          </label>
+          <label className={LABEL_CLASS}>
+            x até
+            <input
+              type="text"
+              value={values.x_max}
+              onChange={(event) => set({ x_max: event.target.value })}
+              placeholder="10"
+              autoComplete="off"
+              className={`${INPUT_CLASS} w-28`}
+            />
+          </label>
+          <p className="basis-full text-xs text-slate-500">
+            Vazios: de -10 a 10. Aceitam expressões como -2pi. Várias funções: separe com ;.
+          </p>
+        </>
+      )}
       {has("point") && (
         <label className={LABEL_CLASS}>
           Ponto

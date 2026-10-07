@@ -353,3 +353,75 @@ def test_invalid_options_are_answers() -> None:
     assert result.error is not None
     assert result.error.code is ErrorCode.INVALID_INPUT_FOR_INTENT
     assert "ordem" in result.error.message
+
+
+# -- Phase 7: graphs ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "plain", "latex"),
+    [
+        ("y = x^2 - 4x + 3", "y = x^2 - 4*x + 3", "y = x^{2} - 4 x + 3"),
+        (
+            "x^2; 2x + 1",
+            "y = x^2; y = 2*x + 1",
+            r"\begin{aligned} y_{1} &= x^{2} \\ y_{2} &= 2 x + 1 \end{aligned}",
+        ),
+    ],
+)
+def test_graphs_are_detected(text: str, plain: str, latex: str) -> None:
+    result = calculate(text)
+    assert result.intent is IntentName.GRAPH
+    assert result.result is not None
+    assert (result.result.plain, result.result.latex) == (plain, latex)
+
+
+def test_graph_details() -> None:
+    details = calculate("x^2 - 4x + 3", "graph", {"x_min": "0", "x_max": "4"}).details
+    assert details["variable"] == "x"
+    assert details["x_range"] == [0.0, 4.0]
+    assert details["x_range_text"] == ["0", "4"]
+    (function,) = details["functions"]
+    assert function["label"] == "x^2 - 4*x + 3"
+    assert len(function["x"]) == len(function["y"])
+    assert details["points"] == [
+        {
+            "function": 0,
+            "kind": "root",
+            "x": "1",
+            "y": "0",
+            "x_value": 1.0,
+            "y_value": 0.0,
+            "exact": True,
+        },
+        {
+            "function": 0,
+            "kind": "root",
+            "x": "3",
+            "y": "0",
+            "x_value": 3.0,
+            "y_value": 0.0,
+            "exact": True,
+        },
+        {
+            "function": 0,
+            "kind": "y_intercept",
+            "x": "0",
+            "y": "3",
+            "x_value": 0.0,
+            "y_value": 3.0,
+            "exact": True,
+        },
+    ]
+
+
+def test_graph_gaps_are_null_in_json() -> None:
+    result = calculate("sqrt(x)", "graph")
+    data = result.model_dump(mode="json")
+    assert None in data["details"]["functions"][0]["y"]
+
+
+def test_graph_without_points_is_not_applicable() -> None:
+    result = calculate("1/x", "graph", {"x_min": "1", "x_max": "5"})
+    assert result.verification is not None
+    assert result.verification.status is VerificationStatus.NOT_APPLICABLE

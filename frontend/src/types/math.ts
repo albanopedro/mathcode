@@ -13,7 +13,8 @@ export type IntentName =
   | "polynomial_division"
   | "derivative"
   | "integral"
-  | "limit";
+  | "limit"
+  | "graph";
 
 export type VerificationStatus =
   | "verified_symbolic"
@@ -77,6 +78,7 @@ const INTENTS: readonly string[] = [
   "derivative",
   "integral",
   "limit",
+  "graph",
 ];
 const STATUSES: readonly string[] = [
   "verified_symbolic",

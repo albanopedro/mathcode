@@ -44,7 +44,7 @@ feitos e um texto curto para o usuário. A palavra "garantido" nunca é usada.
 | integral definida | Quadratura tanh-sinh (`mpmath.quad`, sem SciPy), erro até 1e-10; divergente: `unverified` | `verified_numeric` |
 | limit | Avaliação aproximando-se do ponto até 1e-24 (ou até 1e24) por cada lado pedido; `failed` só se a sequência estabiliza longe do valor | `partial` |
 | solve_system (linear) | Substituição (simbólica e pelo avaliador independente) + **postos** da matriz dos coeficientes e da ampliada, para única, infinitas e nenhuma | `verified_symbolic` |
-| graph | — | `not_applicable` |
+| graph | As amostras são do próprio avaliador independente; os pontos destacados (raízes, intercepto) são conferidos por ele. Raízes numéricas resultam em `partial`; sem pontos, `not_applicable` ([ADR 0008](0008-graficos.md)) | `verified_numeric` |
 
 ### Regras da verificação numérica
 

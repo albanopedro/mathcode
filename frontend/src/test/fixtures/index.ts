@@ -8,6 +8,10 @@ import type { MathResult } from "../../types/math";
 import allReals from "./all-reals.json";
 import allRealsExcept from "./all-reals-except.json";
 import arithmetic from "./arithmetic.json";
+import graphNoPoints from "./graph-no-points.json";
+import graphParabola from "./graph-parabola.json";
+import graphTan from "./graph-tan.json";
+import graphTwo from "./graph-two.json";
 import derivative from "./derivative.json";
 import integralDefinite from "./integral-definite.json";
 import integralDivergent from "./integral-divergent.json";
@@ -39,6 +43,10 @@ import unverified from "./unverified.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  graphNoPoints,
+  graphParabola,
+  graphTan,
+  graphTwo,
   derivative,
   integralDefinite,
   integralDivergent,

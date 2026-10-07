@@ -16,8 +16,8 @@ Regras gerais:
 | 3 | API | concluída |
 | 4 | Frontend básico | concluída |
 | 5 | Álgebra | concluída |
-| 6 | Cálculo | concluída (aguardando revisão) |
-| 7 | Gráficos | — |
+| 6 | Cálculo | concluída |
+| 7 | Gráficos | concluída (aguardando revisão) |
 | 8 | Linguagem natural / IA | — |
 | 9 | Verification Engine | — |
 | 10 | Matemática avançada | — |
@@ -182,6 +182,24 @@ tabela do ADR 0003.
   ligados por uma linha.
 - Múltiplas funções e pontos relevantes (raízes, interceptos).
 - Plotly.js no frontend.
+
+- **Decidido com o usuário** ([ADR 0008](decisions/0008-graficos.md)):
+  Plotly.js básico, carregado sob demanda; faixa de x por campos (padrão −10 a
+  10).
+- **Entregue:**
+  - várias funções (`;`) e `y = f(x)`, com detecção automática;
+  - 801 amostras por função pelo avaliador independente (sem NumPy);
+  - cortes no domínio e nas assíntotas, e eixo y robusto;
+  - raízes (exatas ou numéricas) e intercepto, conferidos;
+  - gráfico interativo (zoom, arrastar) e pontos listados em texto.
+- **Testes:** 696 no backend (eram 642) e 162 no frontend (eram 137).
+- **Descoberto durante a fase:**
+  - `0` como raiz perdida quando cai exatamente numa amostra;
+  - raízes nas pontas da faixa;
+  - **falsas raízes perto de polos**, aceitas também pelo verificador;
+  - o status `not_applicable` sem mensagem, que quebrava o pipeline;
+  - o botão do Plotly que **envia o gráfico para a nuvem**, ligado por padrão;
+  - a legenda cortada no celular.
 
 ## Fase 8 — Linguagem natural / IA
 

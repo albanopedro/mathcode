@@ -18,3 +18,9 @@ MAX_SYSTEM_EQUATIONS = 10
 
 # Highest derivative order.
 MAX_DERIVATIVE_ORDER = 10
+
+# Graphs: functions drawn together, and samples per function.
+MAX_GRAPH_FUNCTIONS = 5
+GRAPH_SAMPLES = 801
+# Widest x range accepted, so that the samples still mean something.
+MAX_GRAPH_WIDTH = 10**6

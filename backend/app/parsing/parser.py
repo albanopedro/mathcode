@@ -11,12 +11,14 @@ from app.parsing.ast import (
     Constant,
     Degrees,
     Equation,
+    ExpressionList,
     Negate,
     Node,
     Number,
     System,
     Tree,
     Variable,
+    variables,
 )
 from app.parsing.tokenizer import Token, TokenKind
 from app.parsing.vocabulary import ALIASES, CONSTANTS, FUNCTIONS, RESERVED
@@ -58,7 +60,26 @@ class _Parser:
             self._advance()
             items.append(self._item())
         self._expect_end()
-        return self._system(items, separator)
+        if any(isinstance(item, Equation) for item in items):
+            return self._system(items, separator)
+        return self._expression_list(items, separator)
+
+    def _expression_list(self, items: list[Node | Equation], separator: Token) -> ExpressionList:
+        expressions = [item for item in items if not isinstance(item, Equation)]
+        # Only numbers, as in "1, 2": most likely a decimal comma typed with a space.
+        if not any(variables(item) for item in expressions):
+            raise MathError(
+                ErrorCode.PARSE_ERROR,
+                "Vírgula fora de uma função. Para número decimal, escreva sem espaço: 3,5.",
+                separator.position,
+            )
+        if len(expressions) > MAX_SYSTEM_EQUATIONS:
+            raise MathError(
+                ErrorCode.LIMIT_EXCEEDED,
+                f"A lista tem mais de {MAX_SYSTEM_EQUATIONS} expressões.",
+                separator.position,
+            )
+        return ExpressionList(tuple(expressions), separator.position)
 
     def _item(self) -> Node | Equation:
         left = self._expression(0)
@@ -73,12 +94,6 @@ class _Parser:
         return Equation(left, right, equals.position)
 
     def _system(self, items: list[Node | Equation], separator: Token) -> System:
-        if not any(isinstance(item, Equation) for item in items):
-            raise MathError(
-                ErrorCode.PARSE_ERROR,
-                "Vírgula fora de uma função. Para número decimal, escreva sem espaço: 3,5.",
-                separator.position,
-            )
         equations: list[Equation] = []
         for item in items:
             if not isinstance(item, Equation):

@@ -18,6 +18,7 @@ from app.formatting.results import (
     present_division,
     present_equation,
     present_factor,
+    present_graph,
     present_integral,
     present_limit,
     present_rewrite,
@@ -27,12 +28,14 @@ from app.math_engine.algebra import divide, expand, factor, simplify
 from app.math_engine.arithmetic import evaluate
 from app.math_engine.calculus import derivative, integral, limit
 from app.math_engine.equations import solve_equation
+from app.math_engine.graphing import graph
 from app.math_engine.systems import solve_system
 from app.models.intents import (
     ArithmeticParams,
     DerivativeParams,
     ExpandParams,
     FactorParams,
+    GraphParams,
     IntegralParams,
     IntentName,
     LimitParams,
@@ -47,6 +50,7 @@ from app.verification.algebra import verify_division, verify_factor, verify_rewr
 from app.verification.arithmetic import verify_arithmetic
 from app.verification.calculus import verify_derivative, verify_integral, verify_limit
 from app.verification.equations import verify_equation, verify_system
+from app.verification.graphing import verify_graph
 
 
 class Outcome(Protocol):
@@ -103,5 +107,6 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
             IntentName.INTEGRAL, IntegralParams, integral, verify_integral, present_integral
         ),
         IntentSpec(IntentName.LIMIT, LimitParams, limit, verify_limit, present_limit),
+        IntentSpec(IntentName.GRAPH, GraphParams, graph, verify_graph, present_graph),
     )
 }

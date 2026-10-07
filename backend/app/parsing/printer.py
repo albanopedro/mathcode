@@ -6,6 +6,7 @@ from app.parsing.ast import (
     Constant,
     Degrees,
     Equation,
+    ExpressionList,
     Negate,
     Node,
     Number,
@@ -22,6 +23,8 @@ _ATOM = 5
 def to_text(tree: Tree) -> str:
     if isinstance(tree, System):
         return "; ".join(to_text(equation) for equation in tree.equations)
+    if isinstance(tree, ExpressionList):
+        return "; ".join(_text(expression) for expression in tree.expressions)
     if isinstance(tree, Equation):
         return f"{_text(tree.left)} = {_text(tree.right)}"
     return _text(tree)

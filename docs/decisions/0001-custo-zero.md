@@ -50,7 +50,7 @@ Na prática, isso significa:
 | Tailwind CSS | estilos | MIT | 1 |
 | Vitest, Testing Library, jsdom | testes frontend | MIT | 1 |
 | KaTeX | renderizar LaTeX | MIT | 4 |
-| Plotly.js | gráficos | MIT | 7 |
+| Plotly.js (básico, `plotly.js-basic-dist-min`) | gráficos; o botão de envio à nuvem fica desligado | MIT | 7 |
 | MathLive | teclado/entrada matemática | MIT | 11 |
 | opencode (CLI) | provedor de IA gratuito | MIT | 8 |
 | Ollama | provedor de IA local (opcional) | MIT | 8 |

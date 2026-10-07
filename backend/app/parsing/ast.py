@@ -70,13 +70,23 @@ class System:
     position: int  # of the first separator
 
 
-type Tree = Node | Equation | System
+@dataclass(frozen=True)
+class ExpressionList:
+    """Expressions separated by ";", such as several functions to plot together."""
+
+    expressions: tuple[Node, ...]
+    position: int  # of the first separator
+
+
+type Tree = Node | Equation | System | ExpressionList
 
 
 def children(node: Tree) -> tuple[Tree, ...]:
     match node:
         case System(equations=equations):
             return equations
+        case ExpressionList(expressions=expressions):
+            return expressions
         case Negate(operand=operand) | Degrees(operand=operand):
             return (operand,)
         case Binary(left=left, right=right) | Equation(left=left, right=right):

@@ -16,6 +16,7 @@ from app.math_engine.calculus import (
     show_value,
 )
 from app.math_engine.equations import EquationOutcome, SolutionKind
+from app.math_engine.graphing import GraphOutcome
 from app.math_engine.systems import SystemKind, SystemOutcome
 from app.models.result import ResultValue
 
@@ -229,3 +230,46 @@ def present_limit(outcome: LimitOutcome) -> Presentation:
     if outcome.kind is LimitKind.NONEXISTENT or outcome.value is None:
         return Presentation(ResultValue(plain="não existe", latex=r"\nexists"), details)
     return Presentation(_value(outcome.value), details)
+
+
+# -- graphs -----------------------------------------------------------------------------------
+
+
+def present_graph(outcome: GraphOutcome) -> Presentation:
+    functions = outcome.functions
+    if len(functions) == 1:
+        latex_text = f"y = {latex(functions[0].expr)}"
+    else:
+        lines = [f"y_{{{i}}} &= {latex(f.expr)}" for i, f in enumerate(functions, start=1)]
+        latex_text = r"\begin{aligned} " + r" \\ ".join(lines) + r" \end{aligned}"
+    details: dict[str, Any] = {
+        "variable": outcome.variable.name,
+        "x_range": [float(sp.N(outcome.x_min, 15)), float(sp.N(outcome.x_max, 15))],
+        "x_range_text": list(outcome.x_range_text),
+        "y_range": list(outcome.y_range),
+        "y_clipped": outcome.y_clipped,
+        "functions": [
+            {"label": f.label, "latex": latex(f.expr), "x": list(f.xs), "y": list(f.ys)}
+            for f in functions
+        ],
+        "points": [
+            {
+                "function": p.function,
+                "kind": p.kind,
+                "x": plain(p.x) if p.x is not None else _short_float(p.x_value),
+                "y": plain(p.y) if p.y is not None else _short_float(p.y_value),
+                "x_value": p.x_value,
+                "y_value": p.y_value,
+                "exact": p.exact,
+            }
+            for p in outcome.points
+        ],
+    }
+    return Presentation(
+        ResultValue(plain="; ".join(f"y = {f.label}" for f in functions), latex=latex_text),
+        details,
+    )
+
+
+def _short_float(value: float) -> str:
+    return f"{value:.10g}"

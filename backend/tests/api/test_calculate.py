@@ -96,6 +96,15 @@ def test_malformed_options_are_422(api: TestClient, options: dict) -> None:
     assert status == 422
 
 
+def test_graph_through_the_api(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "x^2 - 1", "intent": "graph", "options": {"x_min": "-2", "x_max": "2"}}
+    )
+    assert status == 200
+    assert data["details"]["x_range"] == [-2.0, 2.0]
+    assert [p["x"] for p in data["details"]["points"] if p["kind"] == "root"] == ["-1", "1"]
+
+
 def test_warnings_are_returned(api: TestClient) -> None:
     _, data = post(api, {"input": "log(100)"})
     assert [w["code"] for w in data["warnings"]] == ["LOG_BASE_10"]

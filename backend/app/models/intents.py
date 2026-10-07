@@ -21,6 +21,7 @@ class IntentName(StrEnum):
     DERIVATIVE = "derivative"
     INTEGRAL = "integral"
     LIMIT = "limit"
+    GRAPH = "graph"
 
 
 class _Params(BaseModel):
@@ -84,6 +85,14 @@ class LimitParams(_Params):
     side: Literal["both", "left", "right"] = "both"
 
 
+class GraphParams(_Params):
+    """One or more functions ("x^2; 2x + 1" or "y = x^2"), plotted over [x_min, x_max]."""
+
+    expression: str
+    x_min: str | None = Field(default=None, min_length=1, max_length=100)
+    x_max: str | None = Field(default=None, min_length=1, max_length=100)
+
+
 type IntentParams = (
     ArithmeticParams
     | SimplifyParams
@@ -95,6 +104,7 @@ type IntentParams = (
     | DerivativeParams
     | IntegralParams
     | LimitParams
+    | GraphParams
 )
 
 # Options a request may carry for each intent, besides the input text.
@@ -103,4 +113,5 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.DERIVATIVE: frozenset({"variable", "order"}),
     IntentName.INTEGRAL: frozenset({"variable", "lower", "upper"}),
     IntentName.LIMIT: frozenset({"variable", "point", "side"}),
+    IntentName.GRAPH: frozenset({"x_min", "x_max"}),
 }

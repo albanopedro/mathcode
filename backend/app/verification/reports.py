@@ -12,6 +12,7 @@ _MESSAGES = {
         "completa. Veja como foi verificado."
     ),
     VerificationStatus.UNVERIFIED: "Não foi possível verificar este resultado.",
+    VerificationStatus.NOT_APPLICABLE: "Não há um resultado único a verificar aqui.",
     VerificationStatus.FAILED: "A verificação independente contradiz o resultado.",
 }
 

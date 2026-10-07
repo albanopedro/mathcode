@@ -1,4 +1,5 @@
 import type { MathResult } from "../types/math";
+import { graphDetails } from "./graph";
 
 const MULTIPLICITY_NAMES: Record<number, string> = { 2: "dupla", 3: "tripla", 4: "quádrupla" };
 
@@ -93,6 +94,27 @@ export function captions(result: MathResult): string[] {
       } else {
         lines.push(`Primitiva em relação a ${variable}; C é uma constante qualquer.`);
       }
+      break;
+    }
+    case "graph": {
+      const graph = graphDetails(result);
+      if (!graph) {
+        break;
+      }
+      const [from, to] = graph.x_range_text;
+      lines.push(`${graph.variable} de ${from} a ${to}.`);
+      graph.functions.forEach((f, index) => {
+        const of = graph.functions.length > 1 ? ` de y = ${f.label}` : "";
+        const points = graph.points.filter((p) => p.function === index);
+        const roots = points.filter((p) => p.kind === "root").map((p) => `${graph.variable} = ${p.x}`);
+        if (roots.length > 0) {
+          lines.push(`${roots.length === 1 ? "Raiz" : "Raízes"}${of}: ${roots.join("; ")}.`);
+        }
+        const intercept = points.find((p) => p.kind === "y_intercept");
+        if (intercept) {
+          lines.push(`Intercepto em y${of}: (0, ${intercept.y}).`);
+        }
+      });
       break;
     }
     case "limit": {
