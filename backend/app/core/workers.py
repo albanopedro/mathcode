@@ -13,6 +13,7 @@ import contextlib
 import logging
 import multiprocessing
 import signal
+import time
 from dataclasses import dataclass
 from multiprocessing.connection import Connection
 from multiprocessing.process import BaseProcess
@@ -26,13 +27,17 @@ logger = logging.getLogger(__name__)
 
 _CONTEXT = multiprocessing.get_context("spawn")
 _STARTUP_TIMEOUT = 60.0  # seconds to import SymPy and answer the warm-up job
-_WARM_UP = ("1 + 1", None, None)
+_WARM_UP = ("1 + 1", None, None, None)
+# The verification may use the job's time up to this share of the timeout; the
+# rest is kept for presenting the result (ADR 0010).
+VERIFICATION_SHARE = 0.8
 
-type Job = tuple[str, str | None, dict[str, str | int] | None]
+# (text, intent, options, seconds the verification may run after the job starts)
+type Job = tuple[str, str | None, dict[str, str | int] | None, float | None]
 
 
 def _serve(conn: Connection) -> None:
-    """Worker main loop: receive ``(text, intent, options)``, send back a MathResult as JSON."""
+    """Worker main loop: receive a ``Job``, send back a MathResult as JSON."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)  # Ctrl+C is handled by the server
     # Imported here, not at module level: the server process never loads SymPy.
     from app.calculator import calculate
@@ -44,8 +49,9 @@ def _serve(conn: Connection) -> None:
             return  # the server went away
         if job is None:
             return
-        text, intent, options = job
-        conn.send(calculate(text, intent, options).model_dump(mode="json"))
+        text, intent, options, verify_seconds = job
+        until = None if verify_seconds is None else time.monotonic() + verify_seconds
+        conn.send(calculate(text, intent, options, until).model_dump(mode="json"))
 
 
 @dataclass(eq=False)
@@ -103,7 +109,12 @@ class WorkerPool:
                 "O servidor está ocupado com outros cálculos. Tente de novo em instantes.",
             )
 
-        job: Job = (text, intent.value if intent else None, options)
+        job: Job = (
+            text,
+            intent.value if intent else None,
+            options,
+            self._timeout * VERIFICATION_SHARE,
+        )
         try:
             data = await asyncio.to_thread(self._roundtrip, worker, job)
         except _Timeout:

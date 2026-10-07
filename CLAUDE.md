@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-07, ao fim da Fase 8 (aguardando revisão).
+> Última atualização: 2026-10-07, ao fim da Fase 9 (aguardando revisão).
 
 ## O que é
 
@@ -53,8 +53,9 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 5: Álgebra | concluída e commitada (`12fab27`) |
 | 6: Cálculo | concluída e commitada (`b172eb8`) |
 | 7: Gráficos | concluída e commitada (`978dab5`) |
-| 8: Linguagem natural / IA | **concluída, aguardando revisão e commit** |
-| 9: Verification Engine | próxima |
+| 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
+| 9: Verification Engine | **concluída, aguardando revisão e commit** |
+| 10: Matemática avançada | próxima |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -71,7 +72,8 @@ texto → interpreter/language.py (frases em PT → intent + texto matemático)
                       senão arithmetic. factor/expand/polynomial_division só por intent explícito)
       → math_engine/ (arithmetic, algebra [simplify/factor/expand/divide], equations, systems,
                       polynomials [forma pela AST, real_roots, Sturm])
-      → verification/ (avaliador mpmath independente da AST + checagens simbólicas)
+      → verification/ (avaliador mpmath independente + checagens estruturadas + 2º método,
+                       com prazo próprio: estourou/quebrou → unverified com motivo)
       → formatting/ (plain / LaTeX / aproximação)
       → MathResult (models/result.py), com `interpretation` quando era frase
 calculator.py: calculate(text, intent=None, options=None) -> MathResult  (nunca lança exceção)
@@ -96,7 +98,16 @@ Arquivos-chave do backend (`backend/app/`):
 - `parsing/build.py`: AST → SymPy. É aqui que ficam as convenções de domínio e
   o registro dos denominadores.
 - `verification/numeric.py`: o avaliador independente, com precisão adaptativa
-  e limite de erro.
+  e limite de erro (`digits` mínimo opcional, usado nas derivadas).
+- `verification/` da Fase 9 (ADR 0010):
+  - `reports.py`: `passed`/`failed`/`inconclusive`, `report`, `failure`,
+    `unverified`, `message_for`;
+  - `symbolic.py`: `reduces_to_zero` (expand → cancel → simplify com 1 s) e
+    `compare_constants` (igual / diferente / indecidido);
+  - `exact.py` (frações), `differentiate.py` (derivador próprio, sem `diff`),
+    `continuity.py`, `newton_leibniz.py`;
+  - `deadline.py`: `time_limit(seconds, step=)`, `VerificationTimeout`
+    (BaseException) e `StepTimeout`.
 - `api/`: rotas sob `/api`, que são `health` e `calculate`. O corpo é
   `{input, intent?, options?, allow_ai?}`, com `extra="forbid"` e `input` de
   até 2 000 caracteres. `OptionValue` (tipos estritos) fica em
@@ -159,9 +170,21 @@ Backend, continuação:
   - `xy` é um símbolo desconhecido (variáveis têm uma letra);
   - `1/2x` vira `(1/2)·x`, com aviso;
   - `f(x)` vira `f·x`, com aviso.
-- **Verificação** ([ADR 0003](docs/decisions/0003-verificacao.md)):
+- **Verificação** ([ADR 0003](docs/decisions/0003-verificacao.md),
+  [ADR 0010](docs/decisions/0010-verification-engine.md)):
   - status possíveis: `verified_symbolic`, `verified_numeric`, `partial`,
     `unverified`, `not_applicable` e `failed`;
+  - cada checagem tem `kind` (symbolic, substitution, numeric, comparison,
+    completeness, domain, execution) e `outcome` (passed, failed,
+    inconclusive); `methods` é calculado; `reason` só em partial/unverified;
+    o modelo **recusa** relatórios incoerentes (ex.: partial sem nada que
+    passou);
+  - comparação de métodos: frações exatas, derivador próprio, continuidade,
+    Newton–Leibniz. Discordância numérica → failed; igualdade não provada →
+    inconclusiva (nunca reprova um resultado certo);
+  - prazo: 80% do timeout (`VERIFICATION_SHARE`), 1,5 s por comparação, 1 s por
+    `simplify`; estourou ou quebrou → `unverified` com `deadline` /
+    `internal_error`, sem perder o resultado;
   - `failed` nunca é exibido: vira o erro `VERIFICATION_FAILED`;
   - a tolerância é de 30 algarismos, com precisão adaptativa. A antiga, `1e-9`,
     aceitava erros, e uma precisão fixa rejeitava resultados certos com números
@@ -193,8 +216,10 @@ Backend, continuação:
     o integrando é;
   - limites só pelos lados reais (`ONE_SIDED_DOMAIN`), com "não existe" quando
     os laterais diferem ou há oscilação;
-  - derivadas: `verified_numeric` (diferenças finitas); integrais definidas:
-    `verified_numeric` (`mpmath.quad`); limites: no máximo `partial`.
+  - derivadas: diferenças finitas (80 + 10·ordem dígitos) + derivador próprio
+    → `verified_symbolic`; integrais definidas: `mpmath.quad`, e Newton–Leibniz
+    em polinômios/racionais; limites: `partial`, ou `verified_symbolic` por
+    continuidade.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -289,6 +314,13 @@ Backend, continuação:
   requisições, use `vi.fn(() => Promise.resolve(jsonResponse(...)))`.
 - O OpenCode v2 não informou custo (`step_finish`) nos eventos; a resposta vem
   em eventos `text` (`part.text`).
+- O prazo da verificação usa `SIGALRM`: só funciona na thread principal (no
+  worker e no pytest, sim; em threads, não faz nada). `time.sleep` também é
+  interrompido, o que os testes usam para simular lentidão.
+- `sp.simplify` em raízes `CRootOf` pode levar minutos (polinômio mínimo). Use
+  divisibilidade (`equations._substitutes_exactly`).
+- O texto simples (`formatting/expressions.plain`) escreve ln como `log`, que
+  na entrada é base 10. Pendência registrada, fora do escopo da Fase 9.
 - O `ruff` tem `allowed-confusables` para `× · − º ℝ` etc. Em testes, caracteres
   de largura total vão como escapes `\uXXXX`.
 
@@ -308,9 +340,29 @@ cd frontend && npm test && npm run build
 
 ## Próximos passos
 
-- Fase 8 concluída; aguardando a revisão e o "pode seguir" para a Fase 9
-  (Verification Engine). Decisões do usuário na Fase 8: caixa "Permitir IA"
-  por pedido; poucas chamadas reais com frases fictícias; Ollama adiado.
+- Fase 9: decisões do usuário (2026-10-07):
+  1. **Checagens estruturadas** no `VerificationReport`: cada checagem com tipo
+     (simbólica, substituição, numérica, comparação de métodos, completude,
+     domínio), resultado (passou / falhou / inconclusiva) e texto; o relatório
+     ganha as estratégias usadas e o motivo quando não verifica. Muda a API e o
+     frontend (ícones por checagem).
+  2. **Comparações de métodos** (todas aprovadas):
+     - derivada: derivador próprio (regras sobre a árvore), comparado com o
+       `diff` do SymPy → `verified_symbolic`;
+     - aritmética: frações exatas (`Fraction`) para contas só com racionais;
+     - limite: continuidade no ponto (interior do domínio) → `verified_symbolic`;
+     - integral definida: Newton–Leibniz para polinômios e racionais sem polo
+       no intervalo (Sturm).
+  3. **Não verificável vira "não verificado" com motivo**, não erro: prazo
+     próprio para a verificação dentro do worker (SIGALRM) e exceção num
+     verificador → `unverified`. Trocar a substituição lenta de raízes
+     `CRootOf` (sp.simplify → minpoly, >20 s em `x^20 - 3x^7 + 1 = 0`) por
+     divisibilidade de polinômios.
+- Fase 9 concluída; aguardando a revisão e o "pode seguir" para a Fase 10
+  (Matemática avançada: estatística, probabilidade, matrizes, vetores,
+  geometria, trigonometria — **um domínio por alteração**).
+- Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
+  chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
   `--dir`). O DevAI foi feito na v1.18 e pode ter quebrado.
 - Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
@@ -320,7 +372,9 @@ cd frontend && npm test && npm run build
   demanda (o JS tem 490 kB); exibir decimais com vírgula; seletor de operação
   na interface (feito na Fase 5); sistemas não lineares; equações
   trigonométricas; divisão com várias variáveis; provedor Ollama (quando
-  instalado); regras locais para "o dobro de" e "a metade de".
+  instalado); regras locais para "o dobro de" e "a metade de"; comparação de
+  métodos para integrais com limites irracionais e trigonométricas;
+  continuidade lateral em pontos de borda; texto simples de ln.
 
 ## Histórico
 
@@ -346,3 +400,8 @@ cd frontend && npm test && npm run build
   IA") pelo OpenCode, só com modelos gratuitos, isolada e validada pelo mesmo
   pipeline; campo `interpretation`; 5 chamadas reais autorizadas; 822 testes
   no backend e 181 no frontend.
+- **Fase 9:** Verification Engine formal (ADR 0010): checagens estruturadas,
+  comparação de métodos (frações exatas, derivador próprio, continuidade,
+  Newton–Leibniz), prazos aninhados (não verificável não vira erro), raízes
+  `CRootOf` por divisibilidade, diferenças finitas de ordem alta corrigidas,
+  matriz de adulteração; 950 testes no backend e 189 no frontend.

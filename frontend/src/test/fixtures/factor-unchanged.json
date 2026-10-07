@@ -14,12 +14,24 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "symbolic+numeric",
     "checks": [
-      "Avaliador independente: a expressão original e o resultado coincidem em 6 ponto(s) sorteados.",
-      "A diferença entre a expressão original e a forma fatorada se reduz a 0."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Avaliador independente: a expressão original e o resultado coincidem em 6 ponto(s) sorteados."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A diferença entre a expressão original e a forma fatorada se reduz a 0 (diretamente)."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "symbolic"
+    ]
   },
   "warnings": [],
   "error": null,

@@ -16,11 +16,18 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "sturm",
     "checks": [
-      "Pelo teorema de Sturm, o polinômio x^2 + 1 tem 0 raiz(es) real(is) distinta(s)."
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Pelo teorema de Sturm, o polinômio x^2 + 1 tem 0 raiz(es) real(is) distinta(s)."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "completeness"
+    ]
   },
   "warnings": [
     {

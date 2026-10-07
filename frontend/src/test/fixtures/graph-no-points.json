@@ -1640,11 +1640,18 @@
   },
   "verification": {
     "status": "not_applicable",
-    "method": "sampling",
     "checks": [
-      "Os pontos do gráfico foram calculados pelo avaliador independente; não há raízes nem intercepto a conferir nesta faixa."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Os pontos do gráfico foram calculados pelo avaliador independente; não há raízes nem intercepto a conferir nesta faixa."
+      }
     ],
-    "message": "Não há um resultado único a verificar aqui."
+    "message": "Não há um resultado único a verificar aqui.",
+    "reason": null,
+    "methods": [
+      "numeric"
+    ]
   },
   "warnings": [],
   "error": null,

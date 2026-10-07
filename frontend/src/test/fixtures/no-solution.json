@@ -16,11 +16,18 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "symbolic",
     "checks": [
-      "Os termos com x se cancelam e sobra -1 = 0, que é falso."
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Os termos com x se cancelam e sobra -1 = 0, que é falso."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "symbolic"
+    ]
   },
   "warnings": [],
   "error": null,

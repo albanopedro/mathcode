@@ -68,7 +68,34 @@ describe("Calculator", () => {
 
     const result = await screen.findByRole("region", { name: "Resultado" });
     expect(within(result).getByText("0.3")).toBeInTheDocument();
-    expect(within(result).getByText(/conferido numericamente por um avaliador independente/)).toBeInTheDocument();
+    // Only rationals: exact fractions are a second method (ADR 0010).
+    expect(within(result).getByText("Resultado verificado simbolicamente.")).toBeInTheDocument();
+  });
+
+  it("lists each check with its strategy and outcome", async () => {
+    answer(fixtures.arithmetic);
+    await calculateText("0.1 + 0.2");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const checks = within(within(result).getByRole("list", { name: "Checagens" })).getAllByRole(
+      "listitem",
+    );
+    expect(checks).toHaveLength(2);
+    expect(checks[0]).toHaveTextContent("Numérica");
+    expect(checks[0]).toHaveTextContent(/Passou: Um avaliador independente/);
+    expect(checks[1]).toHaveTextContent("Comparação de métodos");
+    expect(checks[1]).toHaveTextContent(/frações exatas/);
+  });
+
+  it("marks what a partial verification could not prove", async () => {
+    answer(fixtures.partial);
+    await calculateText("sqrt(x + 2) = x");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const checks = within(result).getAllByRole("listitem");
+    const open = checks.find((check) => check.textContent?.includes("Inconclusiva:"));
+    expect(open).toHaveTextContent("Completude");
+    expect(open).toHaveTextContent(/não foi provado que não existem outras soluções/i);
   });
 
   it("shows a very long result as wrapping text instead of a formula", async () => {
@@ -153,9 +180,12 @@ describe("Calculator", () => {
       error: { code: "VERIFICATION_FAILED", message: "Não confirmado.", position: null },
       verification: {
         status: "failed",
-        method: "independent_numeric",
-        checks: ["O avaliador independente obteve 4."],
+        methods: ["numeric"],
+        checks: [
+          { kind: "numeric", outcome: "failed", message: "O avaliador independente obteve 4." },
+        ],
         message: "A verificação independente contradiz o resultado.",
+        reason: null,
       },
     });
     await calculateText("2 + 2");
@@ -164,7 +194,9 @@ describe("Calculator", () => {
     expect(
       within(alert).getByText("A verificação independente contradiz o resultado."),
     ).toBeInTheDocument();
-    expect(within(alert).getByText("O avaliador independente obteve 4.")).toBeInTheDocument();
+    const check = within(alert).getByRole("listitem");
+    expect(check).toHaveTextContent("Numérica");
+    expect(check).toHaveTextContent("Falhou: O avaliador independente obteve 4.");
   });
 
   it("shows when the API cannot be reached", async () => {

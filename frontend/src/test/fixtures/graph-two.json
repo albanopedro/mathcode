@@ -3287,14 +3287,34 @@
   },
   "verification": {
     "status": "verified_numeric",
-    "method": "points",
     "checks": [
-      "y = x^2: as raízes vêm da resolução exata de f(x) = 0, que provou não haver outras.",
-      "y = x^2: o avaliador independente confirma os 2 ponto(s) destacados (1 raiz(es)).",
-      "y = 2*x + 1: as raízes vêm da resolução exata de f(x) = 0, que provou não haver outras.",
-      "y = 2*x + 1: o avaliador independente confirma os 2 ponto(s) destacados (1 raiz(es))."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "y = x^2: o avaliador independente confirma os 2 ponto(s) destacados (1 raiz(es))."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "y = x^2: as raízes vêm da resolução exata de f(x) = 0, que provou não haver outras."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "y = 2*x + 1: o avaliador independente confirma os 2 ponto(s) destacados (1 raiz(es))."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "y = 2*x + 1: as raízes vêm da resolução exata de f(x) = 0, que provou não haver outras."
+      }
     ],
-    "message": "Resultado conferido numericamente por um avaliador independente."
+    "message": "Resultado conferido numericamente por um avaliador independente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

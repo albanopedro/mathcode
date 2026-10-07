@@ -18,11 +18,18 @@
   },
   "verification": {
     "status": "unverified",
-    "method": "quadrature",
     "checks": [
-      "A divergência da integral não é conferida numericamente."
+      {
+        "kind": "numeric",
+        "outcome": "inconclusive",
+        "message": "A divergência da integral não é conferida numericamente."
+      }
     ],
-    "message": "Não foi possível verificar este resultado."
+    "message": "Não foi possível verificar este resultado.",
+    "reason": "no_strategy",
+    "methods": [
+      "numeric"
+    ]
   },
   "warnings": [],
   "error": null,

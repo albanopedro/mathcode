@@ -11,12 +11,25 @@
   "steps": [],
   "details": {},
   "verification": {
-    "status": "verified_numeric",
-    "method": "independent_numeric",
+    "status": "verified_symbolic",
     "checks": [
-      "Um avaliador independente (mpmath, com precisão ajustada ao tamanho dos números) obteve 0.3, igual ao resultado em pelo menos 30 algarismos significativos."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Um avaliador independente (mpmath, com precisão ajustada ao tamanho dos números) obteve 0.3, igual ao resultado em pelo menos 30 algarismos significativos."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Refazendo a conta com frações exatas (aritmética racional do Python, sem o SymPy), obtém-se exatamente o mesmo número."
+      }
     ],
-    "message": "Resultado conferido numericamente por um avaliador independente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "comparison"
+    ]
   },
   "warnings": [],
   "error": null,

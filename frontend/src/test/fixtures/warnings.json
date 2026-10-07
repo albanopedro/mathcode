@@ -12,11 +12,18 @@
   "details": {},
   "verification": {
     "status": "verified_numeric",
-    "method": "independent_numeric",
     "checks": [
-      "Um avaliador independente (mpmath, com precisão ajustada ao tamanho dos números) obteve 1.01196837590714, igual ao resultado em pelo menos 30 algarismos significativos."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Um avaliador independente (mpmath, com precisão ajustada ao tamanho dos números) obteve 1.01196837590714, igual ao resultado em pelo menos 30 algarismos significativos."
+      }
     ],
-    "message": "Resultado conferido numericamente por um avaliador independente."
+    "message": "Resultado conferido numericamente por um avaliador independente.",
+    "reason": null,
+    "methods": [
+      "numeric"
+    ]
   },
   "warnings": [
     {

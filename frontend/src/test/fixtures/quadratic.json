@@ -23,12 +23,24 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "substitution+sturm",
     "checks": [
-      "Substituindo cada uma das 2 soluções na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
-      "Pelo teorema de Sturm, o polinômio x^2 - 5*x + 6 tem exatamente 2 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Substituindo cada uma das 2 soluções na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Pelo teorema de Sturm, o polinômio x^2 - 5*x + 6 tem exatamente 2 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "substitution",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

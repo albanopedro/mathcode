@@ -17,12 +17,25 @@
     "converges": true
   },
   "verification": {
-    "status": "verified_numeric",
-    "method": "quadrature",
+    "status": "verified_symbolic",
     "checks": [
-      "A integração numérica independente (tanh-sinh, mpmath) dá 0.333333333333333, igual ao resultado com erro relativo menor que 10⁻¹⁰."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "A integração numérica independente (tanh-sinh, mpmath) dá 0.333333333333333, igual ao resultado com erro relativo menor que 10⁻¹⁰."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Por Newton–Leibniz, F(b) − F(a) = 1/3, igual ao resultado (diretamente); a primitiva F = x^3/3 é suave em [0, 1] e F' é o integrando."
+      }
     ],
-    "message": "Resultado conferido numericamente por um avaliador independente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "comparison"
+    ]
   },
   "warnings": [],
   "error": null,

@@ -21,12 +21,24 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "substitution+sturm",
     "checks": [
-      "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
-      "Pelo teorema de Sturm, o polinômio 2*x - 12 tem exatamente 1 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Pelo teorema de Sturm, o polinômio 2*x - 12 tem exatamente 1 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "substitution",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

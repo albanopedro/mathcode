@@ -1,5 +1,6 @@
 """Calculus verifiers: confirm correct results and catch tampered ones."""
 
+import time
 from dataclasses import replace
 
 import pytest
@@ -17,6 +18,7 @@ from app.math_engine.calculus import (
 from app.models.intents import DerivativeParams, IntegralParams, LimitParams
 from app.models.result import VerificationStatus as S
 from app.parsing.build import symbol
+from app.verification import calculus as calculus_module
 from app.verification.calculus import verify_derivative, verify_integral, verify_limit
 
 x = symbol("x")
@@ -39,17 +41,65 @@ def lim(expression: str, point: str, side: str = "both") -> LimitOutcome:
 
 @pytest.mark.parametrize(
     ("expression", "order"),
-    [("x^2 + 3x", 1), ("x^2 sin(x)", 3), ("e^(2x)", 10), ("ln(x)", 1), ("abs(x)", 1)],
+    [
+        ("x^2 + 3x", 1),
+        ("x^2 sin(x)", 3),
+        ("e^(2x)", 10),
+        ("ln(x)", 1),
+        ("abs(x)", 1),
+        ("x^x", 2),
+        ("asin(x/2) + atan(x^2)", 1),
+        ("log(x; 2)", 1),
+    ],
 )
-def test_derivatives_are_verified_numerically(expression: str, order: int) -> None:
+def test_derivatives_are_verified_by_two_methods(expression: str, order: int) -> None:
+    """Finite differences (numeric) and a second differentiator (textbook rules)."""
+    report = verify_derivative(d(expression, order))
+    assert report.status is S.VERIFIED_SYMBOLIC
+    assert report.methods == ["numeric", "comparison"]
+    assert "diferenças finitas" in report.checks[0].message
+    assert "segundo derivador" in report.checks[1].message
+
+
+@pytest.mark.parametrize(
+    ("expression", "order"),
+    [("sin(x)^10 cos(x)^10", 10), ("1/(1 + x^2)", 10), ("sin(5x)", 10), ("e^(x^2)", 8)],
+)
+def test_high_order_finite_differences_alone_pass(
+    expression: str, order: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A fixed step of 10^-5 gave a relative error of 3.5e-7 at order 10 (Phase 9 fix)."""
+    monkeypatch.setattr(calculus_module, "differentiate", lambda *args: None)
     report = verify_derivative(d(expression, order))
     assert report.status is S.VERIFIED_NUMERIC
-    assert "diferenças finitas" in report.checks[0]
+    assert report.checks[0].outcome == "passed"
+
+
+def test_derivative_outside_the_second_differentiator_is_numeric() -> None:
+    """The 2nd derivative of abs(x^2 - 1) involves sign(u), outside the rule table."""
+    report = verify_derivative(d("abs(x^2 - 1)", 2))
+    assert report.status is S.VERIFIED_NUMERIC
+    assert report.checks[1].outcome == "inconclusive"
+    assert "sign" in report.checks[1].message
 
 
 def test_derivative_with_another_variable() -> None:
     outcome = derivative(DerivativeParams(expression="x y^2", variable="y"))
-    assert verify_derivative(outcome).status is S.VERIFIED_NUMERIC
+    assert verify_derivative(outcome).status is S.VERIFIED_SYMBOLIC
+
+
+def test_a_slow_comparison_is_inconclusive_not_fatal(monkeypatch: pytest.MonkeyPatch) -> None:
+    def slow(*args: object) -> None:
+        time.sleep(5)
+
+    monkeypatch.setattr(calculus_module, "differentiate", slow)
+    monkeypatch.setattr(calculus_module, "COMPARISON_SECONDS", 0.05)
+
+    report = verify_derivative(d("x^2 sin(x)"))
+
+    assert report.status is S.VERIFIED_NUMERIC
+    assert report.checks[1].outcome == "inconclusive"
+    assert "não terminou a tempo" in report.checks[1].message
 
 
 def test_derivative_catches_a_wrong_result() -> None:
@@ -74,7 +124,7 @@ def test_antiderivatives_are_verified_symbolically(expression: str) -> None:
 
 def test_absolute_value_in_log_is_explained() -> None:
     report = verify_integral(i("1/x"))
-    assert any("ln|u|" in check for check in report.checks)
+    assert any("ln|u|" in check.message for check in report.checks)
 
 
 def test_antiderivative_catches_a_wrong_result() -> None:
@@ -95,9 +145,8 @@ def test_antiderivative_valid_only_for_positive_x_fails() -> None:
 @pytest.mark.parametrize(
     ("expression", "lower", "upper"),
     [
-        ("x^2", "0", "1"),
         ("sen(x)", "0", "pi"),
-        ("1/x^2", "1", "inf"),
+        ("1/x^2", "1", "inf"),  # infinite bound: outside Newton–Leibniz here
         ("e^(-x^2)", "-inf", "inf"),
         ("1/sqrt(x)", "0", "1"),
     ],
@@ -107,12 +156,46 @@ def test_definite_integrals_are_verified_by_quadrature(
 ) -> None:
     report = verify_integral(i(expression, lower, upper))
     assert report.status is S.VERIFIED_NUMERIC
-    assert "tanh-sinh" in report.checks[0]
+    assert report.methods == ["numeric"]
+    assert "tanh-sinh" in report.checks[0].message
+
+
+@pytest.mark.parametrize(
+    ("expression", "lower", "upper", "value"),
+    [
+        ("x^2", "0", "1", sp.Rational(1, 3)),
+        ("x^3 - 2x", "-1", "3", sp.Integer(12)),
+        ("1/(x^2 + 1)", "0", "1", sp.pi / 4),
+        ("1/x", "1", "2", sp.log(2)),
+        ("1/x", "-2", "-1", -sp.log(2)),  # ln|x|: a real antiderivative on [-2, -1]
+        ("(x^2 + 1)/(x - 3)", "0", "2", 8 - 10 * sp.log(3)),
+        ("1/(x^2 + x + 1)", "0", "1", sp.sqrt(3) * sp.pi / 9),
+    ],
+)
+def test_newton_leibniz_proves_definite_integrals(
+    expression: str, lower: str, upper: str, value: sp.Expr
+) -> None:
+    outcome = i(expression, lower, upper)
+    assert sp.simplify(outcome.value - value) == 0
+    report = verify_integral(outcome)
+    assert report.status is S.VERIFIED_SYMBOLIC
+    assert report.methods == ["numeric", "comparison"]
+    assert "Newton–Leibniz" in report.checks[1].message
 
 
 def test_definite_integral_catches_a_wrong_value() -> None:
     outcome = i("x^2", "0", "1")
-    assert verify_integral(replace(outcome, value=sp.Rational(1, 2))).status is S.FAILED
+    report = verify_integral(replace(outcome, value=sp.Rational(1, 2)))
+    assert report.status is S.FAILED
+
+
+def test_newton_leibniz_alone_catches_a_tiny_error() -> None:
+    """1/3 + 10^-12 passes quadrature's 10^-10 tolerance, not the exact comparison."""
+    outcome = i("x^2", "0", "1")
+    report = verify_integral(replace(outcome, value=sp.Rational(1, 3) + sp.Rational(1, 10**12)))
+    assert report.status is S.FAILED
+    assert report.checks[0].outcome == "passed"  # quadrature could not tell
+    assert report.checks[1].outcome == "failed"
 
 
 def test_divergence_is_not_claimed_as_verified() -> None:
@@ -134,10 +217,54 @@ def test_divergence_is_not_claimed_as_verified() -> None:
         ("tan(x)", "pi/2", "both"),
     ],
 )
-def test_limits_are_at_most_partial(expression: str, point: str, side: str) -> None:
+def test_limits_without_continuity_are_at_most_partial(
+    expression: str, point: str, side: str
+) -> None:
     report = verify_limit(lim(expression, point, side))
     assert report.status is S.PARTIAL
-    assert "não prova" in report.checks[-1]
+    assert report.reason == "numeric_evidence_only"
+    assert "não prova" in report.checks[-1].message
+
+
+@pytest.mark.parametrize(
+    ("expression", "point", "side"),
+    [
+        ("x^2 + 1", "2", "both"),
+        ("sin(x)", "pi/6", "both"),
+        ("ln(x)", "e", "both"),
+        ("sqrt(x)", "4", "left"),
+        ("(x^2 - 1)/(x + 1)", "3", "both"),
+        ("tan(x)", "pi/4", "right"),
+    ],
+)
+def test_limits_at_continuity_points_are_proved(expression: str, point: str, side: str) -> None:
+    report = verify_limit(lim(expression, point, side))
+    assert report.status is S.VERIFIED_SYMBOLIC
+    assert report.checks[0].kind == "comparison"
+    assert "contínua" in report.checks[0].message
+
+
+def test_continuity_catches_a_wrong_limit() -> None:
+    outcome = lim("x^2 + 1", "2")
+    report = verify_limit(replace(outcome, value=sp.Integer(6)))
+    assert report.status is S.FAILED
+    assert report.checks[0].kind == "comparison"
+
+
+def test_continuity_catches_a_false_nonexistent_limit() -> None:
+    outcome = lim("x^2 + 1", "2")
+    nonexistent = replace(
+        outcome, kind=LimitKind.NONEXISTENT, value=None, left=sp.Integer(5), right=sp.Integer(4)
+    )
+    assert verify_limit(nonexistent).status is S.FAILED
+
+
+def test_continuity_explains_why_it_does_not_apply() -> None:
+    report = verify_limit(lim("sin(x)/x", "0"))
+    assert any(
+        check.kind == "comparison" and "denominador se anula" in check.message
+        for check in report.checks
+    )
 
 
 def test_slow_convergence_is_inconclusive_not_verified() -> None:

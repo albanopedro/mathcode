@@ -1668,12 +1668,24 @@
   },
   "verification": {
     "status": "verified_numeric",
-    "method": "points",
     "checks": [
-      "y = x^2 - 4*x + 3: as raízes vêm da resolução exata de f(x) = 0, que provou não haver outras.",
-      "y = x^2 - 4*x + 3: o avaliador independente confirma os 3 ponto(s) destacados (2 raiz(es))."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "y = x^2 - 4*x + 3: o avaliador independente confirma os 3 ponto(s) destacados (2 raiz(es))."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "y = x^2 - 4*x + 3: as raízes vêm da resolução exata de f(x) = 0, que provou não haver outras."
+      }
     ],
-    "message": "Resultado conferido numericamente por um avaliador independente."
+    "message": "Resultado conferido numericamente por um avaliador independente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

@@ -38,13 +38,22 @@ def system(text: str) -> SystemOutcome:
 # -- arithmetic -----------------------------------------------------------------------
 
 
-@pytest.mark.parametrize(
-    "expression", ["2 + 2", "0.1 + 0.2", "sqrt(8)", "sin(30)", "(-8)^(1/3)", "2^3000", "log(5)"]
-)
+@pytest.mark.parametrize("expression", ["sqrt(8)", "sin(30)", "(-8)^(1/3)", "log(5)", "pi + 1"])
 def test_arithmetic_is_verified_numerically(expression: str) -> None:
     report = verify_arithmetic(evaluate(ArithmeticParams(expression=expression)))
     assert report.status is S.VERIFIED_NUMERIC
-    assert report.checks
+    assert report.methods == ["numeric"]
+
+
+@pytest.mark.parametrize(
+    "expression", ["2 + 2", "0.1 + 0.2", "2^3000", "(3/4)^-2 - 1/7", "-(2 - 0.5) * 4 / 3"]
+)
+def test_rational_arithmetic_is_verified_exactly(expression: str) -> None:
+    """Only rationals, + − × ÷ and integer powers: exact fractions are a second method."""
+    report = verify_arithmetic(evaluate(ArithmeticParams(expression=expression)))
+    assert report.status is S.VERIFIED_SYMBOLIC
+    assert report.methods == ["numeric", "comparison"]
+    assert "frações exatas" in report.checks[1].message
 
 
 def test_arithmetic_catches_a_wrong_value() -> None:
@@ -73,7 +82,7 @@ def test_simplify_catches_a_wrong_result() -> None:
     outcome = simplify(SimplifyParams(expression="x^2 + 2x + 1"))
     report = verify_rewrite(replace(outcome, result=(x + 2) ** 2))
     assert report.status is S.FAILED
-    assert "x =" in report.checks[0]
+    assert "x =" in report.checks[0].message
 
 
 def test_simplify_catches_a_result_undefined_where_the_original_is_defined() -> None:
@@ -107,9 +116,9 @@ def test_prime_factorization_catches_a_wrong_product_or_a_composite() -> None:
 
 def test_prime_factorization_names_the_primality_test() -> None:
     small = verify_factor(factor(FactorParams(expression="360")))
-    assert "determinístico" in small.checks[1]
+    assert "determinístico" in small.checks[1].message
     big = verify_factor(factor(FactorParams(expression="2^89 - 1")))  # a Mersenne prime
-    assert "BPSW" in big.checks[1]
+    assert "BPSW" in big.checks[1].message
 
 
 def test_expand_is_verified_and_catches_errors() -> None:
@@ -164,16 +173,23 @@ def test_complete_solution_sets_are_verified_symbolically(text: str) -> None:
 
 def test_sturm_is_named_in_the_report() -> None:
     report = verify_equation(equation("x^2 - 5x + 6 = 0"))
-    assert any("Sturm" in check for check in report.checks)
+    assert any("Sturm" in check.message for check in report.checks)
+    assert report.methods == ["substitution", "completeness"]
 
 
-@pytest.mark.parametrize(
-    "text", ["sqrt(x + 2) = x", "abs(x) = 3", "2^x = 8", "sqrt(x) = -1", "sqrt(2) x^2 = 1"]
-)
+@pytest.mark.parametrize("text", ["sqrt(x + 2) = x", "abs(x) = 3", "2^x = 8", "sqrt(2) x^2 = 1"])
 def test_completeness_not_proved_is_partial(text: str) -> None:
     report = verify_equation(equation(text))
     assert report.status is S.PARTIAL
+    assert report.reason == "completeness_not_proved"
     assert report.message.startswith("Verificação parcial")
+
+
+def test_no_solution_found_without_proof_is_unverified() -> None:
+    """Nothing positive was checked: "partial" would overstate it (ADR 0010)."""
+    report = verify_equation(equation("sqrt(x) = -1"))
+    assert report.status is S.UNVERIFIED
+    assert report.reason == "completeness_not_proved"
 
 
 def test_equation_catches_a_wrong_solution() -> None:
@@ -185,7 +201,8 @@ def test_equation_catches_a_missing_root() -> None:
     outcome = equation("x^2 - 5x + 6 = 0")
     report = verify_equation(replace(outcome, solutions=(sp.Integer(2),), multiplicities=(1,)))
     assert report.status is S.FAILED
-    assert "Sturm" in report.checks[0]
+    assert "Sturm" in report.checks[-1].message
+    assert report.checks[-1].outcome == "failed"
 
 
 def test_equation_catches_an_extraneous_root() -> None:

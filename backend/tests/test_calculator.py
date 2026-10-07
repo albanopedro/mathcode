@@ -271,7 +271,7 @@ def test_several_roots_are_one_per_line_in_latex() -> None:
             {"order": 2},
             "-x^2*sin(x) + 4*x*cos(x) + 2*sin(x)",
             r"- x^{2} \sin{\left(x \right)} + 4 x \cos{\left(x \right)} + 2 \sin{\left(x \right)}",
-            VerificationStatus.VERIFIED_NUMERIC,
+            VerificationStatus.VERIFIED_SYMBOLIC,  # finite differences + a second differentiator
         ),
         (
             "1/x",
@@ -287,7 +287,7 @@ def test_several_roots_are_one_per_line_in_latex() -> None:
             {"lower": "0", "upper": "1"},
             "1/3",
             r"\frac{1}{3}",
-            VerificationStatus.VERIFIED_NUMERIC,
+            VerificationStatus.VERIFIED_SYMBOLIC,  # quadrature + Newton–Leibniz
         ),
         (
             "1/x",
@@ -298,6 +298,7 @@ def test_several_roots_are_one_per_line_in_latex() -> None:
             VerificationStatus.UNVERIFIED,
         ),
         ("sin(x)/x", "limit", {"point": "0"}, "1", "1", VerificationStatus.PARTIAL),
+        ("x^2 + 1", "limit", {"point": "2"}, "5", "5", VerificationStatus.VERIFIED_SYMBOLIC),
         ("1/x^2", "limit", {"point": "0"}, "∞", r"\infty", VerificationStatus.PARTIAL),
         ("1/x", "limit", {"point": "0"}, "não existe", r"\nexists", VerificationStatus.PARTIAL),
     ],

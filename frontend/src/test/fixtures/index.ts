@@ -7,6 +7,9 @@
  * ai-equation came from the real free model (opencode/space-bunny-free).
  * ai-clarification is that model's real answer to "integral dupla de x",
  * replayed through the API with the mock provider (so it names "mock").
+ * In Phase 9, both were re-captured by replaying those same answers (no new
+ * AI call): only the verification changed, and ai-equation keeps the real
+ * provider and model in its interpretation.
  */
 import type { MathResult } from "../../types/math";
 import aiClarification from "./ai-clarification.json";

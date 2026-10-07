@@ -44,7 +44,13 @@ def test_json_shape(api: TestClient) -> None:
     }
     assert data["interpretation"] is None  # plain math, not a phrase
     assert data["result"] == {"plain": "3/10", "latex": r"\frac{3}{10}", "approx": "0.3"}
-    assert data["verification"]["status"] == "verified_numeric"
+    verification = data["verification"]
+    assert set(verification) == {"status", "methods", "checks", "message", "reason"}
+    assert verification["status"] == "verified_symbolic"  # exact fractions agree (ADR 0010)
+    assert verification["methods"] == ["numeric", "comparison"]
+    assert verification["checks"][1]["kind"] == "comparison"
+    assert verification["checks"][1]["outcome"] == "passed"
+    assert verification["reason"] is None
 
 
 def test_explicit_intent(api: TestClient) -> None:

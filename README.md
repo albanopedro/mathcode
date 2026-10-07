@@ -5,14 +5,15 @@ cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
 informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
 pedido: nunca é ela que calcula.
 
-> **Estado: Fase 8 (linguagem natural e IA).** Pelo navegador ou pela API, o
+> **Estado: Fase 9 (Verification Engine).** Pelo navegador ou pela API, o
 > Mathcode já: calcula; simplifica, fatora e expande; resolve equações
 > (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
 > deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;
 > e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
 > mais livres são traduzidas por um modelo gratuito. Tudo vem com verificação
 > independente, que diz quando provou o resultado, quando só tem evidência e
-> quando não conseguiu conferir.
+> quando não conseguiu conferir, e mostra cada checagem feita: substituição,
+> avaliação numérica, comparação com um segundo método, completude.
 > Os próximos passos estão no [roadmap](docs/roadmap.md).
 
 ## Princípios
@@ -21,8 +22,10 @@ pedido: nunca é ela que calcula.
   ([ADR 0001](docs/decisions/0001-custo-zero.md)).
 - **Nenhuma entrada vira código.** Sem `eval`; o parser é próprio
   ([ADR 0002](docs/decisions/0002-parser-sem-eval.md)).
-- **Verificação explícita.** Cada resultado diz se foi verificado, e como
-  ([ADR 0003](docs/decisions/0003-verificacao.md)).
+- **Verificação explícita.** Cada resultado diz se foi verificado, e como:
+  cada checagem tem um tipo e um resultado, e um segundo método confere o
+  primeiro sempre que possível ([ADR 0003](docs/decisions/0003-verificacao.md),
+  [ADR 0010](docs/decisions/0010-verification-engine.md)).
 
 ## Requisitos
 

@@ -19,12 +19,29 @@
   },
   "verification": {
     "status": "partial",
-    "method": "approach",
     "checks": [
-      "Aproximando-se pela direita (x = 0 + 10^-24), a função vale 1.0e-12; o limite indicado é 0.",
-      "É evidência numérica, não prova: por isso a verificação é parcial."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Aproximando-se pela direita (x = 0 + 10^-24), a função vale 1.0e-12; o limite indicado é 0."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "inconclusive",
+        "message": "Não dá para usar a continuidade em x = 0: o argumento de uma raiz quadrada vale 0 no ponto (borda do domínio)."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "inconclusive",
+        "message": "É evidência numérica, não prova: por isso a verificação é parcial."
+      }
     ],
-    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
+    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado.",
+    "reason": "numeric_evidence_only",
+    "methods": [
+      "numeric",
+      "comparison"
+    ]
   },
   "warnings": [
     {

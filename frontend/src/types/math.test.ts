@@ -23,6 +23,21 @@ describe("isMathResult", () => {
     ["a failure with a value", { ...fixtures.parseError, result: valid.result }],
     ["a non-numeric position", { ...fixtures.parseError, error: { code: "X", message: "y", position: "3" } }],
     ["a missing interpretation", { ...valid, interpretation: undefined }],
+    [
+      "the old report format (checks as text)",
+      { ...valid, verification: { status: "verified_symbolic", method: "x", checks: ["ok"], message: "m" } },
+    ],
+    ["a report without checks", { ...valid, verification: { ...valid.verification, checks: [] } }],
+    [
+      "a check of an unknown kind",
+      { ...valid, verification: { ...valid.verification, checks: [{ kind: "magic", outcome: "passed", message: "m" }] } },
+    ],
+    [
+      "a check with an unknown outcome",
+      { ...valid, verification: { ...valid.verification, checks: [{ kind: "numeric", outcome: "maybe", message: "m" }] } },
+    ],
+    ["an unknown reason", { ...valid, verification: { ...valid.verification, reason: "tired" } }],
+    ["methods that are not kinds", { ...valid, verification: { ...valid.verification, methods: ["magic"] } }],
     ["an unknown interpretation method", { ...fixtures.aiEquation, interpretation: { ...fixtures.aiEquation.interpretation, method: "magic" } }],
     ["an interpretation with an unknown intent", { ...fixtures.aiEquation, interpretation: { ...fixtures.aiEquation.interpretation, intent: "teleport" } }],
     ["an interpretation with an object option", { ...fixtures.aiEquation, interpretation: { ...fixtures.aiEquation.interpretation, options: { variable: { x: 1 } } } }],

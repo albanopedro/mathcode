@@ -14,12 +14,25 @@
     "order": 2
   },
   "verification": {
-    "status": "verified_numeric",
-    "method": "finite_differences",
+    "status": "verified_symbolic",
     "checks": [
-      "A derivada numérica (diferenças finitas com 80 dígitos, calculada sobre a expressão original por um avaliador independente) coincide com o resultado em 6 pontos sorteados, com erro relativo menor que 10⁻⁸."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "A derivada numérica (diferenças finitas com 100 dígitos, calculada sobre a expressão original por um avaliador independente) coincide com o resultado em 6 pontos sorteados, com erro relativo menor que 10⁻⁸."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Um segundo derivador, escrito com as regras de soma, produto, potência e cadeia (sem o diff do SymPy), chega ao mesmo resultado: a diferença se reduz a 0 (diretamente)."
+      }
     ],
-    "message": "Resultado conferido numericamente por um avaliador independente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "comparison"
+    ]
   },
   "warnings": [],
   "error": null,

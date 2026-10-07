@@ -8,7 +8,7 @@ from mpmath import mp
 from app.formatting.expressions import plain
 from app.math_engine.algebra import DivisionOutcome, PrimeFactorization, RewriteOutcome
 from app.models.intents import IntentName
-from app.models.result import VerificationReport, VerificationStatus
+from app.models.result import CheckKind, ReasonCode, VerificationReport, VerificationStatus
 from app.parsing.ast import Node, variables
 from app.parsing.build import symbol
 from app.verification.numeric import (
@@ -22,7 +22,8 @@ from app.verification.numeric import (
     sample_points,
     to_mpf,
 )
-from app.verification.reports import report, show
+from app.verification.reports import failure, passed, report, show, unverified
+from app.verification.symbolic import reduces_to_zero
 
 REQUIRED_POINTS = 6
 MAX_ATTEMPTS = 40
@@ -68,34 +69,37 @@ def verify_rewrite(outcome: RewriteOutcome) -> VerificationReport:
         if actual is None or not agrees(expected, actual):
             where = f"Em {describe(point)}, a" if names else "A"
             got = "não tem valor real" if actual is None else f"vale {show(actual)}"
-            return report(
-                VerificationStatus.FAILED,
-                "independent_numeric",
-                [f"{where} expressão original vale {show(expected.value)} e o resultado {got}."],
+            return failure(
+                CheckKind.NUMERIC,
+                f"{where} expressão original vale {show(expected.value)} e o resultado {got}.",
             )
         agreeing += 1
         if agreeing == needed:
             break
 
     if agreeing < needed:
-        return report(
-            VerificationStatus.UNVERIFIED,
-            "independent_numeric",
-            [f"Só {agreeing} ponto(s) do domínio foram encontrados para comparar."],
+        return unverified(
+            ReasonCode.FEW_POINTS,
+            CheckKind.NUMERIC,
+            f"Só {agreeing} ponto(s) do domínio foram encontrados para comparar.",
         )
 
-    checks = [
+    numeric = passed(
+        CheckKind.NUMERIC,
         "Avaliador independente: a expressão original e o resultado coincidem em "
-        f"{agreeing} ponto(s)" + (" sorteados." if names else ".")
-    ]
-    difference = outcome.original - outcome.result
+        f"{agreeing} ponto(s)" + (" sorteados." if names else "."),
+    )
     # Factor and expand are polynomial identities: expanding the difference is
-    # an exact test. Simplify may involve functions, so it also tries simplify.
-    if sp.expand(difference) == 0 or sp.simplify(difference) == 0:
+    # an exact test. Simplify may involve functions, so it also tries more.
+    how = reduces_to_zero(outcome.original - outcome.result)
+    if how is not None:
         word = _WORDS.get(outcome.operation, "reescrita")
-        checks.append(f"A diferença entre a expressão original e a forma {word} se reduz a 0.")
-        return report(VerificationStatus.VERIFIED_SYMBOLIC, "symbolic+numeric", checks)
-    return report(VerificationStatus.VERIFIED_NUMERIC, "independent_numeric", checks)
+        symbolic = passed(
+            CheckKind.SYMBOLIC,
+            f"A diferença entre a expressão original e a forma {word} se reduz a 0 ({how}).",
+        )
+        return report(VerificationStatus.VERIFIED_SYMBOLIC, [numeric, symbolic])
+    return report(VerificationStatus.VERIFIED_NUMERIC, [numeric])
 
 
 # -- prime factorization ------------------------------------------------------------------
@@ -108,14 +112,16 @@ def verify_prime_factorization(outcome: PrimeFactorization) -> VerificationRepor
     for prime, exponent in outcome.factors:
         product *= prime**exponent
     if product != abs(outcome.number):
-        return report(
-            VerificationStatus.FAILED,
-            "exact_product",
-            [f"O produto dos fatores é {product}, não {abs(outcome.number)}."],
+        return failure(
+            CheckKind.SYMBOLIC, f"O produto dos fatores é {product}, não {abs(outcome.number)}."
         )
+    exact_product = passed(
+        CheckKind.SYMBOLIC,
+        f"Multiplicando os fatores com inteiros exatos, obtém-se {abs(outcome.number)}.",
+    )
     composite = [prime for prime, _ in outcome.factors if not sp.isprime(prime)]
     if composite:
-        return report(VerificationStatus.FAILED, "primality", [f"{composite[0]} não é primo."])
+        return failure(CheckKind.COMPLETENESS, f"{composite[0]} não é primo.", exact_product)
     largest = max(prime for prime, _ in outcome.factors)
     method = (
         "teste determinístico"
@@ -124,10 +130,9 @@ def verify_prime_factorization(outcome: PrimeFactorization) -> VerificationRepor
     )
     return report(
         VerificationStatus.VERIFIED_SYMBOLIC,
-        "exact_product+primality",
         [
-            f"Multiplicando os fatores com inteiros exatos, obtém-se {abs(outcome.number)}.",
-            f"Cada fator foi confirmado primo ({method}).",
+            exact_product,
+            passed(CheckKind.COMPLETENESS, f"Cada fator foi confirmado primo ({method})."),
         ],
     )
 
@@ -147,16 +152,15 @@ def verify_division(outcome: DivisionOutcome) -> VerificationReport:
 
     identity = sp.expand(b * q + r - a)
     if identity != 0:
-        return report(
-            VerificationStatus.FAILED, "identity", [f"B·Q + R − A = {plain(identity)}, e não 0."]
-        )
+        return failure(CheckKind.SYMBOLIC, f"B·Q + R − A = {plain(identity)}, e não 0.")
+    rebuilt = passed(CheckKind.SYMBOLIC, "Expandindo B·Q + R, obtém-se exatamente o dividendo A.")
     degree_r = sp.degree(r, var) if r != 0 else None
     degree_b = sp.degree(b, var)
     if degree_r is not None and degree_r >= degree_b:
-        return report(
-            VerificationStatus.FAILED,
-            "degree",
-            [f"O resto tem grau {degree_r}, que não é menor que o grau {degree_b} do divisor."],
+        return failure(
+            CheckKind.COMPLETENESS,
+            f"O resto tem grau {degree_r}, que não é menor que o grau {degree_b} do divisor.",
+            rebuilt,
         )
 
     agreeing = 0
@@ -171,12 +175,11 @@ def verify_division(outcome: DivisionOutcome) -> VerificationReport:
             continue
         # Combine at full precision: outside workdps, mpmath rounds to 15 digits.
         with mp.workdps(BASE_PRECISION):
-            rebuilt = divisor.value * q_value + r_value
-        if not agrees(dividend, rebuilt, divisor.error_bound * abs(q_value)):
-            return report(
-                VerificationStatus.FAILED,
-                "independent_numeric",
-                [f"Em {describe(point)}, A vale {show(dividend.value)}, mas B·Q + R não."],
+            value = divisor.value * q_value + r_value
+        if not agrees(dividend, value, divisor.error_bound * abs(q_value)):
+            return failure(
+                CheckKind.NUMERIC,
+                f"Em {describe(point)}, A vale {show(dividend.value)}, mas B·Q + R não.",
             )
         agreeing += 1
         if agreeing == REQUIRED_POINTS:
@@ -189,10 +192,12 @@ def verify_division(outcome: DivisionOutcome) -> VerificationReport:
     )
     return report(
         VerificationStatus.VERIFIED_SYMBOLIC,
-        "identity+numeric",
         [
-            "Expandindo B·Q + R, obtém-se exatamente o dividendo A.",
-            remainder_check,
-            f"O avaliador independente confirma A = B·Q + R em {agreeing} pontos sorteados.",
+            rebuilt,
+            passed(CheckKind.COMPLETENESS, remainder_check),
+            passed(
+                CheckKind.NUMERIC,
+                f"O avaliador independente confirma A = B·Q + R em {agreeing} pontos sorteados.",
+            ),
         ],
     )

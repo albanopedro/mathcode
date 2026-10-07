@@ -19,11 +19,18 @@
   },
   "verification": {
     "status": "unverified",
-    "method": "approach",
     "checks": [
-      "Oscilações não são conferidas numericamente."
+      {
+        "kind": "numeric",
+        "outcome": "inconclusive",
+        "message": "Oscilações não são conferidas numericamente."
+      }
     ],
-    "message": "Não foi possível verificar este resultado."
+    "message": "Não foi possível verificar este resultado.",
+    "reason": "no_strategy",
+    "methods": [
+      "numeric"
+    ]
   },
   "warnings": [],
   "error": null,

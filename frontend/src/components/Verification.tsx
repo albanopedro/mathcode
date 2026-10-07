@@ -1,4 +1,5 @@
 import type { VerificationReport, VerificationStatus } from "../types/math";
+import { KIND_LABELS, OUTCOMES } from "../utils/verification";
 
 // The headline is the backend message; the status only picks icon and colors.
 const BADGES: Record<VerificationStatus, { icon: string; className: string }> = {
@@ -36,16 +37,28 @@ export function Verification({ report }: { report: VerificationReport }) {
         <span aria-hidden="true">{badge.icon}</span>
         {report.message}
       </p>
-      {report.checks.length > 0 && (
-        <details className="mt-2 text-sm">
-          <summary className="cursor-pointer select-none font-medium">Como foi verificado</summary>
-          <ul className="mt-2 list-disc space-y-1 pl-5">
-            {report.checks.map((check) => (
-              <li key={check}>{check}</li>
-            ))}
-          </ul>
-        </details>
-      )}
+      <details className="mt-2 text-sm">
+        <summary className="cursor-pointer select-none font-medium">Como foi verificado</summary>
+        <ul aria-label="Checagens" className="mt-2 space-y-2">
+          {report.checks.map((check, index) => {
+            const outcome = OUTCOMES[check.outcome];
+            return (
+              <li key={`${index}-${check.kind}`} className="flex gap-2">
+                <span aria-hidden="true" className="w-4 shrink-0 text-center font-semibold">
+                  {outcome.icon}
+                </span>
+                <p className="min-w-0">
+                  <span className="mr-1.5 rounded bg-white/70 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap">
+                    {KIND_LABELS[check.kind]}
+                  </span>
+                  <span className="sr-only">{outcome.label}: </span>
+                  {check.message}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      </details>
     </div>
   );
 }

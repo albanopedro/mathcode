@@ -23,13 +23,30 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "substitution+rank",
     "checks": [
-      "Substituindo a solução em cada equação original, os dois lados ficam iguais.",
-      "O avaliador independente confirma em 1 ponto(s).",
-      "O posto da matriz dos coeficientes é 2, igual ao número de incógnitas, então a solução é única."
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Substituindo a solução em cada equação original, os dois lados ficam iguais."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente confirma em 1 ponto(s)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "O posto da matriz dos coeficientes é 2, igual ao número de incógnitas, então a solução é única."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "substitution",
+      "numeric",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

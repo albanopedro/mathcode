@@ -20,11 +20,18 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "rank",
     "checks": [
-      "O sistema é incompatível: o posto da matriz dos coeficientes é 1, menor que o posto da matriz ampliada (2)."
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "O sistema é incompatível: o posto da matriz dos coeficientes é 1, menor que o posto da matriz ampliada (2)."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

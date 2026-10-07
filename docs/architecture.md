@@ -70,7 +70,7 @@ Cada intent é registrado em `interpreter/registry.py` com:
 | `name` | identificador estável (`arithmetic`, `simplify`, `solve_equation`...) |
 | `params_model` | modelo Pydantic com os parâmetros (`models/intents.py`) |
 | `execute(params) → Outcome` | cálculo no domínio correspondente do `math_engine` |
-| `verify(outcome) → VerificationReport` | estratégia do ADR 0003 (`verification/`) |
+| `verify(outcome) → VerificationReport` | estratégia do ADR 0003 (`verification/`), com checagens estruturadas e comparação de métodos (ADR 0010) |
 | `present(outcome) → Presentation` | `ResultValue` (plain/LaTeX/aproximação) + `details` (`formatting/results.py`) |
 
 Intents disponíveis (`models/intents.py`):
@@ -117,12 +117,16 @@ MathResult
 │   └── approx: str | null          "1.4142135623731" quando não exato
 ├── steps: list[Step]               vazio até existirem regras reais de passos
 ├── details: dict                   dados extras tipados por intent (raízes, vértice...)
-├── verification: VerificationReport
+├── verification: VerificationReport           (ADR 0010)
 │   ├── status: verified_symbolic | verified_numeric | partial
 │   │           | unverified | not_applicable | failed
-│   ├── method: str
-│   ├── checks: list[str]
-│   └── message: str
+│   ├── methods: list[kind]         as estratégias usadas, em ordem
+│   ├── checks: list[{kind, outcome, message}]
+│   │     kind: symbolic | substitution | numeric | comparison
+│   │           | completeness | domain | execution
+│   │     outcome: passed | failed | inconclusive
+│   ├── message: str                a manchete mostrada ao usuário
+│   └── reason: str | null          por que é partial/unverified (deadline...)
 ├── warnings: list[{code, message}]
 ├── error: {code, message, position?} | null
 └── interpretation: Interpretation | null     só quando a entrada era uma frase
@@ -222,6 +226,11 @@ formato.
 **Execução:** cada pedido vai para um worker do pool (ADR 0002, seção 4). O
 `lifespan` do FastAPI cria o pool na inicialização e o encerra no desligamento.
 
+**Prazo da verificação** (ADR 0010): dentro do worker, a verificação pode usar
+até 80% do timeout do cálculo (4 s de 5 s). Se o prazo acabar, ou se o
+verificador quebrar, o resultado é entregue com `unverified` e o motivo
+(`deadline` ou `internal_error`), em vez de virar erro.
+
 ## 6. Frontend
 
 Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
@@ -239,7 +248,7 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | `components/OperationFields.tsx` | os campos extras da operação escolhida (variável, ordem, de/até, ponto, lado), descritos em `utils/operations.ts`; `buildOptions` envia só os preenchidos e não valida nada: a API explica o que estiver errado |
 | `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, interpretação da frase, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
 | `components/ErrorView.tsx` | `role="alert"`, mensagem e a entrada com o caractere de `error.position` destacado (contando code points, como o Python) e, se houver, a interpretação da frase |
-| `components/Verification.tsx` | a mensagem do backend como título, com ícone e cor por status, e "Como foi verificado" (`<details>`) com os `checks` |
+| `components/Verification.tsx` | a mensagem do backend como título, com ícone e cor por status, e "Como foi verificado" (`<details>`) com cada checagem: ✓, ✗ ou ? (e "Passou", "Falhou" ou "Inconclusiva" para leitores de tela) e o tipo (`utils/verification.ts`) |
 | `components/MathFormula.tsx` | `katex.render` num `ref` (sem `innerHTML` vindo do React); gera HTML e MathML, que é o que leitores de tela leem |
 
 Decisões:
@@ -268,7 +277,8 @@ Mathcode/
 │   │   ├── interpreter/        registry + detecção + frases em PT (language.py)
 │   │   ├── planner/            ExecutionPlan (Fase 12)
 │   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials (depois: calculus, graphing...)
-│   │   ├── verification/       estratégias por intent
+│   │   ├── verification/       estratégias por intent + avaliador independente, frações exatas,
+│   │   │                       derivador próprio, continuidade, Newton–Leibniz, prazos
 │   │   ├── formatting/         plain/LaTeX/aproximação
 │   │   └── ai/                 AIProvider, OpenCode (só modelos gratuitos), mock, prompt e serviço
 │   ├── tests/                  parsing/ math_engine/ verification/ api/ + integração
@@ -334,4 +344,5 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0010](decisions/0010-verification-engine.md) | Verification Engine (Fase 9): checagens estruturadas, comparação de métodos, prazos, não verificável sem perder o resultado |
 | [0009](decisions/0009-linguagem-natural-e-ia.md) | Linguagem natural e IA (Fase 8): regras em PT, "Permitir IA", OpenCode isolado, só modelos gratuitos |

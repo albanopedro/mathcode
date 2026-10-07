@@ -28,12 +28,24 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "exact_product+primality",
     "checks": [
-      "Multiplicando os fatores com inteiros exatos, obtém-se 360.",
-      "Cada fator foi confirmado primo (teste determinístico)."
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Multiplicando os fatores com inteiros exatos, obtém-se 360."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Cada fator foi confirmado primo (teste determinístico)."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "symbolic",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

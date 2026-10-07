@@ -17,13 +17,30 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "identity+numeric",
     "checks": [
-      "Expandindo B·Q + R, obtém-se exatamente o dividendo A.",
-      "O resto é 0: a divisão é exata.",
-      "O avaliador independente confirma A = B·Q + R em 6 pontos sorteados."
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Expandindo B·Q + R, obtém-se exatamente o dividendo A."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "O resto é 0: a divisão é exata."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente confirma A = B·Q + R em 6 pontos sorteados."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "symbolic",
+      "completeness",
+      "numeric"
+    ]
   },
   "warnings": [],
   "error": null,

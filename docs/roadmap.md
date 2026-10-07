@@ -18,8 +18,8 @@ Regras gerais:
 | 5 | Álgebra | concluída |
 | 6 | Cálculo | concluída |
 | 7 | Gráficos | concluída |
-| 8 | Linguagem natural / IA | concluída (aguardando revisão) |
-| 9 | Verification Engine | — |
+| 8 | Linguagem natural / IA | concluída |
+| 9 | Verification Engine | concluída (aguardando revisão) |
 | 10 | Matemática avançada | — |
 | 11 | UX e histórico | — |
 | 12 | Assistente matemático | — |
@@ -240,6 +240,33 @@ tabela do ADR 0003.
 Formalizar e expandir a verificação: comparação de métodos, relatórios
 detalhados e cobertura de todos os intents.
 
+- **Decidido com o usuário** ([ADR 0010](decisions/0010-verification-engine.md)):
+  checagens estruturadas; quatro comparações de métodos; resultado não
+  verificável aparece como "não verificado", com o motivo, e não como erro.
+- **Entregue:**
+  - relatório com checagens tipadas (simbólica, substituição, numérica,
+    comparação de métodos, completude, domínio, execução), resultado de cada
+    uma, estratégias usadas e motivo; regras de coerência entre status e
+    checagens validadas pelo modelo;
+  - comparação de métodos: frações exatas (aritmética), derivador próprio
+    (derivadas), continuidade (limites) e Newton–Leibniz (integrais definidas
+    de polinômios e racionais);
+  - prazos aninhados para a verificação (SIGALRM no worker): estourar o prazo
+    ou quebrar deixa o resultado `unverified`, com o motivo;
+  - interface com ✓, ✗ ou ? e o tipo de cada checagem;
+  - matriz de adulteração que cobre todos os intents.
+- **Testes:** 950 no backend (eram 822) e 189 no frontend (eram 181).
+- **Descoberto durante a fase:**
+  - a verificação de `x^20 - 3x^7 + 1 = 0` levava mais de 20 s (o
+    `simplify` de raízes `CRootOf`) e virava `TIMEOUT`; agora usa
+    divisibilidade e leva 44 ms;
+  - a 10ª derivada de `sin(x)^10 cos(x)^10` era **reprovada** por imprecisão
+    das diferenças finitas; a precisão agora cresce com a ordem;
+  - a integral definida de `1/(x^5 + x + 1)` trava no cálculo (limitação do
+    SymPy, anterior a esta fase);
+  - o texto simples dos resultados escreve o logaritmo natural como `log`, que
+    na entrada é base 10 (anterior a esta fase; registrado como pendência).
+
 ## Fase 10 — Matemática avançada
 
 Estatística, probabilidade, matrizes/vetores, geometria e trigonometria, **um
@@ -265,5 +292,9 @@ determinística.
 - `docker-compose.yml`, quando houver Docker para testar.
 - Provedor de IA Ollama (local), quando estiver instalado.
 - Regras locais para frases frequentes ("o dobro de", "a metade de").
+- Comparação de métodos para integrais com limites irracionais (0 a π) e
+  funções trigonométricas; continuidade lateral em pontos de borda (`sqrt(x)`
+  em 0⁺).
+- Corrigir o texto simples do logaritmo natural (`log` → `ln`).
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

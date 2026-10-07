@@ -18,12 +18,24 @@
   },
   "verification": {
     "status": "partial",
-    "method": "substitution",
     "checks": [
-      "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente).",
-      "Não foi provado que não existem outras soluções."
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "inconclusive",
+        "message": "Não foi provado que não existem outras soluções."
+      }
     ],
-    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
+    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado.",
+    "reason": "completeness_not_proved",
+    "methods": [
+      "substitution",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

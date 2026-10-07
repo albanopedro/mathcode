@@ -25,13 +25,30 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "substitution+rank",
     "checks": [
-      "Substituindo a solução em cada equação original, os dois lados ficam iguais.",
-      "O avaliador independente confirma em 6 ponto(s).",
-      "O posto é 1 com 2 incógnitas: sobram 1 variável(is) livre(s), então essa família descreve todas as soluções."
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Substituindo a solução em cada equação original, os dois lados ficam iguais."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente confirma em 6 ponto(s)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "O posto é 1 com 2 incógnitas: sobram 1 variável(is) livre(s), então essa família descreve todas as soluções."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "substitution",
+      "numeric",
+      "completeness"
+    ]
   },
   "warnings": [],
   "error": null,

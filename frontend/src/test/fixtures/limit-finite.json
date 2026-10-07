@@ -19,13 +19,34 @@
   },
   "verification": {
     "status": "partial",
-    "method": "approach",
     "checks": [
-      "Aproximando-se pela esquerda (x = 0 - 10^-24), a função vale 1; o limite indicado é 1.",
-      "Aproximando-se pela direita (x = 0 + 10^-24), a função vale 1; o limite indicado é 1.",
-      "É evidência numérica, não prova: por isso a verificação é parcial."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Aproximando-se pela esquerda (x = 0 - 10^-24), a função vale 1; o limite indicado é 1."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Aproximando-se pela direita (x = 0 + 10^-24), a função vale 1; o limite indicado é 1."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "inconclusive",
+        "message": "Não dá para usar a continuidade em x = 0: um denominador se anula no ponto."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "inconclusive",
+        "message": "É evidência numérica, não prova: por isso a verificação é parcial."
+      }
     ],
-    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
+    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado.",
+    "reason": "numeric_evidence_only",
+    "methods": [
+      "numeric",
+      "comparison"
+    ]
   },
   "warnings": [],
   "error": null,

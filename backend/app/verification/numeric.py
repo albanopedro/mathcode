@@ -50,9 +50,10 @@ class Evaluation:
     error_bound: mpf  # absolute
 
 
-def evaluate(node: Node, point: Point | None = None) -> Evaluation:
+def evaluate(node: Node, point: Point | None = None, digits: int = BASE_PRECISION) -> Evaluation:
+    """Value at ``point`` with at least ``digits`` digits beyond the largest intermediate value."""
     point = point or {}
-    precision = BASE_PRECISION
+    precision = digits
     while True:
         evaluator = _Evaluator(point)
         value: mpf | None = None
@@ -62,13 +63,13 @@ def evaluate(node: Node, point: Point | None = None) -> Evaluation:
             except OutsideDomain:
                 # Possibly a false zero caused by too little precision: retry if
                 # larger values were seen, otherwise it is genuine.
-                if precision >= BASE_PRECISION + evaluator.largest_digits:
+                if precision >= digits + evaluator.largest_digits:
                     raise
-        needed = BASE_PRECISION + evaluator.largest_digits
+        needed = digits + evaluator.largest_digits
         if value is not None and precision >= needed:
             exponent = evaluator.largest_digits - precision + GUARD_DIGITS
             return Evaluation(value, mpf(10) ** exponent)
-        if needed > MAX_PRECISION:
+        if needed > MAX_PRECISION + digits - BASE_PRECISION:
             raise TooLarge
         precision = needed
 

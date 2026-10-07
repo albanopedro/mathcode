@@ -19,13 +19,30 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "symbolic+numeric",
     "checks": [
-      "Os dois lados são idênticos: a diferença entre eles se reduz a 0.",
-      "O avaliador independente confirma a igualdade em 6 pontos sorteados.",
-      "Exceto onde a equação não é definida: x = 0."
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Os dois lados são idênticos: a diferença entre eles se reduz a 0."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente confirma a igualdade em 6 pontos sorteados."
+      },
+      {
+        "kind": "domain",
+        "outcome": "passed",
+        "message": "Exceto onde a equação não é definida: x = 0."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "symbolic",
+      "numeric",
+      "domain"
+    ]
   },
   "warnings": [],
   "error": null,

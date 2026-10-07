@@ -15,12 +15,30 @@
   },
   "verification": {
     "status": "verified_symbolic",
-    "method": "differentiation",
     "checks": [
-      "Derivando a primitiva com ln(u), obtém-se exatamente o integrando; trocar ln(u) por ln|u| não muda a derivada (d/dx ln|u| = u'/u).",
-      "O avaliador independente confirma: a derivada da primitiva é igual ao integrando em 6 pontos sorteados."
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Derivando a primitiva com ln(u), obtém-se exatamente o integrando; trocar ln(u) por ln|u| não muda a derivada (d/dx ln|u| = u'/u)."
+      },
+      {
+        "kind": "domain",
+        "outcome": "passed",
+        "message": "A primitiva é real em todos os pontos em que o integrando é definido."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente confirma: a derivada da primitiva é igual ao integrando em 6 pontos sorteados."
+      }
     ],
-    "message": "Resultado verificado simbolicamente."
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "symbolic",
+      "domain",
+      "numeric"
+    ]
   },
   "warnings": [
     {

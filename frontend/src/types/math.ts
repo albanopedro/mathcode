@@ -35,11 +35,43 @@ export interface Step {
   latex: string | null;
 }
 
+/** The strategy behind one check (ADR 0010). */
+export type CheckKind =
+  | "symbolic"
+  | "substitution"
+  | "numeric"
+  | "comparison"
+  | "completeness"
+  | "domain"
+  | "execution";
+
+export type CheckOutcome = "passed" | "failed" | "inconclusive";
+
+/** Why a result is only partially verified, or not verified at all. */
+export type ReasonCode =
+  | "completeness_not_proved"
+  | "numeric_evidence_only"
+  | "few_points"
+  | "too_large"
+  | "inconclusive"
+  | "no_strategy"
+  | "deadline"
+  | "internal_error";
+
+export interface VerificationCheck {
+  kind: CheckKind;
+  outcome: CheckOutcome;
+  message: string;
+}
+
 export interface VerificationReport {
   status: VerificationStatus;
-  method: string;
-  checks: string[];
+  /** The strategies used, in the order they first appear in `checks`. */
+  methods: CheckKind[];
+  checks: VerificationCheck[];
   message: string;
+  /** Set for `partial` and `unverified` only. */
+  reason: ReasonCode | null;
 }
 
 export interface ResultWarning {
@@ -103,6 +135,27 @@ const STATUSES: readonly string[] = [
   "failed",
 ];
 
+const KINDS: readonly string[] = [
+  "symbolic",
+  "substitution",
+  "numeric",
+  "comparison",
+  "completeness",
+  "domain",
+  "execution",
+];
+const OUTCOMES: readonly string[] = ["passed", "failed", "inconclusive"];
+const REASONS: readonly string[] = [
+  "completeness_not_proved",
+  "numeric_evidence_only",
+  "few_points",
+  "too_large",
+  "inconclusive",
+  "no_strategy",
+  "deadline",
+  "internal_error",
+];
+
 type Data = Record<string, unknown>;
 
 const isObject = (value: unknown): value is Data =>
@@ -121,13 +174,23 @@ const isResultValue = (value: unknown): value is ResultValue =>
 const isStep = (value: unknown): value is Step =>
   isObject(value) && isString(value.description) && isNullableString(value.latex);
 
+const isOneOf = (options: readonly string[]) => (value: unknown) =>
+  isString(value) && options.includes(value);
+
+const isCheck = (value: unknown): value is VerificationCheck =>
+  isObject(value) &&
+  isOneOf(KINDS)(value.kind) &&
+  isOneOf(OUTCOMES)(value.outcome) &&
+  isString(value.message);
+
 const isVerification = (value: unknown): value is VerificationReport =>
   isObject(value) &&
-  isString(value.status) &&
-  STATUSES.includes(value.status) &&
-  isString(value.method) &&
-  isArrayOf(value.checks, isString) &&
-  isString(value.message);
+  isOneOf(STATUSES)(value.status) &&
+  isArrayOf(value.methods, (kind): kind is CheckKind => isOneOf(KINDS)(kind)) &&
+  isArrayOf(value.checks, isCheck) &&
+  value.checks.length > 0 &&
+  isString(value.message) &&
+  (value.reason === null || isOneOf(REASONS)(value.reason));
 
 const isError = (value: unknown): value is ResultError =>
   isObject(value) &&

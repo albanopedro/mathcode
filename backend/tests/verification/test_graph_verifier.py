@@ -24,7 +24,7 @@ def test_exact_and_complete_roots_are_verified(expression: str) -> None:
 def test_roots_by_sign_change_are_partial(expression: str) -> None:
     report = verify_graph(draw(expression))
     assert report.status is S.PARTIAL
-    assert any("mudança de sinal" in check for check in report.checks)
+    assert any("mudança de sinal" in check.message for check in report.checks)
 
 
 def test_nothing_to_check_is_not_applicable() -> None:
@@ -37,7 +37,7 @@ def test_catches_a_wrong_root() -> None:
     wrong = replace(outcome, points=(wrong_point, *outcome.points[1:]))
     report = verify_graph(wrong)
     assert report.status is S.FAILED
-    assert "não 0" in report.checks[0]
+    assert "não 0" in report.checks[-1].message
 
 
 def test_catches_a_wrong_numeric_root() -> None:
@@ -57,12 +57,15 @@ def test_catches_a_wrong_intercept() -> None:
     assert verify_graph(replace(outcome, points=tuple(points))).status is S.FAILED
 
 
-def test_every_status_has_a_message() -> None:
+def test_every_status_and_reason_has_a_message() -> None:
     """NOT_APPLICABLE had none until graphs used it, and the pipeline broke."""
-    from app.verification.reports import report
+    from app.models.result import ReasonCode
+    from app.verification.reports import message_for
 
     for status in S:
-        assert report(status, "test", []).message
+        assert message_for(status)
+    for reason in ReasonCode:
+        assert message_for(S.UNVERIFIED, reason).startswith("Não foi possível verificar")
 
 
 def test_catches_a_root_next_to_a_pole() -> None:

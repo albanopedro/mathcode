@@ -1,10 +1,16 @@
-"""Verification of equations and linear systems (ADR 0003).
+"""Verification of equations and linear systems (ADR 0003, ADR 0010).
 
-Every solution is substituted into the **original** equation twice: symbolically
-and with the independent evaluator (which also catches roots outside the
-domain, such as an extraneous root of a radical equation). Completeness, that
-is, "there are no other solutions", is proved only when an independent method
+Every solution is substituted into the **original** equation twice: exactly and
+with the independent evaluator (which also catches roots outside the domain,
+such as an extraneous root of a radical equation). Completeness, that is,
+"there are no other solutions", is proved only when an independent method
 allows it; otherwise the status is ``partial``.
+
+An algebraic root that has no radical form (``CRootOf``) is substituted by
+divisibility: it is a root of an irreducible polynomial Q, so it makes the
+equation true exactly when Q divides the equation's numerator (and not its
+denominator). That is exact and fast, where simplifying the substituted
+expression can take minutes.
 """
 
 import sympy as sp
@@ -13,12 +19,19 @@ from app.formatting.expressions import plain
 from app.math_engine.equations import EquationOutcome, SolutionKind
 from app.math_engine.polynomials import Shape, count_distinct_real_roots
 from app.math_engine.systems import SystemKind, SystemOutcome
-from app.models.result import VerificationReport, VerificationStatus
+from app.models.result import (
+    CheckKind,
+    ReasonCode,
+    VerificationCheck,
+    VerificationReport,
+    VerificationStatus,
+)
 from app.parsing.ast import Equation
 from app.parsing.build import symbol
 from app.verification.algebra import REQUIRED_POINTS, describe, points, try_evaluate
 from app.verification.numeric import Evaluation, Point, agrees, decimal, rational
-from app.verification.reports import report, show
+from app.verification.reports import failure, inconclusive, passed, report, show
+from app.verification.symbolic import reduces_to_zero
 
 # -- shared -------------------------------------------------------------------------------
 
@@ -36,8 +49,25 @@ def _equal(sides: tuple[Evaluation, Evaluation]) -> bool:
     return agrees(left, right.value, right.error_bound)
 
 
-def _vanishes(expr: sp.Expr) -> bool:
-    return sp.simplify(expr) == 0
+def _substitutes_exactly(outcome: EquationOutcome, solution: sp.Expr) -> bool | None:
+    """True: the solution satisfies the equation exactly; False: it does not; None: unknown."""
+    var = outcome.variable
+    difference = outcome.left - outcome.right
+    if isinstance(solution, sp.CRootOf):
+        factor = sp.Poly(solution.poly.as_expr().xreplace({solution.poly.gen: var}), var)
+        numerator, denominator = sp.fraction(sp.together(difference))
+        try:
+            top = sp.Poly(numerator, var)
+            bottom = sp.Poly(denominator, var)
+        except sp.PolynomialError:
+            top = None
+        if top is not None and factor.is_irreducible:
+            vanishes = top.rem(factor).is_zero
+            defined = sp.gcd(bottom, factor).degree() == 0
+            return vanishes and defined
+    if reduces_to_zero(difference.subs(var, solution)) is not None:
+        return True
+    return None
 
 
 # -- one equation -----------------------------------------------------------------------------
@@ -54,60 +84,83 @@ def verify_equation(outcome: EquationOutcome) -> VerificationReport:
 
 
 def _verify_finite(outcome: EquationOutcome) -> VerificationReport:
-    var, name = outcome.variable, outcome.variable.name
-    checks: list[str] = []
+    name = outcome.variable.name
+    unproved: list[str] = []  # solutions whose exact substitution was not decided
     for solution in outcome.solutions:
         shown = f"{name} = {plain(solution)}"
-        difference = outcome.left.subs(var, solution) - outcome.right.subs(var, solution)
-        if not _vanishes(difference):
-            return report(
-                VerificationStatus.FAILED,
-                "substitution",
-                [f"Substituindo {shown}, a diferença entre os lados não se anula."],
+        exact = _substitutes_exactly(outcome, solution)
+        if exact is False:
+            return failure(
+                CheckKind.SUBSTITUTION,
+                f"Substituindo {shown}, a diferença entre os lados não se anula.",
             )
         sides = _sides(outcome.equation, {name: decimal(solution)})
         if sides is None:
-            return report(
-                VerificationStatus.FAILED,
-                "substitution",
-                [f"A equação original não tem valor real em {shown}."],
-            )
+            return failure(CheckKind.DOMAIN, f"A equação original não tem valor real em {shown}.")
         if not _equal(sides):
-            return report(
-                VerificationStatus.FAILED,
-                "substitution",
-                [
-                    f"Em {shown}, o avaliador independente obteve "
-                    f"{show(sides[0].value)} ≠ {show(sides[1].value)}."
-                ],
+            return failure(
+                CheckKind.NUMERIC,
+                f"Em {shown}, o avaliador independente obteve "
+                f"{show(sides[0].value)} ≠ {show(sides[1].value)}.",
             )
+        if exact is None:
+            unproved.append(shown)
+
     count = len(outcome.solutions)
-    checks.append(
-        "Substituindo "
-        + ("a solução" if count == 1 else f"cada uma das {count} soluções")
-        + " na equação original, os dois lados ficam iguais (de forma exata e pelo "
-        "avaliador independente)."
-    )
+    which = "a solução" if count == 1 else f"cada uma das {count} soluções"
+    checks: list[VerificationCheck] = []
+    if unproved:
+        checks.append(
+            passed(
+                CheckKind.NUMERIC,
+                f"Substituindo {which} na equação original, o avaliador independente obtém "
+                "lados iguais em 30 algarismos.",
+            )
+        )
+        checks.append(
+            inconclusive(
+                CheckKind.SUBSTITUTION,
+                "A substituição exata não foi decidida (a diferença não se reduziu a 0) em "
+                + ", ".join(unproved)
+                + ".",
+            )
+        )
+    else:
+        checks.append(
+            passed(
+                CheckKind.SUBSTITUTION,
+                f"Substituindo {which} na equação original, os dois lados ficam iguais (de "
+                "forma exata e pelo avaliador independente).",
+            )
+        )
     if outcome.rejected:
         rejected = ", ".join(plain(r) for r in outcome.rejected)
-        checks.append(f"Descartado por zerar um denominador: {name} = {rejected}.")
+        checks.append(
+            passed(CheckKind.DOMAIN, f"Descartado por zerar um denominador: {name} = {rejected}.")
+        )
 
     poly = outcome.candidates
     if poly is not None:
         total = count_distinct_real_roots(poly)  # Sturm: independent of real_roots
         found = len(outcome.solutions) + len(outcome.rejected)
         if total != found:
-            return _contradiction(
+            return failure(
+                CheckKind.COMPLETENESS,
                 f"Pelo teorema de Sturm, o polinômio tem {total} raiz(es) real(is) distinta(s), "
-                f"mas {found} foram consideradas."
+                f"mas {found} foram consideradas.",
+                *checks,
             )
 
     completeness = _completeness(outcome)
     if completeness is None:
-        checks.append("Não foi provado que não existem outras soluções.")
-        return report(VerificationStatus.PARTIAL, "substitution", checks)
-    checks.append(completeness)
-    return report(VerificationStatus.VERIFIED_SYMBOLIC, "substitution+sturm", checks)
+        checks.append(
+            inconclusive(CheckKind.COMPLETENESS, "Não foi provado que não existem outras soluções.")
+        )
+        return report(VerificationStatus.PARTIAL, checks, ReasonCode.COMPLETENESS_NOT_PROVED)
+    checks.append(passed(CheckKind.COMPLETENESS, completeness))
+    if unproved:
+        return report(VerificationStatus.VERIFIED_NUMERIC, checks)
+    return report(VerificationStatus.VERIFIED_SYMBOLIC, checks)
 
 
 def _completeness(outcome: EquationOutcome) -> str | None:
@@ -137,46 +190,69 @@ def _verify_none(outcome: EquationOutcome) -> VerificationReport:
 
     if outcome.shape is Shape.POLYNOMIAL and not difference.free_symbols:
         if difference == 0:
-            return _contradiction(f"A diferença entre os lados é 0, então {name} não some.")
+            return failure(
+                CheckKind.SYMBOLIC, f"A diferença entre os lados é 0, então {name} não some."
+            )
         return report(
             VerificationStatus.VERIFIED_SYMBOLIC,
-            "symbolic",
-            [f"Os termos com {name} se cancelam e sobra {plain(difference)} = 0, que é falso."],
+            [
+                passed(
+                    CheckKind.SYMBOLIC,
+                    f"Os termos com {name} se cancelam e sobra {plain(difference)} = 0, que é "
+                    "falso.",
+                )
+            ],
         )
 
     poly = outcome.candidates
     if poly is not None:
         total = count_distinct_real_roots(poly)
         if total != len(outcome.rejected):
-            return _contradiction(
+            return failure(
+                CheckKind.COMPLETENESS,
                 f"Pelo teorema de Sturm, o polinômio tem {total} raiz(es) real(is), "
-                "que não foram todas consideradas."
+                "que não foram todas consideradas.",
             )
         checks = [
-            f"Pelo teorema de Sturm, o polinômio {plain(poly.as_expr())} tem "
-            f"{total} raiz(es) real(is) distinta(s)."
+            passed(
+                CheckKind.COMPLETENESS,
+                f"Pelo teorema de Sturm, o polinômio {plain(poly.as_expr())} tem "
+                f"{total} raiz(es) real(is) distinta(s).",
+            )
         ]
         if outcome.rejected:
             rejected = ", ".join(plain(r) for r in outcome.rejected)
-            checks.append(f"Todas zeram um denominador e foram descartadas: {name} = {rejected}.")
-        return report(VerificationStatus.VERIFIED_SYMBOLIC, "sturm", checks)
+            checks.append(
+                passed(
+                    CheckKind.DOMAIN,
+                    f"Todas zeram um denominador e foram descartadas: {name} = {rejected}.",
+                )
+            )
+        return report(VerificationStatus.VERIFIED_SYMBOLIC, checks)
 
     if outcome.shape is Shape.RATIONAL:
         numerator, _ = sp.fraction(sp.together(outcome.left - outcome.right))
         if not sp.expand(numerator).free_symbols and sp.expand(numerator) != 0:
             return report(
                 VerificationStatus.VERIFIED_SYMBOLIC,
-                "symbolic",
                 [
-                    f"Juntando as frações, o numerador é {plain(sp.expand(numerator))}, "
-                    "que nunca é 0."
+                    passed(
+                        CheckKind.SYMBOLIC,
+                        f"Juntando as frações, o numerador é {plain(sp.expand(numerator))}, "
+                        "que nunca é 0.",
+                    )
                 ],
             )
 
     return report(
-        VerificationStatus.PARTIAL,
-        "none_found",
-        ["Nenhuma solução real foi encontrada, mas não foi provado que não existe."],
+        VerificationStatus.UNVERIFIED,
+        [
+            inconclusive(
+                CheckKind.COMPLETENESS,
+                "Nenhuma solução real foi encontrada, mas não foi provado que não existe.",
+            )
+        ],
+        ReasonCode.COMPLETENESS_NOT_PROVED,
     )
 
 
@@ -195,31 +271,43 @@ def _verify_all_reals(outcome: EquationOutcome) -> VerificationReport:
         if sides is None:
             continue
         if not _equal(sides):
-            return report(
-                VerificationStatus.FAILED,
-                "numeric",
-                [
-                    f"Em {describe(point)}, o lado esquerdo vale {show(sides[0].value)} "
-                    f"e o direito {show(sides[1].value)}."
-                ],
+            return failure(
+                CheckKind.NUMERIC,
+                f"Em {describe(point)}, o lado esquerdo vale {show(sides[0].value)} "
+                f"e o direito {show(sides[1].value)}.",
             )
         checked += 1
         if checked == REQUIRED_POINTS:
             break
 
-    numeric = f"O avaliador independente confirma a igualdade em {checked} pontos sorteados."
+    numeric = passed(
+        CheckKind.NUMERIC,
+        f"O avaliador independente confirma a igualdade em {checked} pontos sorteados.",
+    )
     if not identity:
-        return report(VerificationStatus.PARTIAL, "numeric", [numeric])
-    first = "Os dois lados são idênticos: a diferença entre eles se reduz a 0."
-    checks = [first, numeric]
+        return report(
+            VerificationStatus.PARTIAL,
+            [
+                numeric,
+                inconclusive(
+                    CheckKind.SYMBOLIC,
+                    "Não foi provado que os dois lados são iguais para todo valor.",
+                ),
+            ],
+            ReasonCode.NUMERIC_EVIDENCE_ONLY,
+        )
+    checks = [
+        passed(
+            CheckKind.SYMBOLIC, "Os dois lados são idênticos: a diferença entre eles se reduz a 0."
+        ),
+        numeric,
+    ]
     if outcome.excluded:
         excluded = ", ".join(plain(e) for e in outcome.excluded)
-        checks.append(f"Exceto onde a equação não é definida: {name} = {excluded}.")
-    return report(VerificationStatus.VERIFIED_SYMBOLIC, "symbolic+numeric", checks)
-
-
-def _contradiction(reason: str) -> VerificationReport:
-    return report(VerificationStatus.FAILED, "symbolic", [reason])
+        checks.append(
+            passed(CheckKind.DOMAIN, f"Exceto onde a equação não é definida: {name} = {excluded}.")
+        )
+    return report(VerificationStatus.VERIFIED_SYMBOLIC, checks)
 
 
 # -- linear systems --------------------------------------------------------------------------
@@ -235,52 +323,78 @@ def verify_system(outcome: SystemOutcome) -> VerificationReport:
         if rank < augmented_rank:
             return report(
                 VerificationStatus.VERIFIED_SYMBOLIC,
-                "rank",
                 [
-                    f"O sistema é incompatível: o posto da matriz dos coeficientes é {rank}, "
-                    f"menor que o posto da matriz ampliada ({augmented_rank})."
+                    passed(
+                        CheckKind.COMPLETENESS,
+                        "O sistema é incompatível: o posto da matriz dos coeficientes é "
+                        f"{rank}, menor que o posto da matriz ampliada ({augmented_rank}).",
+                    )
                 ],
             )
-        return _contradiction("Os postos das matrizes não indicam um sistema incompatível.")
+        return failure(
+            CheckKind.COMPLETENESS, "Os postos das matrizes não indicam um sistema incompatível."
+        )
 
     solution = outcome.solution
     if solution is None:
         raise AssertionError("a compatible system must have a solution")
     mapping = dict(zip(outcome.variables, solution, strict=True))
 
-    for difference in outcome.differences:
-        if not _vanishes(difference.subs(mapping)):
-            return _contradiction("Substituindo a solução, uma equação não é satisfeita.")
-
+    # Undecided is not a failure (irrational coefficients may resist expanding);
+    # the independent evaluator below decides whether an equation fails.
+    exact = all(
+        reduces_to_zero(difference.subs(mapping)) is not None for difference in outcome.differences
+    )
     checked = _check_system_numerically(outcome, mapping)
     if checked is None:
-        return report(
-            VerificationStatus.FAILED,
-            "independent_numeric",
-            ["O avaliador independente encontrou uma equação não satisfeita."],
+        return failure(
+            CheckKind.NUMERIC, "O avaliador independente encontrou uma equação não satisfeita."
         )
-
+    substitution = (
+        passed(
+            CheckKind.SUBSTITUTION,
+            "Substituindo a solução em cada equação original, os dois lados ficam iguais.",
+        )
+        if exact
+        else inconclusive(
+            CheckKind.SUBSTITUTION,
+            "A substituição exata não foi decidida: a diferença não se reduziu a 0.",
+        )
+    )
     checks = [
-        "Substituindo a solução em cada equação original, os dois lados ficam iguais.",
-        f"O avaliador independente confirma em {checked} ponto(s).",
+        substitution,
+        passed(CheckKind.NUMERIC, f"O avaliador independente confirma em {checked} ponto(s)."),
     ]
     if outcome.kind is SystemKind.UNIQUE:
         if rank != unknowns:
-            return _contradiction(
-                f"O posto da matriz é {rank}, menor que o número de incógnitas ({unknowns})."
+            return failure(
+                CheckKind.COMPLETENESS,
+                f"O posto da matriz é {rank}, menor que o número de incógnitas ({unknowns}).",
+                *checks,
             )
         checks.append(
-            f"O posto da matriz dos coeficientes é {rank}, igual ao número de incógnitas, "
-            "então a solução é única."
+            passed(
+                CheckKind.COMPLETENESS,
+                f"O posto da matriz dos coeficientes é {rank}, igual ao número de incógnitas, "
+                "então a solução é única.",
+            )
         )
     else:
         if not (rank == augmented_rank and unknowns - rank == len(outcome.free)):
-            return _contradiction("Os postos das matrizes não confirmam a família de soluções.")
+            return failure(
+                CheckKind.COMPLETENESS,
+                "Os postos das matrizes não confirmam a família de soluções.",
+                *checks,
+            )
         checks.append(
-            f"O posto é {rank} com {unknowns} incógnitas: sobram {len(outcome.free)} "
-            "variável(is) livre(s), então essa família descreve todas as soluções."
+            passed(
+                CheckKind.COMPLETENESS,
+                f"O posto é {rank} com {unknowns} incógnitas: sobram {len(outcome.free)} "
+                "variável(is) livre(s), então essa família descreve todas as soluções.",
+            )
         )
-    return report(VerificationStatus.VERIFIED_SYMBOLIC, "substitution+rank", checks)
+    status = VerificationStatus.VERIFIED_SYMBOLIC if exact else VerificationStatus.VERIFIED_NUMERIC
+    return report(status, checks)
 
 
 def _check_system_numerically(

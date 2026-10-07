@@ -14,11 +14,18 @@
   },
   "verification": {
     "status": "unverified",
-    "method": "independent_numeric",
     "checks": [
-      "Só 0 ponto(s) do domínio foram encontrados para comparar."
+      {
+        "kind": "numeric",
+        "outcome": "inconclusive",
+        "message": "Só 0 ponto(s) do domínio foram encontrados para comparar."
+      }
     ],
-    "message": "Não foi possível verificar este resultado."
+    "message": "Não foi possível verificar este resultado.",
+    "reason": "few_points",
+    "methods": [
+      "numeric"
+    ]
   },
   "warnings": [],
   "error": null,

@@ -1703,12 +1703,24 @@
   },
   "verification": {
     "status": "partial",
-    "method": "points",
     "checks": [
-      "y = tan(x): as raízes foram encontradas pela mudança de sinal; raízes em que o gráfico só toca o eixo podem faltar.",
-      "y = tan(x): o avaliador independente confirma os 6 ponto(s) destacados (5 raiz(es))."
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "y = tan(x): o avaliador independente confirma os 6 ponto(s) destacados (5 raiz(es))."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "inconclusive",
+        "message": "y = tan(x): as raízes foram encontradas pela mudança de sinal; raízes em que o gráfico só toca o eixo podem faltar."
+      }
     ],
-    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado."
+    "message": "Verificação parcial: há evidência a favor do resultado, mas não uma prova completa. Veja como foi verificado.",
+    "reason": "completeness_not_proved",
+    "methods": [
+      "numeric",
+      "completeness"
+    ]
   },
   "warnings": [
     {

@@ -2,26 +2,34 @@
 
 Phase 2 runs it in-process. Phase 3 moves execution to worker processes with a
 timeout (ADR 0002, section 4). Phase 8 adds requests in Portuguese, read by
-local rules (``interpreter/language.py``) before the math parser.
+local rules (``interpreter/language.py``) before the math parser. Phase 9 gives
+the verification a time budget: a verification that runs out of time, or breaks,
+leaves the result "unverified" instead of losing it (ADR 0010).
 """
 
 import logging
+import time
 from dataclasses import dataclass
+from typing import Any
 
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import unique
 from app.interpreter.detect import Options, interpret
 from app.interpreter.language import match_language
-from app.interpreter.registry import REGISTRY
+from app.interpreter.registry import REGISTRY, IntentSpec
 from app.models.intents import IntentName
 from app.models.result import (
+    CheckKind,
     Interpretation,
     MathResult,
+    ReasonCode,
     ResultError,
     ResultWarning,
     VerificationReport,
     VerificationStatus,
 )
+from app.verification.deadline import VerificationTimeout, time_limit
+from app.verification.reports import unverified
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +47,13 @@ class _Context:
     offset: int | None = 0
 
 
-def calculate(text: str, intent: str | None = None, options: Options | None = None) -> MathResult:
+def calculate(
+    text: str,
+    intent: str | None = None,
+    options: Options | None = None,
+    verify_until: float | None = None,
+) -> MathResult:
+    """``verify_until``: a ``time.monotonic()`` instant by which verification must end."""
     context = _Context(text)
     try:
         math_text, math_intent, math_options = text, intent, options
@@ -61,7 +75,7 @@ def calculate(text: str, intent: str | None = None, options: Options | None = No
         spec = REGISTRY[request.intent]
         outcome = spec.execute(request.params)
         context.normalized = outcome.parsed.canonical
-        verification = spec.verify(outcome)
+        verification = _verify(spec, outcome, verify_until)
         if verification.status is VerificationStatus.FAILED:
             return _failure(
                 context,
@@ -91,6 +105,29 @@ def calculate(text: str, intent: str | None = None, options: Options | None = No
     except Exception:
         logger.exception("unexpected failure while calculating %r", text)
         return _failure(context, MathError(ErrorCode.INTERNAL_ERROR, "Erro interno ao calcular."))
+
+
+def _verify(spec: IntentSpec[Any, Any], outcome: Any, until: float | None) -> VerificationReport:
+    """The intent's verification, within its budget; never lets the result be lost."""
+    seconds = None if until is None else until - time.monotonic()
+    try:
+        with time_limit(seconds):
+            return spec.verify(outcome)
+    except VerificationTimeout:
+        return unverified(
+            ReasonCode.DEADLINE,
+            CheckKind.EXECUTION,
+            "A verificação foi interrompida por exceder o tempo reservado a ela; o resultado "
+            "foi calculado, mas não foi conferido.",
+        )
+    except Exception:
+        logger.exception("the verification of %s failed", spec.name)
+        return unverified(
+            ReasonCode.INTERNAL_ERROR,
+            CheckKind.EXECUTION,
+            "A verificação encontrou um erro interno; o resultado foi calculado, mas não foi "
+            "conferido.",
+        )
 
 
 def _failure(
