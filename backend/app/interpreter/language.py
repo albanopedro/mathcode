@@ -77,7 +77,8 @@ _LEADS = re.compile(
 _KEYWORD = (
     r"(?:derivada|integral|primitiva|limite|grafico|raizes|raiz|zeros|zero|fatoracao"
     r"|simplificacao|segunda|terceira|quarta|quinta|media|mediana|moda|desvio|variancia"
-    r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor"
+    r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor|inversa|transposta|traco|posto"
+    r"|norma|modulo|comprimento|vetor|versor|produto|angulo"
     r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo)"
 )
 _ARTICLE = re.compile(rf"(?:o|a|os|as)\s+(?={_KEYWORD})")
@@ -244,11 +245,71 @@ def _statistics_without_data(found: re.Match[str], request: str, rule: str) -> L
     )
 
 
+# -- matrices (Phase 10, ADR 0012) ----------------------------------------------------------------
+
+_MATRIX_OPERATIONS = {
+    "determinante": "determinant",
+    "inversa": "inverse",
+    "transposta": "transpose",
+    "traco": "trace",
+    "posto": "rank",
+}
+
+
+def _matrix(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    operation = _MATRIX_OPERATIONS[found.group("op")]
+    expr = _grab(found, request, "expr") or ""
+    return LanguageMatch(
+        IntentName.MATRIX, expr, {"operation": operation}, offset=found.start("expr"), rule=rule
+    )
+
+
+def _matrix_without_brackets(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    raise MathError(
+        ErrorCode.INVALID_INPUT_FOR_INTENT,
+        "Para matrizes, escreva os números entre colchetes, uma linha por colchete: "
+        "'determinante de [[1, 2], [3, 4]]'.",
+    )
+
+
+# -- vectors (Phase 10, ADR 0013) -----------------------------------------------------------------
+
+_VECTOR_OPERATIONS = {
+    "norma": "norm",
+    "modulo": "norm",
+    "comprimento": "norm",
+    "vetor unitario": "unit",
+    "versor": "unit",
+    "produto escalar": "dot",
+    "produto interno": "dot",
+    "produto vetorial": "cross",
+    "angulo": "angle",
+}
+
+
+def _vector(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    operation = _VECTOR_OPERATIONS[re.sub(r"\s+", " ", found.group("op"))]
+    expr = _grab(found, request, "expr") or ""
+    listed = re.sub(r"\]\s+e\s+\[", "]; [", expr)  # "[1, 2] e [3, 4]"
+    offset = found.start("expr") if listed == expr else None
+    return LanguageMatch(
+        IntentName.VECTOR, listed, {"operation": operation}, offset=offset, rule=rule
+    )
+
+
+def _vector_without_brackets(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    raise MathError(
+        ErrorCode.INVALID_INPUT_FOR_INTENT,
+        "Para vetores, escreva os componentes entre colchetes: 'produto escalar de [1, 2] e "
+        "[3, 4]' ou 'norma de [3, 4]'.",
+    )
+
+
 def _future(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     raise MathError(
         ErrorCode.UNSUPPORTED_FEATURE,
-        "Matrizes, geometria, probabilidade e pontos como vértice e máximo de uma função "
-        "ainda não são suportados; eles estão previstos para as próximas etapas.",
+        "Geometria, probabilidade e pontos como vértice e máximo de uma função ainda não "
+        "são suportados; eles estão previstos para as próximas etapas.",
     )
 
 
@@ -262,11 +323,35 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
         _statistics_without_data,
     ),
     (
-        "future",
+        "matrix",
         re.compile(
-            r"(?:determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo)"
-            r"\b.*"
+            r"(?:(?:a\s+)?matriz\s+)?(?P<op>determinante|inversa|transposta|traco|posto)"
+            r"(?:\s+(?:de|da|do))?(?:\s+(?:a\s+)?matriz)?\s*:?\s+(?P<expr>\[.*)"
         ),
+        _matrix,
+    ),
+    (
+        "vector",
+        re.compile(
+            r"(?P<op>norma|modulo|comprimento|vetor\s+unitario|versor|produto\s+escalar"
+            r"|produto\s+interno|produto\s+vetorial|angulo)"
+            r"(?:\s+(?:de|do|da|dos|das|entre))?(?:\s+(?:os\s+)?vetor(?:es)?)?\s*:?\s+(?P<expr>\[.*)"
+        ),
+        _vector,
+    ),
+    (
+        "vector_without_brackets",
+        re.compile(r"(?:produto\s+escalar|produto\s+vetorial|vetor\s+unitario|versor)\b[^\[]*"),
+        _vector_without_brackets,
+    ),
+    (
+        "matrix_without_brackets",
+        re.compile(r"(?:determinante|matriz)\b[^\[]*"),
+        _matrix_without_brackets,
+    ),
+    (
+        "future",
+        re.compile(r"(?:area|perimetro|volume|probabilidade|vertice|maximo|minimo)\b.*"),
         _future,
     ),
     (

@@ -19,14 +19,16 @@ from app.models.intents import (
     IntentName,
     IntentParams,
     LimitParams,
+    MatrixParams,
     PolynomialDivisionParams,
     SimplifyParams,
     SolveEquationParams,
     SolveSystemParams,
     StatisticsParams,
+    VectorParams,
 )
 from app.parsing import parse
-from app.parsing.ast import Equation, System, variables
+from app.parsing.ast import Equation, Matrix, System, has_brackets, variables, walk
 
 type Options = Mapping[str, str | int]
 
@@ -44,6 +46,8 @@ _TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
     IntentName.LIMIT: (LimitParams, "expression"),
     IntentName.GRAPH: (GraphParams, "expression"),
     IntentName.STATISTICS: (StatisticsParams, "data"),
+    IntentName.MATRIX: (MatrixParams, "expression"),
+    IntentName.VECTOR: (VectorParams, "expression"),
 }
 
 # User-facing explanation of an invalid option.
@@ -59,6 +63,10 @@ _OPTION_PROBLEMS = {
     "measure": (
         "Medida desconhecida. Use count, sum, mean, median, mode, min, max, range, variance, "
         "std, sample_variance ou sample_std."
+    ),
+    "operation": (
+        "Cálculo desconhecido. Para matrizes: evaluate, determinant, inverse, transpose, trace "
+        "ou rank; para vetores: evaluate, norm, unit, dot, cross ou angle."
     ),
 }
 
@@ -116,6 +124,10 @@ def _explain(exc: ValidationError) -> str:
 def _detect(text: str) -> IntentName:
     """From the shape of the input. Factor, expand, division and calculus must be asked for."""
     tree = parse(text).tree
+    if any(isinstance(node, Matrix) for node in walk(tree)):  # "[[1, 2], [3, 4]] * 2"
+        return IntentName.MATRIX
+    if has_brackets(tree):  # "[1, 2] + [3, 4]"
+        return IntentName.VECTOR
     if is_graph_input(tree):  # "x^2; 2x + 1" or "y = x^2"
         return IntentName.GRAPH
     if isinstance(tree, System):

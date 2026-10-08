@@ -1,0 +1,45 @@
+{
+  "success": true,
+  "intent": "vector",
+  "input": "[sqrt(2), pi]",
+  "normalized_input": "[sqrt(2), pi]",
+  "result": {
+    "plain": "‖u‖ = sqrt(2 + pi^2)",
+    "latex": "\\lVert u \\rVert = \\sqrt{2 + \\pi^{2}}",
+    "approx": "3.44522922330131"
+  },
+  "steps": [],
+  "details": {
+    "operation": "norm",
+    "dimension": 2,
+    "vectors": [
+      "[sqrt(2), pi]"
+    ],
+    "vectors_latex": [
+      "\\left(\\sqrt{2},\\ \\pi\\right)"
+    ]
+  },
+  "verification": {
+    "status": "verified_numeric",
+    "checks": [
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Os vetores, recalculados pelo avaliador independente (mpmath, 60 dígitos), coincidem em 30 algarismos significativos."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "A operação, refeita com o mpmath a partir dos vetores, confere com o resultado."
+      }
+    ],
+    "message": "Resultado conferido numericamente por um avaliador independente.",
+    "reason": null,
+    "methods": [
+      "numeric"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

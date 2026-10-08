@@ -22,7 +22,8 @@ async function calculateText(text: string, operation?: string) {
   if (operation) {
     await user.selectOptions(screen.getByLabelText("Operação"), operation);
   }
-  await user.type(screen.getByLabelText("Expressão ou equação"), text);
+  // user-event reads "[" as the start of a key name: "[[" types one literal "[".
+  await user.type(screen.getByLabelText("Expressão ou equação"), text.replaceAll("[", "[["));
   await user.click(screen.getByRole("button", { name: "Calcular" }));
   return user;
 }
@@ -571,5 +572,118 @@ describe("Calculator: statistics", () => {
     const result = await screen.findByRole("region", { name: "Resultado" });
     expect(within(result).getAllByTitle("Não definido para estes dados")).toHaveLength(2);
     expect(within(result).getByText(/Com um só valor/)).toBeInTheDocument();
+  });
+});
+
+/** The LaTeX of every formula drawn inside an element. */
+function latexOf(element: HTMLElement): string[] {
+  return Array.from(element.querySelectorAll("[data-latex]"), (node) =>
+    node.getAttribute("data-latex") ?? "",
+  );
+}
+
+describe("Calculator: matrices", () => {
+  it("offers the operation with its calculation field and sends both", async () => {
+    answer(fixtures.matrixDeterminant);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Matrizes");
+    expect(screen.getByLabelText("Cálculo")).toHaveValue("determinant");
+    await user.selectOptions(screen.getByLabelText("Cálculo"), "Inversa");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "[[[[1, 2], [[3, 4]]{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({
+      input: "[[1, 2], [3, 4]]",
+      intent: "matrix",
+      options: { operation: "inverse" },
+    });
+  });
+
+  it("shows the result and the matrix it was computed from", async () => {
+    answer(fixtures.matrixDeterminant);
+    await calculateText("[[1, 2], [3, 4]]", "Matrizes");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Matriz")).toBeInTheDocument();
+    expect(within(result).getByText(/Matriz A \(2×2\)/)).toBeInTheDocument();
+    expect(latexOf(result).some((latex) => latex.startsWith("\\det(A) = -2"))).toBe(true);
+  });
+
+  it("draws a matrix result as a formula, not as text", async () => {
+    answer(fixtures.matrixProduct);
+    await calculateText("[[1, 2], [3, 4]] * [[5, 6], [7, 8]]");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(latexOf(result).some((latex) => latex.includes("\\begin{matrix}"))).toBe(true);
+    expect(within(result).queryByText(/Matriz A/)).not.toBeInTheDocument(); // evaluate: A is the result
+  });
+
+  it("names the calculation of a phrase in Portuguese", async () => {
+    answer(fixtures.matrixInversePhrase);
+    await calculateText("qual a inversa de [[1, 2], [3, 4]]?");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByLabelText("Interpretação da frase")).toHaveTextContent(
+      "(cálculo: inversa)",
+    );
+  });
+
+  it("explains a singular matrix", async () => {
+    answer(fixtures.matrixSingular);
+    await calculateText("[[1, 2], [2, 4]]", "Matrizes");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/singular/);
+  });
+});
+
+describe("Calculator: vectors", () => {
+  it("offers the operation with its calculation field and sends both", async () => {
+    answer(fixtures.vectorCross);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Vetores");
+    expect(screen.getByLabelText("Cálculo")).toHaveValue("norm");
+    await user.selectOptions(screen.getByLabelText("Cálculo"), "Produto vetorial");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "[[1, 2, 3]; [[4, 5, 6]{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({
+      input: "[1, 2, 3]; [4, 5, 6]",
+      intent: "vector",
+      options: { operation: "cross" },
+    });
+  });
+
+  it("shows the result and the vectors it was computed from", async () => {
+    answer(fixtures.vectorCross);
+    await calculateText("[1, 2, 3]; [4, 5, 6]", "Vetores");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Vetor")).toBeInTheDocument();
+    const formulas = latexOf(result);
+    expect(formulas).toContain("u \\times v = \\left(-3,\\ 6,\\ -3\\right)");
+    expect(formulas).toContain("u = \\left(1,\\ 2,\\ 3\\right)");
+    expect(formulas).toContain("v = \\left(4,\\ 5,\\ 6\\right)");
+  });
+
+  it("shows an angle in radians and degrees", async () => {
+    answer(fixtures.vectorAnglePhrase);
+    await calculateText("ângulo entre os vetores [1, 0] e [1, 1]");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(latexOf(result)).toContain("\\theta = \\frac{\\pi}{4} = 45^\\circ");
+    expect(within(result).getByLabelText("Interpretação da frase")).toHaveTextContent(
+      "(cálculo: ângulo)",
+    );
+  });
+
+  it("explains the zero vector", async () => {
+    answer(fixtures.vectorZeroUnit);
+    await calculateText("[0, 0]", "Vetores");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/vetor nulo/);
   });
 });

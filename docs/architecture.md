@@ -81,10 +81,16 @@ Intents disponíveis (`models/intents.py`):
 - `polynomial_division` (`A / B`);
 - `derivative`, `integral` e `limit`, com parâmetros em `options` (ADR 0007);
 - `graph`: uma ou mais funções, separadas por `;`, ou `y = f(x)` (ADR 0008);
-- `statistics`: uma lista de números, com o resumo ou uma medida (ADR 0011).
+- `statistics`: uma lista de números, com o resumo ou uma medida (ADR 0011);
+- `matrix`: uma expressão com matrizes (`[[1, 2], [3, 4]]`) e o cálculo pedido
+  (ADR 0012);
+- `vector`: um vetor (`[1, 2, 3]`) ou dois separados por `;`, e o cálculo
+  pedido (ADR 0013).
 
 Sem intent explícito, a detecção por regras usa a forma da entrada:
 
+- com matriz entre colchetes, é `matrix` (calcular a expressão);
+- só com vetores, é `vector` (calcular a expressão);
 - listas de expressões (`x^2; 2x + 1`) e `y = f(x)` formam um gráfico;
 - equações separadas por `;` formam um sistema;
 - com `=`, é uma equação;
@@ -103,6 +109,8 @@ Estatística (pode ser uma vírgula decimal digitada com espaço).
 | solve_equation | `math_engine/equations.py` (com `polynomials.py`) | `verification/equations.py` |
 | solve_system | `math_engine/systems.py` | `verification/equations.py` |
 | statistics | `math_engine/statistics.py` | `verification/statistics.py` |
+| matrix | `math_engine/matrices.py` (o `LinearEvaluator`, comum a matrizes e vetores) | `verification/matrices.py` |
+| vector | `math_engine/vectors.py` | `verification/vectors.py` |
 
 Para adicionar um intent, cria-se um módulo e registra-se o intent. O fluxo
 principal não muda.
@@ -172,6 +180,8 @@ Avisos (`core/notices.py`), cada um uma vez por resultado:
 | integral | `variable`, `definite`; se definida: `lower`, `upper`, `converges` |
 | limit | `variable`, `point`, `side` (o lado usado), `requested_side`, `exists`, `oscillates`; se os laterais diferem: `left`, `right` |
 | statistics | `measure` (pedida ou `null`), `count`, `data` e `sorted` (decimais finitos como decimais), `modes` e `measures` (12 entradas: `name`, `label`, `symbol`, `plain`, `latex`, `approx`; `null` quando não definida) |
+| matrix | `operation`, `rows`, `cols`, `matrix` e `matrix_latex` (a matriz A sobre a qual o cálculo foi feito; com A·v, o vetor resultante como coluna) |
+| vector | `operation`, `dimension`, `vectors` e `vectors_latex` (u e v); no ângulo, `degrees` (exato ou `null`) e `degrees_approx` |
 | graph | `variable`, `x_range` (números), `x_range_text` (como digitado), `y_range`, `y_clipped`, `functions` (`label`, `latex`, `x`, `y` com `null` nos cortes) e `points` (`function`, `kind`: `root` ou `y_intercept`, `x`, `y`, `x_value`, `y_value`, `exact`) |
 
 `error.position` é um índice no texto **original** digitado pelo usuário. Num
@@ -210,6 +220,8 @@ entendem seja enviada ao modelo de IA configurado no servidor. Só vale sem
 | limit | `variable`, `point` (obrigatório), `side` (`both`, `left` ou `right`) |
 | graph | `x_min`, `x_max` (opcionais; padrão −10 e 10; aceitam `-2pi`) |
 | statistics | `measure`: `count`, `sum`, `mean`, `median`, `mode`, `min`, `max`, `range`, `variance`, `std`, `sample_variance` ou `sample_std` (sem ela, o resumo) |
+| matrix | `operation`: `evaluate` (padrão), `determinant`, `inverse`, `transpose`, `trace` ou `rank` |
+| vector | `operation`: `evaluate` (padrão), `norm`, `unit`, `dot`, `cross` ou `angle` (os três últimos com dois vetores, `u; v`) |
 
 Valores inválidos são respostas (200, `INVALID_INPUT_FOR_INTENT`, mensagem em
 português). Tipos fora do formato recebem 422: texto até 100 caracteres, número
@@ -251,6 +263,8 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | `components/InterpretationNote.tsx` | como a frase foi lida: pelas regras locais (discreto) ou pela IA (destacado, com o modelo e "Confira se é o que você pediu"); textos montados em `utils/interpretation.ts` |
 | `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
 | `components/GraphView.tsx` | carrega o Plotly **sob demanda** (`import()`), desenha linhas (cortes como `null`, `connectgaps: false`) e pontos; sem envio à nuvem; `utils/graph.ts` valida os `details` e monta traços e layout |
+| vetores no `ResultView` | resultado vetor sempre em KaTeX e "u = (…)", "v = (…)" abaixo; o campo "Cálculo" de vetores fica em `OperationFields`; `utils/vectors.ts` valida os `details` |
+| matriz no `ResultView` | resultado matriz sempre em KaTeX (sem o limite de texto longo) e "Matriz A (m×n)" abaixo do resultado; o campo "Cálculo" fica em `OperationFields`; `utils/matrices.ts` valida os `details` |
 | `components/StatisticsView.tsx` | tabela do resumo estatístico (Medida, Valor em KaTeX, Aproximado), com a medida pedida destacada e os dados em ordem; `utils/statistics.ts` valida os `details` |
 | `components/OperationFields.tsx` | os campos extras da operação escolhida (variável, ordem, de/até, ponto, lado), descritos em `utils/operations.ts`; `buildOptions` envia só os preenchidos e não valida nada: a API explica o que estiver errado |
 | `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, interpretação da frase, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
@@ -283,7 +297,7 @@ Mathcode/
 │   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build
 │   │   ├── interpreter/        registry + detecção + frases em PT (language.py)
 │   │   ├── planner/            ExecutionPlan (Fase 12)
-│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics
+│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics, matrices, vectors
 │   │   ├── verification/       estratégias por intent + avaliador independente, frações exatas,
 │   │   │                       derivador próprio, continuidade, Newton–Leibniz, prazos
 │   │   ├── formatting/         plain/LaTeX/aproximação
@@ -351,6 +365,8 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0013](decisions/0013-vetores.md) | Vetores (Fase 10, 3º domínio): `[1, 2, 3]`, álgebra comum com matrizes, escalar, vetorial, norma, unitário, ângulo em rad e graus |
+| [0012](decisions/0012-matrizes.md) | Matrizes (Fase 10, 2º domínio): sintaxe com colchetes, operações, verificação exata (frações) ou numérica (mpmath) |
 | [0011](decisions/0011-estatistica-descritiva.md) | Estatística descritiva (Fase 10, 1º domínio): medidas, σ populacional + s amostral, frases, verificação pelo módulo statistics |
 | [0010](decisions/0010-verification-engine.md) | Verification Engine (Fase 9): checagens estruturadas, comparação de métodos, prazos, não verificável sem perder o resultado |
 | [0009](decisions/0009-linguagem-natural-e-ia.md) | Linguagem natural e IA (Fase 8): regras em PT, "Permitir IA", OpenCode isolado, só modelos gratuitos |

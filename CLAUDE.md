@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-07, Fase 10: estatística concluída (aguardando revisão).
+> Última atualização: 2026-10-07, Fase 10: vetores concluídos (aguardando revisão).
 
 ## O que é
 
@@ -55,7 +55,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 7: Gráficos | concluída e commitada (`978dab5`) |
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
-| 10: Matemática avançada | **estatística concluída, aguardando revisão e commit**; próximos domínios a escolher |
+| 10: Matemática avançada | estatística e matrizes concluídas; **vetores concluídos, aguardando revisão e commit**; próximo domínio a escolher |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -233,6 +233,26 @@ Backend, continuação:
     soma dos desvios = 0, mediana divide, σ² = variância;
   - frases em `language.py` (`statistics` antes de `future`; "máximo de
     x^2…" segue futuro; sem números → orientação de formato).
+- **Matrizes** ([ADR 0012](docs/decisions/0012-matrizes.md)):
+  - tokens `[` `]`, nó `Matrix` (um termo da expressão); até 8×8; só números;
+  - intent `matrix`, `MatrixParams(expression, operation)`; operações
+    `evaluate` (padrão), `determinant`, `inverse`, `transpose`, `trace`,
+    `rank`; Automático detecta colchetes; outras operações recusam matrizes;
+  - álgebra com regras explicadas; potência inteira de −20 a 20; singular →
+    `DOMAIN_ERROR`;
+  - verificação: exata (Fraction + álgebra própria → symbolic) ou numérica
+    (mpmath 60 dígitos → numeric); det por Gauss, A·A⁻¹ = I e A⁻¹·A = I;
+  - frontend: campo "Cálculo"; matriz sempre em KaTeX; "Matriz A (m×n)".
+- **Vetores** ([ADR 0013](docs/decisions/0013-vetores.md)):
+  - nó `Vector` (`[1, 2, 3]`); `has_brackets`; listas `u; v` com colchetes
+    não caem no erro de "lista de números";
+  - `LinearEvaluator` (em `math_engine/matrices.py`) é comum a matrizes e
+    vetores; `VectorValue` é coluna; A·v dá vetor; v·A, v·w com `*` e v^n são
+    recusados com explicação;
+  - intent `vector`, operações `evaluate`, `norm`, `unit`, `dot`, `cross`
+    (3D), `angle` (rad exato + graus; 6 algarismos na manchete);
+  - verificação reaproveita `exact_linear`/`numeric_linear` de
+    `verification/matrices.py`; ‖u‖² = u·u, ortogonalidade + Lagrange, cos θ.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -334,6 +354,10 @@ Backend, continuação:
   divisibilidade (`equations._substitutes_exactly`).
 - O texto simples (`formatting/expressions.plain`) escreve ln como `log`, que
   na entrada é base 10. Pendência registrada, fora do escopo da Fase 9.
+- No `user-event` (Vitest), `[` abre um nome de tecla: para digitar um colchete,
+  use `[[` (o helper `calculateText` já escapa).
+- Em seletores CSS, `\d...` vira escape hexadecimal: para comparar LaTeX, leia
+  o atributo `data-latex` direto (`latexOf` nos testes do Calculator).
 - O `ruff` tem `allowed-confusables` para `× · − º ℝ` etc. Em testes, caracteres
   de largura total vão como escapes `\uXXXX`.
 
@@ -381,9 +405,28 @@ cd frontend && npm test && npm run build
      junto, rotulado, e um aviso explicando a diferença;
   4. operação "Estatística" + lista → **resumo** com todas as medidas; frase
      ("média de 10, 20, 30") → a medida pedida em destaque, com o resumo.
-- Estatística concluída (ADR 0011); aguardando a revisão e a escolha do
-  próximo domínio (matrizes, geometria, probabilidade/combinatória, vetores ou
-  trigonometria), um por vez.
+- Estatística concluída (ADR 0011).
+- **Matrizes (2º domínio, concluído, ADR 0012).** Decisões do usuário (2026-10-07):
+  1. operações: determinante, inversa, transposta, traço, posto e aritmética
+     (soma, subtração, produto, escalar, potência inteira) escrita como
+     expressão; autovalores ficam como sugestão (podem ser complexos; ℝ);
+  2. entradas: **só números exatos** (inteiros, decimais, frações, √2, pi),
+     até 8×8;
+  3. sintaxe **[[1, 2], [3, 4]]** (uma linha por colchete; separadores atuais);
+  4. interface: operação "Matrizes" + campo "Cálculo" (Determinante, Inversa,
+     Transposta, Traço, Posto, Calcular expressão); frases e expressões com
+     colchetes no Automático também.
+- **Vetores (3º domínio, concluído, ADR 0013).** Decisões do usuário (2026-10-07):
+  1. sintaxe `[1, 2, 3]` (um colchete; até 8 componentes; números exatos);
+  2. operações: soma, subtração e × número (expressão); produto escalar,
+     norma, vetor unitário, ângulo; produto vetorial (3D); matriz × vetor (o
+     vetor é coluna); `vetor * vetor` é recusado (ambíguo);
+  3. interface: operação "Vetores" + campo "Cálculo" (Norma, Unitário,
+     Produto escalar, Produto vetorial, Ângulo, Calcular expressão); dois
+     vetores separados por `;`; frases e Automático também;
+  4. ângulo em radianos exatos **e** em graus (θ = π/4 = 45°).
+  - Aguardando a revisão e a escolha do próximo domínio (geometria,
+    probabilidade/combinatória ou trigonometria).
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -399,7 +442,9 @@ cd frontend && npm test && npm run build
   métodos para integrais com limites irracionais e trigonométricas;
   continuidade lateral em pontos de borda; texto simples de ln; estatística:
   quartis/IQR, média ponderada, tabela de frequências, dados irracionais,
-  rótulo "Dados" no campo de entrada.
+  rótulo "Dados" no campo de entrada; matrizes: autovalores (complexos),
+  matrizes com letras, editor em grade; vetores: projeção, produto misto,
+  vetor × matriz, vetores com letras.
 
 ## Histórico
 
@@ -434,3 +479,10 @@ cd frontend && npm test && npm run build
   frases; cálculo exato com frações; verificação pelo módulo `statistics` do
   Python e por propriedades; tabela de resumo; 1 016 testes no backend e 201
   no frontend.
+- **Fase 10.2 (matrizes):** colchetes no parser, intent `matrix` com
+  determinante, inversa, transposta, traço, posto e aritmética; verificação
+  exata ou numérica por outro caminho; campo "Cálculo"; 1 089 testes no backend
+  e 213 no frontend.
+- **Fase 10.3 (vetores):** `[1, 2, 3]`, álgebra comum com matrizes (A·v),
+  escalar, vetorial, norma, unitário e ângulo (rad e graus), verificação por
+  outro caminho; 1 160 testes no backend e 225 no frontend.

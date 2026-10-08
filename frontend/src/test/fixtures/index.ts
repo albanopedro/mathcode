@@ -31,6 +31,11 @@ import limitFinite from "./limit-finite.json";
 import limitOneSided from "./limit-one-sided.json";
 import limitOscillates from "./limit-oscillates.json";
 import limitSides from "./limit-sides.json";
+import matrixDeterminant from "./matrix-determinant.json";
+import matrixInversePhrase from "./matrix-inverse-phrase.json";
+import matrixIrrational from "./matrix-irrational.json";
+import matrixProduct from "./matrix-product.json";
+import matrixSingular from "./matrix-singular.json";
 import complexOmitted from "./complex-omitted.json";
 import division from "./division.json";
 import divisionByZero from "./division-by-zero.json";
@@ -55,9 +60,26 @@ import systemNone from "./system-none.json";
 import systemUnique from "./system-unique.json";
 import timeout from "./timeout.json";
 import unverified from "./unverified.json";
+import vectorAnglePhrase from "./vector-angle-phrase.json";
+import vectorCross from "./vector-cross.json";
+import vectorIrrational from "./vector-irrational.json";
+import vectorMatrixProduct from "./vector-matrix-product.json";
+import vectorNorm from "./vector-norm.json";
+import vectorZeroUnit from "./vector-zero-unit.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  vectorAnglePhrase,
+  vectorCross,
+  vectorIrrational,
+  vectorMatrixProduct,
+  vectorNorm,
+  vectorZeroUnit,
+  matrixDeterminant,
+  matrixInversePhrase,
+  matrixIrrational,
+  matrixProduct,
+  matrixSingular,
   statisticsNoMode,
   statisticsPhrase,
   statisticsSingle,

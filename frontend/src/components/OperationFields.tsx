@@ -1,4 +1,9 @@
-import type { FieldValues, Operation } from "../utils/operations";
+import {
+  type FieldValues,
+  MATRIX_OPERATIONS,
+  type Operation,
+  VECTOR_OPERATIONS,
+} from "../utils/operations";
 
 interface OperationFieldsProps {
   operation: Operation;
@@ -10,7 +15,7 @@ const INPUT_CLASS =
   "rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-mono text-sm shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none";
 const LABEL_CLASS = "flex flex-col gap-1 text-sm font-medium text-slate-700";
 
-/** The extra inputs of the chosen operation (calculus): only those it uses. */
+/** The extra inputs of the chosen operation: only those it uses. */
 export function OperationFields({ operation, values, onChange }: OperationFieldsProps) {
   if (operation.fields.length === 0) {
     return null;
@@ -130,6 +135,42 @@ export function OperationFields({ operation, values, onChange }: OperationFields
             <option value="both">Os dois lados</option>
             <option value="left">Pela esquerda</option>
             <option value="right">Pela direita</option>
+          </select>
+        </label>
+      )}
+      {has("matrix_operation") && (
+        <label className={LABEL_CLASS}>
+          Cálculo
+          <select
+            value={values.matrix_operation}
+            onChange={(event) =>
+              set({ matrix_operation: event.target.value as FieldValues["matrix_operation"] })
+            }
+            className={INPUT_CLASS}
+          >
+            {MATRIX_OPERATIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {has("vector_operation") && (
+        <label className={LABEL_CLASS}>
+          Cálculo
+          <select
+            value={values.vector_operation}
+            onChange={(event) =>
+              set({ vector_operation: event.target.value as FieldValues["vector_operation"] })
+            }
+            className={INPUT_CLASS}
+          >
+            {VECTOR_OPERATIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </label>
       )}

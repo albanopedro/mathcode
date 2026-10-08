@@ -2,6 +2,8 @@ import type { MathResult, ResultValue, VerificationReport } from "../types/math"
 import { captions } from "../utils/captions";
 import { LONG_RESULT_CHARS } from "../utils/display";
 import { graphDetails } from "../utils/graph";
+import { matrixDetails } from "../utils/matrices";
+import { vectorDetails } from "../utils/vectors";
 import { INTENT_LABELS } from "../utils/operations";
 import { statisticsDetails } from "../utils/statistics";
 import { GraphView } from "./GraphView";
@@ -20,6 +22,11 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
   const lines = captions(result);
   const graph = graphDetails(result);
   const statistics = statisticsDetails(result);
+  const matrix = matrixDetails(result);
+  const vector = vectorDetails(result);
+  // Matrices and vectors are drawn as formulas however long their text: their width is
+  // bounded by their columns (at most 8).
+  const asText = !matrix && !vector && value.plain.length > LONG_RESULT_CHARS;
 
   return (
     <section
@@ -37,7 +44,7 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
         )}
       </div>
 
-      {value.plain.length > LONG_RESULT_CHARS ? (
+      {asText ? (
         <div className="flex flex-col gap-1">
           <p className="font-mono text-sm break-all text-slate-800">{value.plain}</p>
           <p className="text-xs text-slate-500">
@@ -64,6 +71,21 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
       ))}
 
       {statistics && <StatisticsView details={statistics} />}
+      {vector && vector.operation !== "evaluate" && (
+        <p className="overflow-x-auto text-sm text-slate-600">
+          {vector.vectors_latex.map((latex, index) => (
+            <span key={latex + String(index)} className="mr-3 inline-block">
+              <MathFormula latex={`${index === 0 ? "u" : "v"} = ${latex}`} />
+            </span>
+          ))}
+        </p>
+      )}
+      {matrix && matrix.operation !== "evaluate" && (
+        <p className="overflow-x-auto text-sm text-slate-600">
+          Matriz A ({matrix.rows}×{matrix.cols}):{" "}
+          <MathFormula latex={`A = ${matrix.matrix_latex}`} />
+        </p>
+      )}
 
       {result.interpretation && <InterpretationNote interpretation={result.interpretation} />}
 

@@ -56,6 +56,16 @@ CASES: dict[IntentName, tuple[str, dict[str, str | int] | None, Tamper]] = {
         None,
         lambda o: replace(o, median=o.median + 1),
     ),
+    IntentName.MATRIX: (
+        "[[1, 2], [3, 4]]",
+        {"operation": "inverse"},
+        lambda o: replace(o, result=o.result.T),
+    ),
+    IntentName.VECTOR: (
+        "[1, 2, 3]; [4, 5, 6]",
+        {"operation": "cross"},
+        lambda o: replace(o, result=replace(o.result, column=o.result.column * 2)),
+    ),
     IntentName.GRAPH: (
         "x^2 - 4x + 3",
         None,

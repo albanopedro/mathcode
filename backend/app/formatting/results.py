@@ -18,8 +18,10 @@ from app.math_engine.calculus import (
 )
 from app.math_engine.equations import EquationOutcome, SolutionKind
 from app.math_engine.graphing import GraphOutcome
+from app.math_engine.matrices import MatrixOutcome, VectorValue
 from app.math_engine.statistics import StatisticsOutcome, rational
 from app.math_engine.systems import SystemKind, SystemOutcome
+from app.math_engine.vectors import VectorOutcome
 from app.models.intents import Measure
 from app.models.result import ResultValue
 
@@ -376,3 +378,152 @@ def present_statistics(outcome: StatisticsOutcome) -> Presentation:
             "measures": measures,
         },
     )
+
+
+# -- matrices (Phase 10) -----------------------------------------------------------------------
+
+
+def _matrix_plain(matrix: sp.MatrixBase) -> str:
+    rows = (", ".join(plain(matrix[i, j]) for j in range(matrix.cols)) for i in range(matrix.rows))
+    return "[" + ", ".join(f"[{row}]" for row in rows) + "]"
+
+
+def _matrix_approx(matrix: sp.MatrixBase) -> str | None:
+    if all(entry.is_Rational for entry in matrix):
+        return None
+    rows = (
+        ", ".join(approx(matrix[i, j]) or plain(matrix[i, j]) for j in range(matrix.cols))
+        for i in range(matrix.rows)
+    )
+    return "[" + ", ".join(f"[{row}]" for row in rows) + "]"
+
+
+# operation -> (plain prefix, LaTeX prefix); None: the matrix alone
+_MATRIX_PREFIX: dict[str, tuple[str, str] | None] = {
+    "evaluate": None,
+    "determinant": ("det = ", r"\det(A) = "),
+    "inverse": ("A⁻¹ = ", r"A^{-1} = "),
+    "transpose": ("Aᵀ = ", r"A^{T} = "),
+    "trace": ("traço = ", r"\operatorname{tr}(A) = "),
+    "rank": ("posto = ", r"\operatorname{posto}(A) = "),
+}
+
+
+def vector_plain(vector: VectorValue) -> str:
+    return "[" + ", ".join(plain(entry) for entry in vector.entries) + "]"
+
+
+def vector_latex(vector: VectorValue) -> str:
+    return r"\left(" + r",\ ".join(latex(entry) for entry in vector.entries) + r"\right)"
+
+
+def vector_approx(vector: VectorValue) -> str | None:
+    if all(entry.is_Rational for entry in vector.entries):
+        return None
+    return "[" + ", ".join(approx(e) or plain(e) for e in vector.entries) + "]"
+
+
+def present_matrices(outcome: MatrixOutcome) -> Presentation:
+    result = outcome.result
+    if isinstance(result, VectorValue):  # A·v
+        body_plain, body_latex, body_approx = (
+            vector_plain(result),
+            vector_latex(result),
+            vector_approx(result),
+        )
+    elif isinstance(result, sp.MatrixBase):
+        body_plain, body_latex, body_approx = (
+            _matrix_plain(result),
+            latex(result),
+            _matrix_approx(result),
+        )
+    else:
+        body_plain, body_latex, body_approx = plain(result), latex(result), approx(result)
+    prefix = _MATRIX_PREFIX[outcome.operation]
+    plain_prefix, latex_prefix = prefix if prefix is not None else ("", "")
+    operand = outcome.operand
+    if isinstance(operand, VectorValue):
+        return Presentation(
+            ResultValue(plain=body_plain, latex=body_latex, approx=body_approx),
+            {
+                "operation": outcome.operation,
+                "rows": operand.size,
+                "cols": 1,
+                "matrix": vector_plain(operand),
+                "matrix_latex": vector_latex(operand),
+            },
+        )
+    return Presentation(
+        ResultValue(
+            plain=plain_prefix + body_plain, latex=latex_prefix + body_latex, approx=body_approx
+        ),
+        {
+            "operation": outcome.operation,
+            "rows": operand.rows,
+            "cols": operand.cols,
+            "matrix": _matrix_plain(operand),
+            "matrix_latex": latex(operand),
+        },
+    )
+
+
+# -- vectors (Phase 10) ------------------------------------------------------------------------
+
+# operation -> (plain prefix, LaTeX prefix)
+_VECTOR_PREFIX: dict[str, tuple[str, str]] = {
+    "evaluate": ("", ""),
+    "norm": ("‖u‖ = ", r"\lVert u \rVert = "),
+    "unit": ("û = ", r"\hat{u} = "),
+    "dot": ("u·v = ", r"u \cdot v = "),
+    "cross": ("u×v = ", r"u \times v = "),
+    "angle": ("θ = ", r"\theta = "),
+}
+
+
+def present_vectors(outcome: VectorOutcome) -> Presentation:
+    result = outcome.result
+    plain_prefix, latex_prefix = _VECTOR_PREFIX[outcome.operation]
+    details: dict[str, Any] = {
+        "operation": outcome.operation,
+        "dimension": outcome.vectors[0].size,
+        "vectors": [vector_plain(v) for v in outcome.vectors],
+        "vectors_latex": [vector_latex(v) for v in outcome.vectors],
+    }
+    if isinstance(result, VectorValue):
+        value = ResultValue(
+            plain=plain_prefix + vector_plain(result),
+            latex=latex_prefix + vector_latex(result),
+            approx=vector_approx(result),
+        )
+        return Presentation(value, details)
+    if outcome.operation != "angle":
+        value = ResultValue(
+            plain=plain_prefix + plain(result),
+            latex=latex_prefix + latex(result),
+            approx=approx(result),
+        )
+        return Presentation(value, details)
+
+    # The angle: exact radians and degrees (ADR 0013). The headline keeps 6 significant
+    # digits of the degrees; ``details`` has all of them.
+    degrees = sp.simplify(result * 180 / sp.pi)
+    exact_degrees = degrees.is_Rational
+    radians_approx = approx(result)
+    details |= {
+        "degrees": plain(degrees) if exact_degrees else None,
+        "degrees_approx": approx(degrees) or plain(degrees),
+    }
+    if exact_degrees:
+        value = ResultValue(
+            plain=f"θ = {plain(result)} rad = {plain(degrees)}°",
+            latex=rf"\theta = {latex(result)} = {latex(degrees)}^\circ",
+            approx=f"{radians_approx} rad" if radians_approx else None,
+        )
+    else:
+        shown = str(sp.N(degrees, 6))
+        value = ResultValue(
+            plain=f"θ = {plain(result)} rad ≈ {shown}°",
+            latex=rf"\theta = {latex(result)} \approx {shown}^\circ",
+            approx=f"{radians_approx} rad" if radians_approx else None,
+        )
+    return Presentation(value, details)

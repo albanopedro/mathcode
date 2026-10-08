@@ -19,6 +19,8 @@ class TokenKind(StrEnum):
     CARET = "^"
     LPAREN = "("
     RPAREN = ")"
+    LBRACKET = "["
+    RBRACKET = "]"
     COMMA = ","
     EQUALS = "="
     SQRT = "√"
@@ -34,6 +36,8 @@ _SINGLE_CHAR = {
     "^": TokenKind.CARET,
     "(": TokenKind.LPAREN,
     ")": TokenKind.RPAREN,
+    "[": TokenKind.LBRACKET,
+    "]": TokenKind.RBRACKET,
     ",": TokenKind.COMMA,
     ";": TokenKind.COMMA,
     "=": TokenKind.EQUALS,

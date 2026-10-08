@@ -232,3 +232,54 @@ def test_a_list_of_numbers_without_operation_points_to_statistics(api: TestClien
     status, data = post(api, {"input": "10; 20; 30"})
     assert status == 200
     assert "Estatística" in data["error"]["message"]
+
+
+# -- matrices (Phase 10) --------------------------------------------------------------------------
+
+
+def test_matrix_operation(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "[[1, 2], [3, 4]]", "intent": "matrix", "options": {"operation": "inverse"}}
+    )
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.result is not None and result.result.plain == "A⁻¹ = [[-2, 1], [3/2, -1/2]]"
+    assert data["details"]["operation"] == "inverse"
+    assert data["verification"]["status"] == "verified_symbolic"
+
+
+def test_matrix_expression_in_automatic(api: TestClient) -> None:
+    status, data = post(api, {"input": "[[1, 2], [3, 4]] * [[5, 6], [7, 8]]"})
+    assert status == 200
+    assert data["intent"] == "matrix"
+    assert data["result"]["plain"] == "[[19, 22], [43, 50]]"
+
+
+def test_singular_matrix_is_explained(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "[[1, 2], [2, 4]]", "intent": "matrix", "options": {"operation": "inverse"}}
+    )
+    assert status == 200
+    assert data["error"]["code"] == "DOMAIN_ERROR"
+    assert "singular" in data["error"]["message"]
+
+
+# -- vectors (Phase 10) ---------------------------------------------------------------------------
+
+
+def test_vector_operation(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "[1, 0]; [1, 1]", "intent": "vector", "options": {"operation": "angle"}}
+    )
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.result is not None and result.result.plain == "θ = pi/4 rad = 45°"
+    assert data["details"]["degrees"] == "45"
+    assert data["verification"]["status"] == "verified_symbolic"
+
+
+def test_matrix_times_vector_in_automatic(api: TestClient) -> None:
+    status, data = post(api, {"input": "[[1, 2], [3, 4]] * [5, 6]"})
+    assert status == 200
+    assert data["intent"] == "matrix"
+    assert data["result"]["plain"] == "[17, 39]"

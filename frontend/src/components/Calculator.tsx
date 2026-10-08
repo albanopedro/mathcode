@@ -74,8 +74,9 @@ export function Calculator() {
         <p id="expression-help" className="text-sm text-slate-500">
           Use ^ para potência, sqrt(x) ou √ para raiz e ° para graus. Separe argumentos
           e as equações de um sistema com ;, como em log(8; 2) ou x + y = 3; x - y = 1.
-          Frases simples também funcionam, como "derivada de x^3", "15% de 780" ou "média
-          de 10, 20, 30".
+          Matrizes vão entre colchetes, uma linha por colchete: [[1, 2], [3, 4]]; vetores, num
+          colchete só: [1, 2, 3]. Frases simples
+          também funcionam, como "derivada de x^3", "15% de 780" ou "média de 10, 20, 30".
         </p>
         {operation.intent === null && (
           <div className="flex items-start gap-2 text-sm">

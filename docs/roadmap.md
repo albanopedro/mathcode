@@ -20,7 +20,7 @@ Regras gerais:
 | 7 | Gráficos | concluída |
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
-| 10 | Matemática avançada | em andamento: estatística feita (aguardando revisão) |
+| 10 | Matemática avançada | em andamento: estatística, matrizes e vetores feitos (vetores aguardando revisão) |
 | 11 | UX e histórico | — |
 | 12 | Assistente matemático | — |
 
@@ -287,8 +287,40 @@ domínio por alteração**.
     módulo `statistics` do Python e por propriedades exatas;
   - tabela de resumo na interface.
 - **Testes:** 1 016 no backend (eram 950) e 201 no frontend (eram 189).
-- **Próximos domínios:** matrizes, geometria, probabilidade/combinatória,
-  vetores e trigonometria, um por vez, com a ordem decidida pelo usuário.
+
+### 10.2 — Matrizes (feita)
+
+- **Decidido com o usuário** ([ADR 0012](decisions/0012-matrizes.md)):
+  determinante, inversa, transposta, traço, posto e aritmética de matrizes;
+  só números exatos (até 8×8); sintaxe `[[1, 2], [3, 4]]`; operação
+  "Matrizes" com o campo "Cálculo".
+- **Entregue:**
+  - colchetes no parser e o nó `Matrix`;
+  - intent `matrix` (opção `operation`), detectado no Automático;
+  - frases ("determinante de [[…]]", "inversa de…", "traço da matriz…");
+  - verificação exata (frações e álgebra própria) ou numérica (mpmath), com
+    determinante por Gauss, A·A⁻¹ = I nos dois lados, transposição, traço e
+    posto refeitos;
+  - resultado em KaTeX e a matriz A exibida.
+- **Testes:** 1 089 no backend (eram 1 016) e 213 no frontend (eram 201).
+
+### 10.3 — Vetores (feita)
+
+- **Decidido com o usuário** ([ADR 0013](decisions/0013-vetores.md)): soma,
+  subtração e múltiplo; escalar, norma, unitário e ângulo; vetorial (3D);
+  matriz × vetor; operação "Vetores" com o campo "Cálculo"; ângulo em
+  radianos exatos e em graus.
+- **Entregue:**
+  - `[1, 2, 3]` no parser;
+  - avaliador de álgebra linear comum a matrizes e vetores (vetor = coluna);
+  - intent `vector` e frases ("produto escalar de [1, 2] e [3, 4]", "ângulo
+    entre os vetores…", "norma de…");
+  - verificação exata ou numérica por outro caminho (‖u‖² = u·u,
+    ortogonalidade e Lagrange no vetorial, cos θ);
+  - "u = (…)", "v = (…)" na interface.
+- **Testes:** 1 160 no backend (eram 1 089) e 225 no frontend (eram 213).
+- **Próximos domínios:** geometria, probabilidade/combinatória e
+  trigonometria, um por vez, com a ordem decidida pelo usuário.
 
 ## Fase 11 — UX e histórico
 
@@ -316,5 +348,8 @@ determinística.
 - Corrigir o texto simples do logaritmo natural (`log` → `ln`).
 - Estatística: quartis e IQR (com convenção explicada), média ponderada,
   tabela de frequências, dados irracionais, rótulo "Dados" no campo de entrada.
+- Matrizes: autovalores e autovetores (tratar complexos), matrizes com letras,
+  editor em grade (Fase 11).
+- Vetores: projeção, produto misto, vetor × matriz (linha), vetores com letras.
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

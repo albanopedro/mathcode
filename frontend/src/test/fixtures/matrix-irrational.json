@@ -1,0 +1,42 @@
+{
+  "success": true,
+  "intent": "matrix",
+  "input": "[[sqrt(2), 1], [1, sqrt(2)]]",
+  "normalized_input": "[[sqrt(2), 1], [1, sqrt(2)]]",
+  "result": {
+    "plain": "A⁻¹ = [[sqrt(2), -1], [-1, sqrt(2)]]",
+    "latex": "A^{-1} = \\left[\\begin{matrix}\\sqrt{2} & -1\\\\-1 & \\sqrt{2}\\end{matrix}\\right]",
+    "approx": "[[1.4142135623731, -1], [-1, 1.4142135623731]]"
+  },
+  "steps": [],
+  "details": {
+    "operation": "inverse",
+    "rows": 2,
+    "cols": 2,
+    "matrix": "[[sqrt(2), 1], [1, sqrt(2)]]",
+    "matrix_latex": "\\left[\\begin{matrix}\\sqrt{2} & 1\\\\1 & \\sqrt{2}\\end{matrix}\\right]"
+  },
+  "verification": {
+    "status": "verified_numeric",
+    "checks": [
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "A matriz da expressão, recalculada pelo avaliador independente (mpmath, 60 dígitos), coincide em 30 algarismos significativos."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "A operação, refeita com o mpmath (determinante por LU, A·A⁻¹ = I, transposição, diagonal ou escalonamento), confere com o resultado."
+      }
+    ],
+    "message": "Resultado conferido numericamente por um avaliador independente.",
+    "reason": null,
+    "methods": [
+      "numeric"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

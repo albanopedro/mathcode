@@ -21,6 +21,10 @@ Operations (intent) and their options:
 - "statistics": numbers separated by "; ", e.g. "10; 20; 30". Option: measure (count, sum,
   mean, median, mode, min, max, range, variance, std, sample_variance, sample_std); no
   measure for the whole summary. variance and std are the population ones.
+- "matrix": a matrix expression, one row per bracket, e.g. "[[1, 2], [3, 4]] * 2". Option:
+  operation (evaluate, determinant, inverse, transpose, trace, rank); default evaluate.
+- "vector": vectors in one bracket, e.g. "[1, 2, 3]"; two vectors separated by "; ". Option:
+  operation (evaluate, norm, unit, dot, cross, angle); dot, cross and angle take two vectors.
 
 Expression syntax: ^ for powers, sqrt(x), abs(x), sin cos tan asin acos atan, exp, ln
 (natural log), log (base 10), pi, e, ° for degrees. Single-letter variables only.
@@ -30,7 +34,7 @@ never the answer.
 If the request is not math, is ambiguous, or needs information that is missing,
 set "intent" to null, "expression" to "" and ask in "clarification".
 If it asks for something that is not in the list above (double integrals, partial
-derivatives, matrices, geometry, probability, complex numbers...), do NOT turn it into
+derivatives, eigenvalues, geometry, probability, complex numbers...), do NOT turn it into
 a similar operation: set "intent" to null and say in "clarification" that it is not
 supported yet.
 

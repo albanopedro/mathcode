@@ -1,0 +1,53 @@
+{
+  "success": true,
+  "intent": "vector",
+  "input": "[1, 2, 3]; [4, 5, 6]",
+  "normalized_input": "[1, 2, 3]; [4, 5, 6]",
+  "result": {
+    "plain": "u×v = [-3, 6, -3]",
+    "latex": "u \\times v = \\left(-3,\\ 6,\\ -3\\right)",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "operation": "cross",
+    "dimension": 3,
+    "vectors": [
+      "[1, 2, 3]",
+      "[4, 5, 6]"
+    ],
+    "vectors_latex": [
+      "\\left(1,\\ 2,\\ 3\\right)",
+      "\\left(4,\\ 5,\\ 6\\right)"
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os vetores, recalculados com frações exatas e álgebra própria (sem o SymPy), são os mesmos."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os três componentes, refeitos pela fórmula com frações, são os mesmos."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "u×v é perpendicular a u e a v (os dois produtos escalares dão 0), e ‖u×v‖² = ‖u‖²‖v‖² − (u·v)² (identidade de Lagrange)."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

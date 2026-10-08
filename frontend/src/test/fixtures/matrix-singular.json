@@ -1,0 +1,17 @@
+{
+  "success": false,
+  "intent": "matrix",
+  "input": "[[1, 2], [2, 4]]",
+  "normalized_input": null,
+  "result": null,
+  "steps": [],
+  "details": {},
+  "verification": null,
+  "warnings": [],
+  "error": {
+    "code": "DOMAIN_ERROR",
+    "message": "A matriz é singular (determinante 0), então não tem inversa.",
+    "position": null
+  },
+  "interpretation": null
+}

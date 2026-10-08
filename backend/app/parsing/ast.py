@@ -52,7 +52,23 @@ class Degrees:
     position: int
 
 
-type Node = Number | Variable | Constant | Negate | Binary | Call | Degrees
+@dataclass(frozen=True)
+class Matrix:
+    """[[1, 2], [3, 4]]: rows of the same length, with numbers in them (ADR 0012)."""
+
+    rows: tuple[tuple[Node, ...], ...]
+    position: int  # of the opening "["
+
+
+@dataclass(frozen=True)
+class Vector:
+    """[1, 2, 3]: components that are numbers (ADR 0013). A column in matrix products."""
+
+    entries: tuple[Node, ...]
+    position: int  # of the "["
+
+
+type Node = Number | Variable | Constant | Negate | Binary | Call | Degrees | Matrix | Vector
 
 
 @dataclass(frozen=True)
@@ -93,6 +109,10 @@ def children(node: Tree) -> tuple[Tree, ...]:
             return (left, right)
         case Call(args=args):
             return args
+        case Matrix(rows=rows):
+            return tuple(entry for row in rows for entry in row)
+        case Vector(entries=entries):
+            return entries
         case _:
             return ()
 
@@ -101,6 +121,11 @@ def walk(node: Tree) -> Iterator[Tree]:
     yield node
     for child in children(node):
         yield from walk(child)
+
+
+def has_brackets(node: Tree) -> bool:
+    """True if a matrix or a vector appears anywhere in ``node``."""
+    return any(isinstance(inner, Matrix | Vector) for inner in walk(node))
 
 
 def variables(node: Tree) -> set[str]:

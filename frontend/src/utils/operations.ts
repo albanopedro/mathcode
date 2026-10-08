@@ -1,7 +1,39 @@
 import type { IntentName } from "../types/math";
 
 /** Extra inputs an operation asks for, besides the expression. */
-export type OperationField = "variable" | "order" | "bounds" | "point" | "side" | "x_range";
+export type OperationField =
+  | "variable"
+  | "order"
+  | "bounds"
+  | "point"
+  | "side"
+  | "x_range"
+  | "matrix_operation"
+  | "vector_operation";
+
+/** What to compute from a matrix expression (ADR 0012), in the order of the field. */
+export const MATRIX_OPERATIONS = [
+  { value: "determinant", label: "Determinante" },
+  { value: "inverse", label: "Inversa" },
+  { value: "transpose", label: "Transposta" },
+  { value: "trace", label: "Traço" },
+  { value: "rank", label: "Posto" },
+  { value: "evaluate", label: "Calcular expressão" },
+] as const;
+
+export type MatrixOperation = (typeof MATRIX_OPERATIONS)[number]["value"];
+
+/** What to compute from vectors (ADR 0013); dot, cross and angle take two: "u; v". */
+export const VECTOR_OPERATIONS = [
+  { value: "norm", label: "Norma" },
+  { value: "unit", label: "Vetor unitário" },
+  { value: "dot", label: "Produto escalar" },
+  { value: "cross", label: "Produto vetorial" },
+  { value: "angle", label: "Ângulo" },
+  { value: "evaluate", label: "Calcular expressão" },
+] as const;
+
+export type VectorOperation = (typeof VECTOR_OPERATIONS)[number]["value"];
 
 export interface Operation {
   /** `null` lets the API detect the operation from the input. */
@@ -66,6 +98,18 @@ export const OPERATIONS: readonly Operation[] = [
     placeholder: "Ex.: 2, 4, 4, 4, 5, 5, 7, 9",
     fields: [],
   },
+  {
+    intent: "matrix",
+    label: "Matrizes",
+    placeholder: "Ex.: [[1, 2], [3, 4]]",
+    fields: ["matrix_operation"],
+  },
+  {
+    intent: "vector",
+    label: "Vetores",
+    placeholder: "Ex.: [1, 2, 3] ou [1, 2, 3]; [4, 5, 6]",
+    fields: ["vector_operation"],
+  },
 ];
 
 /** Short name shown next to a result. */
@@ -82,6 +126,8 @@ export const INTENT_LABELS: Record<IntentName, string> = {
   limit: "Limite",
   graph: "Gráfico",
   statistics: "Estatística",
+  matrix: "Matriz",
+  vector: "Vetor",
 };
 
 /** What the extra inputs hold; empty texts mean "not given". */
@@ -95,6 +141,8 @@ export interface FieldValues {
   side: "both" | "left" | "right";
   x_min: string;
   x_max: string;
+  matrix_operation: MatrixOperation;
+  vector_operation: VectorOperation;
 }
 
 export const EMPTY_FIELDS: FieldValues = {
@@ -106,6 +154,8 @@ export const EMPTY_FIELDS: FieldValues = {
   side: "both",
   x_min: "",
   x_max: "",
+  matrix_operation: "determinant",
+  vector_operation: "norm",
 };
 
 export type CalculationOptions = Record<string, string | number>;
@@ -143,6 +193,12 @@ export function buildOptions(operation: Operation, values: FieldValues): Calcula
         break;
       case "side":
         options.side = values.side;
+        break;
+      case "matrix_operation":
+        options.operation = values.matrix_operation;
+        break;
+      case "vector_operation":
+        options.operation = values.vector_operation;
         break;
       case "x_range":
         if (values.x_min.trim()) {

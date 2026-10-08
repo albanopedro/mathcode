@@ -12,7 +12,19 @@ import sympy as sp
 from app.core.errors import ErrorCode, MathError
 from app.core.limits import MAX_RESULT_DIGITS, MAX_SYMBOLIC_EXPONENT
 from app.core.notices import Notice, NoticeCode
-from app.parsing.ast import Binary, Call, Constant, Degrees, Negate, Node, Number, Variable, walk
+from app.parsing.ast import (
+    Binary,
+    Call,
+    Constant,
+    Degrees,
+    Matrix,
+    Negate,
+    Node,
+    Number,
+    Variable,
+    Vector,
+    walk,
+)
 from app.parsing.vocabulary import TRIGONOMETRIC
 
 _UNDEFINED = (sp.zoo, sp.nan, sp.oo, -sp.oo)
@@ -88,6 +100,14 @@ class ExpressionBuilder:
                 return self._binary(node)
             case Call():
                 return self._call(node)
+            case Matrix() | Vector():
+                raise MathError(
+                    ErrorCode.INVALID_INPUT_FOR_INTENT,
+                    "Matrizes e vetores só entram nas operações Matrizes e Vetores, em "
+                    "expressões com colchetes no Automático ou em frases como 'determinante de "
+                    "[[1, 2], [3, 4]]' e 'norma de [3, 4]'.",
+                    node.position,
+                )
         raise AssertionError(f"unknown node: {node!r}")
 
     def _binary(self, node: Binary) -> sp.Expr:

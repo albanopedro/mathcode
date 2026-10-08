@@ -5,11 +5,13 @@ cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
 informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
 pedido: nunca é ela que calcula.
 
-> **Estado: Fase 10 (matemática avançada), com estatística descritiva.**
+> **Estado: Fase 10 (matemática avançada): estatística, matrizes e vetores.**
 > Pelo navegador ou pela API, o Mathcode já: calcula; simplifica, fatora e expande; resolve equações
 > (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
 > deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;
-> calcula média, mediana, moda e desvio padrão de uma lista; e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
+> calcula média, mediana, moda e desvio padrão de uma lista; opera com
+> matrizes (determinante, inversa, transposta, traço, posto, produto) e
+> vetores (escalar, vetorial, norma, ângulo); e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
 > mais livres são traduzidas por um modelo gratuito. Tudo vem com verificação
 > independente, que diz quando provou o resultado, quando só tem evidência e
 > quando não conseguiu conferir, e mostra cada checagem feita: substituição,
@@ -68,7 +70,10 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Automático (vira gráfico) | `y = x² - 4x + 3` ou `sen(x); cos(x)` |
 | Gráfico (x de `-2pi` até `2pi`) | `tan(x)` |
 | Estatística | `2, 4, 4, 4, 5, 5, 7, 9` (resumo completo) |
-| Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1`, `qual a média de 10, 20 e 30?` |
+| Matrizes (cálculo: Inversa) | `[[2, 1, 0], [1, 3, 1], [0, 1, 4]]` |
+| Automático (matrizes) | `[[1, 2], [3, 4]] * [[5, 6], [7, 8]]` |
+| Vetores (cálculo: Produto vetorial) | `[1, 2, 3]; [4, 5, 6]` |
+| Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1`, `qual a média de 10, 20 e 30?`, `determinante de [[1, 2], [3, 4]]`, `ângulo entre os vetores [1, 0] e [1, 1]` |
 
 Em desenvolvimento, o Vite encaminha `/api` para o backend na porta 8100, então
 rode os dois juntos.

@@ -19,6 +19,9 @@ MAX_SYSTEM_EQUATIONS = 10
 # Values in one statistics request (Phase 10); "1;" repeated fits 250 in 500 characters.
 MAX_DATA_VALUES = 200
 
+# Rows and columns of a matrix (Phase 10, ADR 0012).
+MAX_MATRIX_SIZE = 8
+
 # Highest derivative order.
 MAX_DERIVATIVE_ORDER = 10
 

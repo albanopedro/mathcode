@@ -1,0 +1,65 @@
+{
+  "success": true,
+  "intent": "vector",
+  "input": "ângulo entre os vetores [1, 0] e [1, 1]",
+  "normalized_input": "[1, 0]; [1, 1]",
+  "result": {
+    "plain": "θ = pi/4 rad = 45°",
+    "latex": "\\theta = \\frac{\\pi}{4} = 45^\\circ",
+    "approx": "0.785398163397448 rad"
+  },
+  "steps": [],
+  "details": {
+    "operation": "angle",
+    "dimension": 2,
+    "vectors": [
+      "[1, 0]",
+      "[1, 1]"
+    ],
+    "vectors_latex": [
+      "\\left(1,\\ 0\\right)",
+      "\\left(1,\\ 1\\right)"
+    ],
+    "degrees": "45",
+    "degrees_approx": "45"
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os vetores, recalculados com frações exatas e álgebra própria (sem o SymPy), são os mesmos."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O ângulo, refeito com o mpmath a partir de u·v e das normas (frações exatas), coincide em 30 algarismos."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "cos θ = u·v / (‖u‖‖v‖) = sqrt(2)/2, exatamente, com θ entre 0 e π."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "numeric",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "vector",
+    "expression": "[1, 0]; [1, 1]",
+    "options": {
+      "operation": "angle"
+    },
+    "provider": null,
+    "model": null
+  }
+}

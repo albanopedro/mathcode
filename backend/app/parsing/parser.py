@@ -3,7 +3,7 @@
 from dataclasses import replace
 
 from app.core.errors import ErrorCode, MathError
-from app.core.limits import MAX_DATA_VALUES, MAX_NESTING, MAX_SYSTEM_EQUATIONS
+from app.core.limits import MAX_DATA_VALUES, MAX_MATRIX_SIZE, MAX_NESTING, MAX_SYSTEM_EQUATIONS
 from app.core.notices import Notice, NoticeCode
 from app.parsing.ast import (
     Binary,
@@ -12,12 +12,15 @@ from app.parsing.ast import (
     Degrees,
     Equation,
     ExpressionList,
+    Matrix,
     Negate,
     Node,
     Number,
     System,
     Tree,
     Variable,
+    Vector,
+    has_brackets,
     variables,
 )
 from app.parsing.tokenizer import Token, TokenKind
@@ -88,7 +91,7 @@ class _Parser:
                     separator.position,
                 )
             return ExpressionList(tuple(expressions), separator.position)
-        if not any(variables(item) for item in expressions):
+        if not any(variables(item) or has_brackets(item) for item in expressions):
             raise MathError(ErrorCode.PARSE_ERROR, _NUMBERS_NEED_STATISTICS, separator.position)
         if len(expressions) > MAX_SYSTEM_EQUATIONS:
             raise MathError(
@@ -153,6 +156,12 @@ class _Parser:
             return _DEGREE_BP
         if token.kind in _STARTS_IMPLICIT_FACTOR:
             return _IMPLICIT_BP
+        if token.kind is TokenKind.LBRACKET:
+            raise MathError(
+                ErrorCode.PARSE_ERROR,
+                "Para multiplicar por uma matriz, use *, como em 2*[[1, 2], [3, 4]].",
+                token.position,
+            )
         if token.kind is TokenKind.NUMBER:
             raise MathError(
                 ErrorCode.PARSE_ERROR,
@@ -178,6 +187,10 @@ class _Parser:
                 return replace(inner, grouped=True) if isinstance(inner, Binary) else inner
             case TokenKind.SQRT:
                 return Call("sqrt", (self._expression(_SQRT_BP),), token.position)
+            case TokenKind.LBRACKET:
+                if self._peek().kind is TokenKind.LBRACKET:
+                    return self._matrix(token)
+                return self._vector(token)
             case TokenKind.EOF:
                 raise MathError(
                     ErrorCode.PARSE_ERROR, "A expressão está incompleta.", token.position
@@ -283,6 +296,82 @@ class _Parser:
             )
         return Call(name, tuple(args), name_token.position)
 
+    def _matrix(self, opening: Token) -> Matrix:
+        """[[1, 2], [3, 4]]: the outer brackets hold rows, each row its entries."""
+        rows = [self._matrix_row(opening)]
+        while self._peek().kind is TokenKind.COMMA:
+            self._advance()
+            rows.append(self._matrix_row(opening))
+        self._expect_bracket(opening)
+
+        width = len(rows[0][1])
+        for number, (row_token, entries) in enumerate(rows, start=1):
+            if len(entries) != width:
+                raise MathError(
+                    ErrorCode.PARSE_ERROR,
+                    f"Todas as linhas da matriz precisam ter o mesmo número de elementos: a 1ª "
+                    f"tem {width} e a {number}ª tem {len(entries)}.",
+                    row_token.position,
+                )
+        if len(rows) > MAX_MATRIX_SIZE or width > MAX_MATRIX_SIZE:
+            raise MathError(
+                ErrorCode.LIMIT_EXCEEDED,
+                f"Matrizes podem ter até {MAX_MATRIX_SIZE} linhas e {MAX_MATRIX_SIZE} colunas.",
+                opening.position,
+            )
+        return Matrix(tuple(tuple(entries) for _, entries in rows), opening.position)
+
+    def _vector(self, opening: Token) -> Vector:
+        """[1, 2, 3]: one bracket holds the components."""
+        entries = [self._expression(0)]
+        while self._peek().kind is TokenKind.COMMA:
+            self._advance()
+            entries.append(self._expression(0))
+        self._expect_bracket(opening)
+        for entry in entries:
+            if has_brackets(entry):
+                raise MathError(
+                    ErrorCode.PARSE_ERROR,
+                    "Os componentes de um vetor são números, não outros vetores ou matrizes.",
+                    entry.position,
+                )
+        if len(entries) > MAX_MATRIX_SIZE:
+            raise MathError(
+                ErrorCode.LIMIT_EXCEEDED,
+                f"Vetores podem ter até {MAX_MATRIX_SIZE} componentes.",
+                opening.position,
+            )
+        return Vector(tuple(entries), opening.position)
+
+    def _matrix_row(self, matrix: Token) -> tuple[Token, list[Node]]:
+        opening = self._advance()
+        if opening.kind is not TokenKind.LBRACKET:
+            raise MathError(
+                ErrorCode.PARSE_ERROR,
+                "Escreva cada linha da matriz entre colchetes, como em [[1, 2], [3, 4]].",
+                opening.position if opening.kind is not TokenKind.EOF else matrix.position,
+            )
+        entries = [self._expression(0)]
+        while self._peek().kind is TokenKind.COMMA:
+            self._advance()
+            entries.append(self._expression(0))
+        self._expect_bracket(opening)
+        for entry in entries:
+            if has_brackets(entry):
+                raise MathError(
+                    ErrorCode.PARSE_ERROR,
+                    "Os elementos de uma matriz são números, não outras matrizes ou vetores.",
+                    entry.position,
+                )
+        return opening, entries
+
+    def _expect_bracket(self, opening: Token) -> None:
+        if self._peek().kind is not TokenKind.RBRACKET:
+            raise MathError(
+                ErrorCode.PARSE_ERROR, "Colchete aberto e não fechado.", opening.position
+            )
+        self._advance()
+
     # -- token helpers ----------------------------------------------------------
 
     def _peek(self) -> Token:
@@ -307,6 +396,8 @@ class _Parser:
             return
         if token.kind is TokenKind.RPAREN:
             message = "Parêntese ')' sem o '(' correspondente."
+        elif token.kind is TokenKind.RBRACKET:
+            message = "Colchete ']' sem o '[' correspondente."
         elif token.kind is TokenKind.COMMA:
             message = "Vírgula fora de uma função. Para número decimal, escreva sem espaço: 3,5."
         else:

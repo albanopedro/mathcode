@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "intent": "matrix",
+  "input": "[[1, 2], [3, 4]] * [5, 6]",
+  "normalized_input": "[[1, 2], [3, 4]]*[5, 6]",
+  "result": {
+    "plain": "[17, 39]",
+    "latex": "\\left(17,\\ 39\\right)",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "operation": "evaluate",
+    "rows": 2,
+    "cols": 1,
+    "matrix": "[17, 39]",
+    "matrix_latex": "\\left(17,\\ 39\\right)"
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "A matriz da expressão, recalculada com frações exatas e álgebra de matrizes própria (sem o SymPy), é a mesma."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

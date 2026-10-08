@@ -11,6 +11,22 @@ const OPTION_LABELS: Record<string, string> = {
   x_min: "x de",
   x_max: "x até",
   measure: "medida",
+  operation: "cálculo",
+};
+
+// The "operation" option of matrices and vectors.
+const OPERATION_NAMES: Record<string, string> = {
+  evaluate: "calcular expressão",
+  determinant: "determinante",
+  inverse: "inversa",
+  transpose: "transposta",
+  trace: "traço",
+  rank: "posto",
+  norm: "norma",
+  unit: "vetor unitário",
+  dot: "produto escalar",
+  cross: "produto vetorial",
+  angle: "ângulo",
 };
 
 const MEASURES: Record<string, string> = {
@@ -49,7 +65,8 @@ export function describeInterpretation(interpretation: Interpretation): Interpre
     operation: interpretation.intent ? INTENT_LABELS[interpretation.intent] : null,
     expression: interpretation.expression,
     options: Object.entries(interpretation.options).map(([key, value]) => {
-      const names = key === "side" ? SIDES : key === "measure" ? MEASURES : {};
+      const names: Record<string, string> =
+        { side: SIDES, measure: MEASURES, operation: OPERATION_NAMES }[key] ?? {};
       const shown = names[String(value)] ?? String(value);
       return `${OPTION_LABELS[key] ?? key}: ${shown}`;
     }),

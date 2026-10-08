@@ -7,12 +7,14 @@ from app.parsing.ast import (
     Degrees,
     Equation,
     ExpressionList,
+    Matrix,
     Negate,
     Node,
     Number,
     System,
     Tree,
     Variable,
+    Vector,
 )
 
 _PRECEDENCE = {"+": 1, "-": 1, "*": 2, "/": 2, "^": 4}
@@ -57,6 +59,12 @@ def _text(node: Node) -> str:
             return _wrap(operand, _precedence(operand) < _ATOM) + "°"
         case Call(name=name, args=args):
             return f"{name}({', '.join(_text(arg) for arg in args)})"
+        case Vector(entries=entries):
+            return "[" + ", ".join(_text(entry) for entry in entries) + "]"
+        case Matrix(rows=rows):
+            return (
+                "[" + ", ".join("[" + ", ".join(_text(e) for e in row) + "]" for row in rows) + "]"
+            )
         case Binary():
             return _binary(node)
 

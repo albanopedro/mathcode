@@ -31,6 +31,8 @@ class IntentName(StrEnum):
     LIMIT = "limit"
     GRAPH = "graph"
     STATISTICS = "statistics"
+    MATRIX = "matrix"
+    VECTOR = "vector"
 
 
 class _Params(BaseModel):
@@ -127,6 +129,28 @@ class StatisticsParams(_Params):
     measure: Measure | None = None
 
 
+# Matrices (Phase 10, ADR 0012): what to do with the matrix the expression evaluates to.
+type MatrixOperation = Literal["evaluate", "determinant", "inverse", "transpose", "trace", "rank"]
+
+
+class MatrixParams(_Params):
+    """A matrix expression, such as "[[1, 2], [3, 4]] * 2", and what to compute from it."""
+
+    expression: str
+    operation: MatrixOperation = "evaluate"
+
+
+# Vectors (Phase 10, ADR 0013). dot, cross and angle take two vectors: "u; v".
+type VectorOperation = Literal["evaluate", "norm", "unit", "dot", "cross", "angle"]
+
+
+class VectorParams(_Params):
+    """A vector expression, or two separated by ";", and what to compute from them."""
+
+    expression: str
+    operation: VectorOperation = "evaluate"
+
+
 type IntentParams = (
     ArithmeticParams
     | SimplifyParams
@@ -140,6 +164,8 @@ type IntentParams = (
     | LimitParams
     | GraphParams
     | StatisticsParams
+    | MatrixParams
+    | VectorParams
 )
 
 # Options a request may carry for each intent, besides the input text.
@@ -150,6 +176,8 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.LIMIT: frozenset({"variable", "point", "side"}),
     IntentName.GRAPH: frozenset({"x_min", "x_max"}),
     IntentName.STATISTICS: frozenset({"measure"}),
+    IntentName.MATRIX: frozenset({"operation"}),
+    IntentName.VECTOR: frozenset({"operation"}),
 }
 
 # An option value: a short text (variable, bound, point, side) or a small number

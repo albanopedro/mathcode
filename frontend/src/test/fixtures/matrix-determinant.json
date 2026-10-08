@@ -1,0 +1,42 @@
+{
+  "success": true,
+  "intent": "matrix",
+  "input": "[[1, 2], [3, 4]]",
+  "normalized_input": "[[1, 2], [3, 4]]",
+  "result": {
+    "plain": "det = -2",
+    "latex": "\\det(A) = -2",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "operation": "determinant",
+    "rows": 2,
+    "cols": 2,
+    "matrix": "[[1, 2], [3, 4]]",
+    "matrix_latex": "\\left[\\begin{matrix}1 & 2\\\\3 & 4\\end{matrix}\\right]"
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "A matriz da expressão, recalculada com frações exatas e álgebra de matrizes própria (sem o SymPy), é a mesma."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "O determinante, recalculado por eliminação de Gauss com frações (um algoritmo diferente do usado no cálculo), é o mesmo."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

@@ -110,7 +110,7 @@ def test_the_math_text_is_cut_from_what_was_typed() -> None:
     "text",
     [
         "qual a área de um círculo de raio 5?",
-        "calcule o determinante dessa matriz",
+        "qual a probabilidade de tirar 6 num dado?",
         "qual o vértice dessa função?",
     ],
 )
@@ -228,3 +228,67 @@ def test_statistics_phrase_with_a_variable_explains_the_format() -> None:
     result = calculate("média de 10, 20, x")
     assert result.error is not None
     assert "média de 10, 20, 30" in result.error.message
+
+
+# -- matrices (Phase 10) --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "operation"),
+    [
+        ("determinante de [[1, 2], [3, 4]]", "determinant"),
+        ("calcule o determinante da matriz [[1, 2], [3, 4]]", "determinant"),
+        ("qual a inversa de [[1, 2], [3, 4]]?", "inverse"),
+        ("matriz inversa de [[1, 2], [3, 4]]", "inverse"),
+        ("transposta de [[1, 2], [3, 4]]", "transpose"),
+        ("o traço da matriz [[1, 2], [3, 4]]", "trace"),
+        ("posto de [[1, 2], [3, 4]]", "rank"),
+        ("determinante: [[1, 2], [3, 4]]", "determinant"),
+    ],
+)
+def test_matrix_phrases(text: str, operation: str) -> None:
+    found = match_language(text)
+    assert found is not None
+    assert found.intent is I.MATRIX
+    assert found.text == "[[1, 2], [3, 4]]"
+    assert found.options == {"operation": operation}
+    assert text[found.offset :].startswith("[[1, 2]")
+
+
+def test_matrix_words_without_brackets_explain_the_syntax() -> None:
+    with pytest.raises(MathError) as exc:
+        match_language("calcule o determinante dessa matriz")
+    assert "[[1, 2], [3, 4]]" in exc.value.message
+
+
+def test_inverse_of_a_function_is_not_a_matrix() -> None:
+    assert match_language("inversa de x^2") is None
+
+
+# -- vectors (Phase 10) ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "data", "operation"),
+    [
+        ("norma de [3, 4]", "[3, 4]", "norm"),
+        ("qual o módulo do vetor [3, 4]?", "[3, 4]", "norm"),
+        ("vetor unitário de [3, 4]", "[3, 4]", "unit"),
+        ("produto escalar de [1, 2] e [3, 4]", "[1, 2]; [3, 4]", "dot"),
+        ("calcule o produto escalar dos vetores [1, 2]; [3, 4]", "[1, 2]; [3, 4]", "dot"),
+        ("o produto vetorial entre [1, 0, 0] e [0, 1, 0]", "[1, 0, 0]; [0, 1, 0]", "cross"),
+        ("ângulo entre os vetores [1, 0] e [1, 1]", "[1, 0]; [1, 1]", "angle"),
+    ],
+)
+def test_vector_phrases(text: str, data: str, operation: str) -> None:
+    found = match_language(text)
+    assert found is not None
+    assert found.intent is I.VECTOR
+    assert found.text == data
+    assert found.options == {"operation": operation}
+
+
+def test_vector_words_without_brackets_explain_the_syntax() -> None:
+    with pytest.raises(MathError) as exc:
+        match_language("produto escalar de u e v")
+    assert "[1, 2]" in exc.value.message

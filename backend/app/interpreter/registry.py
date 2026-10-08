@@ -21,17 +21,21 @@ from app.formatting.results import (
     present_graph,
     present_integral,
     present_limit,
+    present_matrices,
     present_rewrite,
     present_statistics,
     present_system,
+    present_vectors,
 )
 from app.math_engine.algebra import divide, expand, factor, simplify
 from app.math_engine.arithmetic import evaluate
 from app.math_engine.calculus import derivative, integral, limit
 from app.math_engine.equations import solve_equation
 from app.math_engine.graphing import graph
+from app.math_engine.matrices import matrices
 from app.math_engine.statistics import statistics
 from app.math_engine.systems import solve_system
+from app.math_engine.vectors import vectors
 from app.models.intents import (
     ArithmeticParams,
     DerivativeParams,
@@ -41,11 +45,13 @@ from app.models.intents import (
     IntegralParams,
     IntentName,
     LimitParams,
+    MatrixParams,
     PolynomialDivisionParams,
     SimplifyParams,
     SolveEquationParams,
     SolveSystemParams,
     StatisticsParams,
+    VectorParams,
 )
 from app.models.result import VerificationReport
 from app.parsing import ParseResult
@@ -54,7 +60,9 @@ from app.verification.arithmetic import verify_arithmetic
 from app.verification.calculus import verify_derivative, verify_integral, verify_limit
 from app.verification.equations import verify_equation, verify_system
 from app.verification.graphing import verify_graph
+from app.verification.matrices import verify_matrices
 from app.verification.statistics import verify_statistics
+from app.verification.vectors import verify_vectors
 
 
 class Outcome(Protocol):
@@ -119,5 +127,7 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
             verify_statistics,
             present_statistics,
         ),
+        IntentSpec(IntentName.MATRIX, MatrixParams, matrices, verify_matrices, present_matrices),
+        IntentSpec(IntentName.VECTOR, VectorParams, vectors, verify_vectors, present_vectors),
     )
 }

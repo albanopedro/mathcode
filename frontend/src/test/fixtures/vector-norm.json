@@ -1,0 +1,46 @@
+{
+  "success": true,
+  "intent": "vector",
+  "input": "[1, 2, 2]",
+  "normalized_input": "[1, 2, 2]",
+  "result": {
+    "plain": "‖u‖ = 3",
+    "latex": "\\lVert u \\rVert = 3",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "operation": "norm",
+    "dimension": 3,
+    "vectors": [
+      "[1, 2, 2]"
+    ],
+    "vectors_latex": [
+      "\\left(1,\\ 2,\\ 2\\right)"
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os vetores, recalculados com frações exatas e álgebra própria (sem o SymPy), são os mesmos."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "‖u‖² = u·u = 9, refeito com frações, e ‖u‖ ≥ 0."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}
