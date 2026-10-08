@@ -1,5 +1,6 @@
 """Outcome of each intent -> the ``result`` and ``details`` of a MathResult."""
 
+import math
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any
@@ -20,6 +21,7 @@ from app.math_engine.equations import EquationOutcome, SolutionKind
 from app.math_engine.geometry import Classification, GeometryOutcome, Line
 from app.math_engine.graphing import GraphOutcome
 from app.math_engine.matrices import MatrixOutcome, VectorValue
+from app.math_engine.probability import BinomialSummary, ProbabilityOutcome
 from app.math_engine.statistics import StatisticsOutcome, rational
 from app.math_engine.systems import SystemKind, SystemOutcome
 from app.math_engine.vectors import VectorOutcome
@@ -596,6 +598,99 @@ def present_geometry(outcome: GeometryOutcome) -> Presentation:
             plain=f"{outcome.symbol} = {plain(result)}",
             latex=f"{outcome.symbol} = {latex(result)}",
             approx=approx(result),
+        ),
+        details,
+    )
+
+
+# -- probability (ADR 0015) -----------------------------------------------------------------------
+
+_LOG10_2 = math.log10(2)
+_SUPERSCRIPTS = str.maketrans("0123456789-", "⁰¹²³⁴⁵⁶⁷⁸⁹⁻")
+_VALUE_NAMES = {"A": "P(A)", "B": "P(B)", "A∩B": "P(A ∩ B)", "A∪B": "P(A ∪ B)"}
+
+
+def _with_comma(scaled: int, decimals: int) -> str:
+    """The integer ``scaled`` divided by 10^decimals, written with a decimal comma."""
+    digits = str(scaled).rjust(decimals + 1, "0")
+    if decimals == 0:
+        return digits
+    return f"{digits[:-decimals]},{digits[-decimals:]}"
+
+
+def percent(value: sp.Rational) -> tuple[str, bool]:
+    """The value in percent, with a decimal comma, and whether it is exact.
+
+    Exact when it has up to 6 decimals ('37,5%', '0,03125%'); otherwise 2
+    decimals from 1% up ('16,67%') and 4 significant digits below it
+    ('0,01429%', '9,333·10⁻³⁰⁰%').
+    """
+    hundred = Fraction(int(value.p), int(value.q)) * 100
+    for decimals in range(7):
+        scaled = hundred * 10**decimals
+        if scaled.denominator == 1:
+            return _with_comma(scaled.numerator, decimals) + "%", True
+    if hundred >= 1:
+        rounded = int(hundred * 100 + Fraction(1, 2))  # half up: probabilities are >= 0
+        return _with_comma(rounded, 2).rstrip("0").rstrip(",") + "%", False
+    # Below 1%: 4 significant digits, from the first one that is not zero.
+    # hundred = mantissa·10^-exponent, 1 <= mantissa < 10; first guess from the sizes.
+    gap = hundred.denominator.bit_length() - hundred.numerator.bit_length()
+    exponent = max(0, int(gap * _LOG10_2) - 1)
+    while hundred * 10**exponent < 1:
+        exponent += 1
+    rounded = int(hundred * 10 ** (exponent + 3) + Fraction(1, 2))
+    if rounded == 10_000:  # 9,9996 rounds up to 10
+        rounded, exponent = 1000, exponent - 1
+    if exponent <= 4:
+        return _with_comma(rounded, exponent + 3).rstrip("0").rstrip(",") + "%", False
+    mantissa = _with_comma(rounded, 3).rstrip("0").rstrip(",")
+    return f"{mantissa}·10{str(-exponent).translate(_SUPERSCRIPTS)}%", False
+
+
+def present_probability(outcome: ProbabilityOutcome) -> Presentation:
+    result = outcome.result
+    details: dict[str, Any] = {
+        "calculation": outcome.calculation,
+        "group": outcome.group,
+        "values": {
+            _VALUE_NAMES.get(name, name): plain(value) for name, value in outcome.values.items()
+        },
+        "formula": outcome.formula,
+        "percent": None,
+        "percent_exact": None,
+    }
+    if outcome.letters:
+        details["letters"] = [
+            {"letter": letter, "count": count} for letter, count in outcome.letters
+        ]
+    if isinstance(result, BinomialSummary):
+        # 6 significant digits: the three lines must fit a phone screen.
+        short = None if result.std.is_Rational else str(sp.N(result.std, 6))
+        std = plain(result.std) if short is None else f"{plain(result.std)} ≈ {short}"
+        std_latex = latex(result.std) if short is None else rf"{latex(result.std)} \approx {short}"
+        details["summary"] = {
+            "mean": plain(result.mean),
+            "variance": plain(result.variance),
+            "std": plain(result.std),
+        }
+        return Presentation(
+            ResultValue(
+                plain=f"μ = {plain(result.mean)}; σ² = {plain(result.variance)}; σ = {std}",
+                latex=(
+                    rf"\begin{{aligned}} \mu &= {latex(result.mean)} \\ "
+                    rf"\sigma^2 &= {latex(result.variance)} \\ "
+                    rf"\sigma &= {std_latex} \end{{aligned}}"
+                ),
+            ),
+            details,
+        )
+    if outcome.group != "counting":
+        details["percent"], details["percent_exact"] = percent(result)
+    return Presentation(
+        ResultValue(
+            plain=f"{outcome.plain_symbol} = {plain(result)}",
+            latex=f"{outcome.symbol} = {latex(result)}",
         ),
         details,
     )

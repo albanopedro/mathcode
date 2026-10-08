@@ -193,6 +193,14 @@ class _Evaluator:
         args = [self._eval(arg) for arg in node.args]
         x = args[0]
         match node.name:
+            case "factorial" | "C" | "A":
+                n, *rest = [_natural(arg) for arg in args]
+                if node.name == "factorial":
+                    return mp.factorial(n)
+                (k,) = rest
+                if k > n:
+                    return mpf(0)
+                return mp.binomial(n, k) if node.name == "C" else mp.ff(n, k)
             case "sqrt":
                 if x < 0:
                     raise OutsideDomain
@@ -223,6 +231,14 @@ class _Evaluator:
                     raise OutsideDomain
                 return mp.log(x, base)
         raise AssertionError(f"unknown function: {node.name}")
+
+
+def _natural(value: mpf) -> mpf:
+    """An argument of n!, C or A: 0.1·30 is 3 up to rounding, so it is rounded (ADR 0015)."""
+    nearest = mpmath.nint(value)
+    if nearest < 0 or abs(value - nearest) > mpf(10) ** (-(mp.dps // 2)):
+        raise OutsideDomain
+    return nearest
 
 
 def _exact_rational(node: Node) -> Fraction | None:

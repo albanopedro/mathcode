@@ -1,5 +1,10 @@
 import { FIGURE_GROUPS, FIGURES, figure } from "../utils/geometry";
 import {
+  PROBABILITY_CALCULATIONS,
+  PROBABILITY_GROUPS,
+  probabilityCalculation,
+} from "../utils/probability";
+import {
   type FieldValues,
   MATRIX_OPERATIONS,
   type Operation,
@@ -201,6 +206,36 @@ export function OperationFields({ operation, values, onChange }: OperationFields
             Medidas: {figure(values.geometry_figure).measures}. Ex.:{" "}
             <code className="font-mono text-slate-700">
               {figure(values.geometry_figure).example}
+            </code>
+          </p>
+        </>
+      )}
+      {has("probability") && (
+        <>
+          <label className={LABEL_CLASS}>
+            Cálculo
+            <select
+              value={values.probability_calculation}
+              onChange={(event) => set({ probability_calculation: event.target.value })}
+              className={INPUT_CLASS}
+            >
+              {PROBABILITY_GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {PROBABILITY_CALCULATIONS.filter((option) => option.group === group).map(
+                    (option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ),
+                  )}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          <p className="basis-full text-sm text-slate-500">
+            Valores: {probabilityCalculation(values.probability_calculation).values}. Ex.:{" "}
+            <code className="font-mono text-slate-700">
+              {probabilityCalculation(values.probability_calculation).example}
             </code>
           </p>
         </>

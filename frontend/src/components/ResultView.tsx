@@ -6,6 +6,7 @@ import { graphDetails } from "../utils/graph";
 import { matrixDetails } from "../utils/matrices";
 import { vectorDetails } from "../utils/vectors";
 import { INTENT_LABELS } from "../utils/operations";
+import { probabilityDetails, repeatedLetters } from "../utils/probability";
 import { statisticsDetails } from "../utils/statistics";
 import { GraphView } from "./GraphView";
 import { InterpretationNote } from "./InterpretationNote";
@@ -26,6 +27,7 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
   const matrix = matrixDetails(result);
   const vector = vectorDetails(result);
   const geometry = geometryDetails(result);
+  const probability = probabilityDetails(result);
   // Matrices and vectors are drawn as formulas however long their text: their width is
   // bounded by their columns (at most 8).
   const asText = !matrix && !vector && value.plain.length > LONG_RESULT_CHARS;
@@ -87,6 +89,23 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
               {geometry.slope && `; inclinação m = ${geometry.slope}`}
             </p>
           )}
+        </div>
+      )}
+      {probability && (
+        <div className="flex flex-col gap-1 text-sm text-slate-600">
+          {probability.percent && (
+            <p className="text-base text-slate-700">
+              Em porcentagem: {probability.percent_exact ? "" : "≈ "}
+              {probability.percent}
+            </p>
+          )}
+          {repeatedLetters(probability) && (
+            <p>Letras repetidas: {repeatedLetters(probability)}.</p>
+          )}
+          {/* A formula that wraps has roots taller than the line: pad, don't scroll. */}
+          <p className="overflow-x-auto overflow-y-hidden py-1">
+            Fórmula: <MathFormula latex={probability.formula} />
+          </p>
         </div>
       )}
       {vector && vector.operation !== "evaluate" && (

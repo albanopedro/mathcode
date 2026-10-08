@@ -71,6 +71,11 @@ CASES: dict[IntentName, tuple[str, dict[str, str | int] | None, Tamper]] = {
         {"figure": "circle", "calculation": "area"},
         lambda o: replace(o, result=o.result + 1),
     ),
+    IntentName.PROBABILITY: (
+        "P(A) = 1/2; P(B) = 1/3; P(A e B) = 1/6",
+        {"calculation": "union"},
+        lambda o: replace(o, result=o.result + sp.Rational(1, 100)),
+    ),
     IntentName.GRAPH: (
         "x^2 - 4x + 3",
         None,

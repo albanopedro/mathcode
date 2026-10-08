@@ -1,15 +1,19 @@
 """Exact rational arithmetic on the parser's AST, with Python's ``Fraction`` (ADR 0010).
 
 A second, independent way to compute a calculation made only of rational
-numbers, + − × ÷ and integer powers: no SymPy, no rounding. Anything else
-(constants, functions, roots, degrees, variables) is out of scope: None.
+numbers, + − × ÷, integer powers and counting (n!, C(n, k), A(n, k), by their
+definitions: ADR 0015): no SymPy, no rounding. Anything else (constants, other
+functions, roots, degrees, variables) is out of scope: None.
 """
 
 import math
 from fractions import Fraction
 
 from app.core.limits import MAX_RESULT_DIGITS
-from app.parsing.ast import Binary, Negate, Node, Number
+from app.parsing.ast import Binary, Call, Negate, Node, Number
+
+# Larger arguments only appear in results the pipeline already refuses (ADR 0015).
+_MAX_FACTORS = 10_000
 
 
 class _OutOfScope(Exception):
@@ -41,7 +45,45 @@ def _value(node: Node) -> Fraction:
             if op == "*":
                 return a * b
             return a / b
+        case Call(name="factorial" | "C" | "A" as name, args=args):
+            return Fraction(_count(name, [_natural(_value(arg)) for arg in args]))
     raise _OutOfScope
+
+
+def _natural(value: Fraction) -> int:
+    if value.denominator != 1 or value < 0:
+        raise _OutOfScope  # an error in the pipeline (ADR 0015)
+    return value.numerator
+
+
+def _count(name: str, numbers: list[int]) -> int:
+    """By the definitions: products of consecutive integers, one factor at a time."""
+    if name == "factorial":
+        (n,) = numbers
+        return _falling(n, n)
+    n, k = numbers
+    if k > n:
+        return 0
+    if name == "A":
+        return _falling(n, k)
+    # C(n, k) = C(n, k − 1)·(n − k + 1)/k: every partial result is an integer.
+    smaller = min(k, n - k)
+    if smaller > _MAX_FACTORS:
+        raise _OutOfScope
+    result = 1
+    for i in range(1, smaller + 1):
+        result = result * (n - i + 1) // i
+    return result
+
+
+def _falling(n: int, k: int) -> int:
+    """n·(n − 1)···(n − k + 1)."""
+    if k > _MAX_FACTORS:
+        raise _OutOfScope
+    result = 1
+    for factor in range(n - k + 1, n + 1):
+        result *= factor
+    return result
 
 
 def _power(base: Fraction, exponent: Fraction) -> Fraction:

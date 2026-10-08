@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.ai import needs_ai
 from app.calculator import calculate
 from app.core.errors import ErrorCode, MathError
 from app.interpreter.language import LanguageMatch, match_language
@@ -110,7 +111,6 @@ def test_the_math_text_is_cut_from_what_was_typed() -> None:
     "text",
     [
         "qual o máximo de x^2 - 4x?",
-        "qual a probabilidade de tirar 6 num dado?",
         "qual o vértice dessa função?",
     ],
 )
@@ -366,3 +366,94 @@ def test_geometry_phrase_through_the_pipeline() -> None:
     result = calculate("qual a área de um círculo de raio 5?")
     assert result.success and result.intent is I.GEOMETRY
     assert result.result is not None and result.result.plain == "A = 25*pi"
+
+
+# -- probability and counting (Phase 10) ----------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "data", "calculation"),
+    [
+        ("qual o fatorial de 6?", "n = 6", "factorial"),
+        ("8 fatorial", "n = 8", "factorial"),
+        ("permutação de 5 elementos", "n = 5", "factorial"),
+        ("quantas permutações de 4?", "n = 4", "factorial"),
+        ("combinação de 10 tomados 3 a 3", "n = 10; k = 3", "combination"),
+        ("quantas combinações de 10 elementos 3 a 3?", "n = 10; k = 3", "combination"),
+        ("combinações de 10, 3 a 3", "n = 10; k = 3", "combination"),
+        ("arranjo de 6 tomados 2 a 2", "n = 6; k = 2", "arrangement"),
+        ("arranjos com repetição de 3 tomados 2 a 2", "n = 3; k = 2", "arrangement_repetition"),
+        (
+            "combinação com repetição de 3 tomados 2 a 2",
+            "n = 3; k = 2",
+            "combination_repetition",
+        ),
+        ("anagramas de BANANA", "BANANA", "anagrams"),
+        ("quantos anagramas tem a palavra BANANA?", "BANANA", "anagrams"),
+        ("número de anagramas da palavra matemática", "matemática", "anagrams"),
+        ("binomial com n = 5, k = 3 e p = 1/2", "n = 5, k = 3; p = 1/2", "binomial_exact"),
+        (
+            "distribuição binomial no máximo n = 5; k = 3; p = 0,5",
+            "n = 5; k = 3; p = 0,5",
+            "binomial_at_most",
+        ),
+        (
+            "probabilidade binomial pelo menos com n = 5, k = 3 e p = 50%",
+            "n = 5, k = 3; p = 50%",
+            "binomial_at_least",
+        ),
+        (
+            "média e variância da binomial com n = 10 e p = 0,3",
+            "n = 10; p = 0,3",
+            "binomial_summary",
+        ),
+        (
+            "probabilidade de A ou B com P(A) = 1/2, P(B) = 1/3 e P(A e B) = 1/6",
+            "P(A) = 1/2, P(B) = 1/3; P(A e B) = 1/6",
+            "union",
+        ),
+        (
+            "probabilidade de A ou B com P(A) = 0,5 e P(B) = 0,3, independentes",
+            "P(A) = 0,5; P(B) = 0,3",
+            "union_independent",
+        ),
+        (
+            "probabilidade de A e B, independentes, com P(A) = 1/2 e P(B) = 1/3",
+            "P(A) = 1/2; P(B) = 1/3",
+            "intersection_independent",
+        ),
+        ("qual a probabilidade de não A sendo P(A) = 30%?", "P(A) = 30%", "complement"),
+        (
+            "probabilidade de A dado B com P(A e B) = 0,1 e P(B) = 0,4",
+            "P(A e B) = 0,1; P(B) = 0,4",
+            "conditional",
+        ),
+        (
+            "P(A ∪ B) com P(A) = 1/2, P(B) = 1/3 e P(A ∩ B) = 1/6",
+            "P(A) = 1/2, P(B) = 1/3; P(A ∩ B) = 1/6",
+            "union",
+        ),
+    ],
+)
+def test_probability_phrases(text: str, data: str, calculation: str) -> None:
+    found = match(text)
+    assert found.intent is I.PROBABILITY
+    assert found.text == data
+    assert found.options == {"calculation": calculation}
+
+
+def test_probability_phrase_through_the_pipeline() -> None:
+    result = calculate("quantos anagramas tem a palavra BANANA?")
+    assert result.success and result.intent is I.PROBABILITY
+    assert result.result is not None and result.result.plain == "anagramas de BANANA = 60"
+
+
+def test_a_factorial_at_the_end_of_a_phrase_is_kept() -> None:
+    assert match("quanto é 5!").text == "5!"
+    assert match("calcule (2 + 1)!?").text == "(2 + 1)!"
+    assert match("quanto é dois mais dois!").text == "dois mais dois"  # punctuation
+
+
+def test_probability_word_problems_go_to_the_ai() -> None:
+    # No rule can model "tirar 6 num dado": with "Permitir IA", the AI translates it.
+    assert needs_ai("qual a probabilidade de tirar 6 num dado?")

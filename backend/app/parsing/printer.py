@@ -58,6 +58,10 @@ def _text(node: Node) -> str:
             return "-" + _wrap(operand, _precedence(operand) <= _NEGATE)
         case Degrees(operand=operand):
             return _wrap(operand, _precedence(operand) < _ATOM) + "°"
+        case Call(name="factorial", args=(operand,)):
+            # (3!)! keeps its parentheses: 3!! would be ambiguous (ADR 0015).
+            nested = isinstance(operand, Call) and operand.name == "factorial"
+            return _wrap(operand, _precedence(operand) < _ATOM or nested) + "!"
         case Call(name=name, args=args):
             return f"{name}({', '.join(_text(arg) for arg in args)})"
         case Point(coordinates=coordinates):

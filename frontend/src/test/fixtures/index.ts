@@ -18,6 +18,7 @@ import aiUnavailable from "./ai-unavailable.json";
 import allReals from "./all-reals.json";
 import allRealsExcept from "./all-reals-except.json";
 import arithmetic from "./arithmetic.json";
+import countingArithmetic from "./counting-arithmetic.json";
 import geometryCircle from "./geometry-circle.json";
 import geometryClassify from "./geometry-classify.json";
 import geometryConePhrase from "./geometry-cone-phrase.json";
@@ -54,6 +55,11 @@ import parseError from "./parse-error.json";
 import partial from "./partial.json";
 import phraseRules from "./phrase-rules.json";
 import primeFactors from "./prime-factors.json";
+import probabilityAnagrams from "./probability-anagrams.json";
+import probabilityBinomial from "./probability-binomial.json";
+import probabilityNotIndependent from "./probability-not-independent.json";
+import probabilitySummary from "./probability-summary.json";
+import probabilityUnionPhrase from "./probability-union-phrase.json";
 import quadratic from "./quadratic.json";
 import simplifyDomain from "./simplify-domain.json";
 import statisticsNoMode from "./statistics-no-mode.json";
@@ -74,6 +80,12 @@ import vectorZeroUnit from "./vector-zero-unit.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  countingArithmetic,
+  probabilityAnagrams,
+  probabilityBinomial,
+  probabilityNotIndependent,
+  probabilitySummary,
+  probabilityUnionPhrase,
   geometryCircle,
   geometryClassify,
   geometryConePhrase,

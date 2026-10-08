@@ -1,0 +1,64 @@
+{
+  "success": true,
+  "intent": "probability",
+  "input": "BANANA",
+  "normalized_input": "BANANA",
+  "result": {
+    "plain": "anagramas de BANANA = 60",
+    "latex": "P_{6}^{3, 2} = 60",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "calculation": "anagrams",
+    "group": "counting",
+    "values": {
+      "n": "6"
+    },
+    "formula": "P_{6}^{3, 2} = \\frac{6!}{3! \\, 2!}",
+    "percent": null,
+    "percent_exact": null,
+    "letters": [
+      {
+        "letter": "B",
+        "count": 1
+      },
+      {
+        "letter": "A",
+        "count": 3
+      },
+      {
+        "letter": "N",
+        "count": 2
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "As letras de BANANA, contadas de novo uma a uma, repetem como no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Por outro caminho, a escolha das posições de cada letra, uma letra por vez, obtém-se o mesmo número."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Listando as possibilidades uma a uma (itertools), há exatamente 60."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

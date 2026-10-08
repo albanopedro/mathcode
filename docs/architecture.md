@@ -87,7 +87,12 @@ Intents disponíveis (`models/intents.py`):
 - `vector`: um vetor (`[1, 2, 3]`) ou dois separados por `;`, e o cálculo
   pedido (ADR 0013);
 - `geometry`: as medidas de uma figura (`r = 5`, `b = 4; h = 3`) ou pontos
-  (`(1, 2); (4, 6)`), com a figura e o cálculo (ADR 0014).
+  (`(1, 2); (4, 6)`), com a figura e o cálculo (ADR 0014);
+- `probability`: os valores (`n = 10; k = 3`, `P(A) = 1/2; P(B) = 1/3`,
+  `n = 5; k = 3; p = 1/2`) ou a palavra dos anagramas, com o cálculo (ADR 0015).
+
+`5!`, `C(n, k)` e `A(n, k)` fazem parte da linguagem e valem em qualquer
+expressão, como `C(4, 2)/C(52, 2)` (ADR 0015).
 
 Sem intent explícito, a detecção por regras usa a forma da entrada:
 
@@ -115,6 +120,7 @@ Estatística (pode ser uma vírgula decimal digitada com espaço).
 | matrix | `math_engine/matrices.py` (o `LinearEvaluator`, comum a matrizes e vetores) | `verification/matrices.py` |
 | vector | `math_engine/vectors.py` | `verification/vectors.py` |
 | geometry | `math_engine/geometry.py` (catálogo de figuras) | `verification/geometry.py` |
+| probability | `math_engine/probability.py` (catálogo de cálculos) | `verification/probability.py` |
 
 Para adicionar um intent, cria-se um módulo e registra-se o intent. O fluxo
 principal não muda.
@@ -187,6 +193,7 @@ Avisos (`core/notices.py`), cada um uma vez por resultado:
 | matrix | `operation`, `rows`, `cols`, `matrix` e `matrix_latex` (a matriz A sobre a qual o cálculo foi feito; com A·v, o vetor resultante como coluna) |
 | vector | `operation`, `dimension`, `vectors` e `vectors_latex` (u e v); no ângulo, `degrees` (exato ou `null`) e `degrees_approx` |
 | geometry | `figure`, `calculation`, `measures`, `points`, `formula` (LaTeX da fórmula usada), `quantity` (`length`, `area`, `volume` ou `null`); na reta, `equation` e `slope`; na classificação, `by_sides` e `by_angles` |
+| probability | `calculation`, `group` (`counting`, `events` ou `binomial`), `values` (nome → valor, como `P(A ∩ B)` → `1/6`), `formula` (LaTeX), `percent` (`"37,5%"`, com vírgula; `null` em contagens e no resumo da binomial) e `percent_exact`; nos anagramas, `letters` (`letter`, `count`); no resumo da binomial, `summary` (`mean`, `variance`, `std`) |
 | graph | `variable`, `x_range` (números), `x_range_text` (como digitado), `y_range`, `y_clipped`, `functions` (`label`, `latex`, `x`, `y` com `null` nos cortes) e `points` (`function`, `kind`: `root` ou `y_intercept`, `x`, `y`, `x_value`, `y_value`, `exact`) |
 
 `error.position` é um índice no texto **original** digitado pelo usuário. Num
@@ -228,6 +235,7 @@ entendem seja enviada ao modelo de IA configurado no servidor. Só vale sem
 | matrix | `operation`: `evaluate` (padrão), `determinant`, `inverse`, `transpose`, `trace` ou `rank` |
 | vector | `operation`: `evaluate` (padrão), `norm`, `unit`, `dot`, `cross` ou `angle` (os três últimos com dois vetores, `u; v`) |
 | geometry | `figure` e `calculation`, os dois obrigatórios; as combinações válidas estão no catálogo (ADR 0014) |
+| probability | `calculation`, obrigatório: `factorial`, `arrangement`, `arrangement_repetition`, `combination`, `combination_repetition`, `anagrams`, `complement`, `intersection`, `intersection_independent`, `union`, `union_independent`, `conditional`, `binomial_exact`, `binomial_at_most`, `binomial_at_least` ou `binomial_summary` (ADR 0015) |
 
 Valores inválidos são respostas (200, `INVALID_INPUT_FOR_INTENT`, mensagem em
 português). Tipos fora do formato recebem 422: texto até 100 caracteres, número
@@ -270,6 +278,7 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
 | `components/GraphView.tsx` | carrega o Plotly **sob demanda** (`import()`), desenha linhas (cortes como `null`, `connectgaps: false`) e pontos; sem envio à nuvem; `utils/graph.ts` valida os `details` e monta traços e layout |
 | geometria no `ResultView` | "em unidades de área/comprimento/volume", a fórmula usada (KaTeX) e, na reta, a equação geral e a inclinação; os campos Figura (com grupos) e Cálculo ficam em `OperationFields`, com o catálogo espelhado em `utils/geometry.ts` |
+| probabilidade no `ResultView` | "Em porcentagem: 37,5%" (com "≈" quando arredondada), as letras repetidas dos anagramas e a fórmula usada (KaTeX); o campo Cálculo (com grupos: Contagem, Eventos, Distribuição binomial) fica em `OperationFields`, com o catálogo espelhado em `utils/probability.ts` |
 | vetores no `ResultView` | resultado vetor sempre em KaTeX e "u = (…)", "v = (…)" abaixo; o campo "Cálculo" de vetores fica em `OperationFields`; `utils/vectors.ts` valida os `details` |
 | matriz no `ResultView` | resultado matriz sempre em KaTeX (sem o limite de texto longo) e "Matriz A (m×n)" abaixo do resultado; o campo "Cálculo" fica em `OperationFields`; `utils/matrices.ts` valida os `details` |
 | `components/StatisticsView.tsx` | tabela do resumo estatístico (Medida, Valor em KaTeX, Aproximado), com a medida pedida destacada e os dados em ordem; `utils/statistics.ts` valida os `details` |
@@ -304,7 +313,7 @@ Mathcode/
 │   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build
 │   │   ├── interpreter/        registry + detecção + frases em PT (language.py)
 │   │   ├── planner/            ExecutionPlan (Fase 12)
-│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics, matrices, vectors, geometry
+│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics, matrices, vectors, geometry, probability
 │   │   ├── verification/       estratégias por intent + avaliador independente, frações exatas,
 │   │   │                       derivador próprio, continuidade, Newton–Leibniz, prazos
 │   │   ├── formatting/         plain/LaTeX/aproximação
@@ -372,6 +381,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0015](decisions/0015-probabilidade.md) | Probabilidade e contagem (Fase 10, 5º domínio): `5!`, `C(n, k)` e `A(n, k)` na linguagem, eventos `P(A) = 1/2`, binomial, fração + porcentagem, verificação por definições, listagem, regiões de Venn e recorrência |
 | [0014](decisions/0014-geometria.md) | Geometria (Fase 10, 4º domínio): catálogo de figuras, medidas `r = 5`, pontos `(1, 2)`, verificação por vértices, integração e coordenadas |
 | [0013](decisions/0013-vetores.md) | Vetores (Fase 10, 3º domínio): `[1, 2, 3]`, álgebra comum com matrizes, escalar, vetorial, norma, unitário, ângulo em rad e graus |
 | [0012](decisions/0012-matrizes.md) | Matrizes (Fase 10, 2º domínio): sintaxe com colchetes, operações, verificação exata (frações) ou numérica (mpmath) |

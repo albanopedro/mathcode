@@ -20,7 +20,7 @@ Regras gerais:
 | 7 | Gráficos | concluída |
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
-| 10 | Matemática avançada | em andamento: estatística, matrizes, vetores e geometria feitos (geometria aguardando revisão) |
+| 10 | Matemática avançada | em andamento: estatística, matrizes, vetores, geometria e probabilidade feitos (probabilidade aguardando revisão); falta trigonometria |
 | 11 | UX e histórico | — |
 | 12 | Assistente matemático | — |
 
@@ -335,8 +335,28 @@ domínio por alteração**.
     revolução, coordenadas no lugar de Heron, leque de triângulos);
   - fórmula usada e tipo de grandeza na interface.
 - **Testes:** 1 275 no backend (eram 1 160) e 239 no frontend (eram 225).
-- **Próximos domínios:** probabilidade/combinatória e trigonometria, um por
-  vez, com a ordem decidida pelo usuário.
+
+### 10.5 — Probabilidade e contagem (feita)
+
+- **Decidido com o usuário** ([ADR 0015](decisions/0015-probabilidade.md)): os
+  dois domínios restantes, um por alteração, a probabilidade primeiro; todos os
+  conteúdos (contagem, anagramas, eventos, binomial); `5!`, `C(10, 3)` e
+  `A(6, 2)` na linguagem; eventos como `P(A) = 1/2`; fração + porcentagem
+  (aceita `30%`); operação "Probabilidade" + Cálculo.
+- **Entregue:**
+  - fatorial, arranjo e combinação em qualquer expressão (`C(4, 2)/C(52, 2)`),
+    com ambiguidades recusadas (`3!!`, `C(10,3)`);
+  - catálogo de 16 cálculos em três grupos, com erros explicados e coerência
+    dos eventos conferida;
+  - frases ("combinação de 10 tomados 3 a 3", "quantos anagramas tem a palavra
+    BANANA?", "binomial com n = 5, k = 3 e p = 1/2", "probabilidade de A ou B
+    com…");
+  - verificação por outro caminho (definições com inteiros, listagem uma a uma,
+    regiões de Venn, recorrência da binomial);
+  - porcentagem com vírgula e a fórmula usada na interface.
+- **Testes:** 1 451 no backend (eram 1 275) e 257 no frontend (eram 239).
+- **Próximo domínio:** trigonometria (já escolhida: valores e conversões,
+  equações trigonométricas, identidades e resolução de triângulos).
 
 ## Fase 11 — UX e histórico
 
@@ -368,7 +388,11 @@ determinística.
   editor em grade (Fase 11).
 - Vetores: projeção, produto misto, vetor × matriz (linha), vetores com letras.
 - Geometria: unidades, perímetro do trapézio, polígonos regulares, setor
-  circular, pirâmide e prisma, distância de ponto a reta; resumir o texto de
-  ajuda da calculadora (Fase 11).
+  circular, pirâmide e prisma, distância de ponto a reta, pontos com nome
+  (`A(1, 2)`); resumir o texto de ajuda da calculadora (Fase 11).
+- Probabilidade: fatorial com variáveis (`(n + 1)!/n!`), fatorial duplo,
+  permutação circular, outras distribuições (geométrica, Poisson, normal),
+  tabela e gráfico da binomial, mais de dois eventos, probabilidades
+  irracionais.
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

@@ -26,10 +26,11 @@ from app.parsing.ast import (
     Vector,
     walk,
 )
-from app.parsing.vocabulary import TRIGONOMETRIC
+from app.parsing.vocabulary import FACTORIAL, TRIGONOMETRIC
 
 _UNDEFINED = (sp.zoo, sp.nan, sp.oo, -sp.oo)
 _LOG10_2 = math.log10(2)
+_LN_10 = math.log(10)
 
 _SIMPLE_FUNCTIONS = {
     "abs": sp.Abs,
@@ -210,6 +211,8 @@ class ExpressionBuilder:
             )
 
         match name:
+            case "factorial" | "C" | "A":
+                return self._counting(node, args)
             case "sqrt":
                 if argument.is_number and argument.is_negative:
                     raise MathError(
@@ -250,6 +253,32 @@ class ExpressionBuilder:
             case _:
                 return _SIMPLE_FUNCTIONS[name](argument)
 
+    def _counting(self, node: Call, args: list[sp.Expr]) -> sp.Expr:
+        """n!, C(n, k) and A(n, k): natural numbers only (ADR 0015)."""
+        what = "O fatorial" if node.name == FACTORIAL else f"{node.name}(n, k)"
+        numbers = [_natural(what, arg, value) for arg, value in zip(node.args, args, strict=True)]
+        if node.name == FACTORIAL:
+            (n,) = numbers
+            _check_count_digits(log10_falling(n, n), node)
+            return sp.factorial(n)
+        n, k = numbers
+        if k > n:
+            choose = "escolher" if node.name == "C" else "ordenar"
+            self.notices.append(
+                Notice(
+                    NoticeCode.COUNT_IS_ZERO,
+                    f"Em {node.name}({n}, {k}), k = {k} é maior que n = {n}: não há como "
+                    f"{choose} {k} de {n}, e o resultado é 0. A ordem é {node.name}(n, k).",
+                )
+            )
+            return sp.Integer(0)
+        if node.name == "A":
+            _check_count_digits(log10_falling(n, k), node)
+            return sp.ff(n, k)
+        smaller = min(k, n - k)
+        _check_count_digits(log10_falling(n, smaller) - log10_falling(smaller, smaller), node)
+        return sp.binomial(n, k)
+
     @staticmethod
     def _check_log_argument(node: Call, argument: sp.Expr) -> None:
         if argument.is_number and argument.is_positive is False:
@@ -258,6 +287,40 @@ class ExpressionBuilder:
                 "O logaritmo só é definido para números positivos.",
                 node.position,
             )
+
+
+def _natural(what: str, node: Node, value: sp.Expr) -> int:
+    if any(isinstance(child, Variable) for child in walk(node)):
+        raise MathError(
+            ErrorCode.UNSUPPORTED_FEATURE,
+            f"{what} só aceita números, sem variáveis, como em 5!, C(10, 3) e A(6, 2).",
+            node.position,
+        )
+    if value.is_integer is not True or value.is_negative:
+        raise MathError(
+            ErrorCode.DOMAIN_ERROR,
+            f"{what} só é definido para inteiros não negativos (0, 1, 2, ...).",
+            node.position,
+        )
+    return int(value)
+
+
+def log10_falling(n: int, k: int) -> float:
+    """Decimal digits of n·(n − 1)···(n − k + 1), which is A(n, k); n! when k = n."""
+    if k == 0:
+        return 0.0
+    if n < 10**15:
+        return (math.lgamma(n + 1) - math.lgamma(n - k + 1)) / _LN_10
+    return k * math.log10(n)  # every factor is close to n
+
+
+def _check_count_digits(log10: float, node: Call) -> None:
+    if log10 > MAX_RESULT_DIGITS:
+        raise MathError(
+            ErrorCode.LIMIT_EXCEEDED,
+            f"O resultado teria mais de {MAX_RESULT_DIGITS} dígitos.",
+            node.position,
+        )
 
 
 def _is_plain_number(node: Node) -> bool:

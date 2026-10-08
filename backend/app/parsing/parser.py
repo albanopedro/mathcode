@@ -26,7 +26,7 @@ from app.parsing.ast import (
     variables,
 )
 from app.parsing.tokenizer import Token, TokenKind
-from app.parsing.vocabulary import ALIASES, CONSTANTS, FUNCTIONS, RESERVED
+from app.parsing.vocabulary import ALIASES, CONSTANTS, COUNTING, FACTORIAL, FUNCTIONS, RESERVED
 
 _INFIX = {
     TokenKind.PLUS: ("+", 10),
@@ -39,6 +39,7 @@ _IMPLICIT_BP = 20  # "2x" binds like "2*x"
 _PREFIX_BP = 35  # unary minus: tighter than * and /, looser than ^ (-x^2 = -(x^2))
 _SQRT_BP = 45  # √ takes the next atom only: √2x = √2·x
 _DEGREE_BP = 50
+_FACTORIAL_BP = 50  # 2^3! = 2^(3!), -3! = -(3!)
 _STARTS_IMPLICIT_FACTOR = {TokenKind.IDENT, TokenKind.LPAREN, TokenKind.SQRT}
 
 
@@ -158,6 +159,8 @@ class _Parser:
             return _INFIX[token.kind][1]
         if token.kind is TokenKind.DEGREE:
             return _DEGREE_BP
+        if token.kind is TokenKind.BANG:
+            return _FACTORIAL_BP
         if token.kind in _STARTS_IMPLICIT_FACTOR:
             return _IMPLICIT_BP
         if token.kind is TokenKind.LBRACKET:
@@ -233,6 +236,16 @@ class _Parser:
         if token.kind is TokenKind.DEGREE:
             self._advance()
             return Degrees(left, token.position)
+        if token.kind is TokenKind.BANG:
+            self._advance()
+            if self._peek().kind is TokenKind.BANG:
+                raise MathError(
+                    ErrorCode.AMBIGUOUS_INPUT,
+                    "'!!' é ambíguo: fatorial duplo ou o fatorial de um fatorial? Para o "
+                    "fatorial do fatorial, escreva (3!)!. O fatorial duplo não é suportado.",
+                    token.position,
+                )
+            return Call(FACTORIAL, (left,), token.position)
 
         # Implicit multiplication: nothing to consume, the next factor starts here.
         if isinstance(left, Variable) and token.kind is TokenKind.LPAREN:
@@ -259,6 +272,14 @@ class _Parser:
     def _identifier(self, token: Token) -> Node:
         name = ALIASES.get(token.text, token.text)
         if name in FUNCTIONS:
+            return self._call(token, name)
+        if name.upper() in COUNTING and self._two_arguments_follow():
+            if name not in COUNTING:
+                raise MathError(
+                    ErrorCode.PARSE_ERROR,
+                    "Combinação e arranjo se escrevem com letra maiúscula: C(10, 3) e A(6, 2).",
+                    token.position,
+                )
             return self._call(token, name)
         if name in CONSTANTS:
             return Constant(name, token.position)
@@ -292,7 +313,7 @@ class _Parser:
             args.append(self._expression(0))
         self._expect_close(opening)
 
-        minimum, maximum = FUNCTIONS[name]
+        minimum, maximum = FUNCTIONS[name] if name in FUNCTIONS else COUNTING[name]
         if not minimum <= len(args) <= maximum:
             expected = str(minimum) if minimum == maximum else f"{minimum} ou {maximum}"
             raise MathError(
@@ -301,6 +322,24 @@ class _Parser:
                 name_token.position,
             )
         return Call(name, tuple(args), name_token.position)
+
+    def _two_arguments_follow(self) -> bool:
+        """True if parentheses follow, with a comma directly inside them: C(10, 3)."""
+        if self._peek().kind is not TokenKind.LPAREN:
+            return False
+        depth = 0
+        for token in self._tokens[self._index :]:
+            if token.kind in (TokenKind.LPAREN, TokenKind.LBRACKET):
+                depth += 1
+            elif token.kind in (TokenKind.RPAREN, TokenKind.RBRACKET):
+                depth -= 1
+                if depth == 0:
+                    return False
+            elif token.kind is TokenKind.COMMA and depth == 1:
+                return True
+            elif token.kind is TokenKind.EOF:
+                return False
+        return False
 
     def _matrix(self, opening: Token) -> Matrix:
         """[[1, 2], [3, 4]]: the outer brackets hold rows, each row its entries."""

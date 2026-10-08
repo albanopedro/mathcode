@@ -82,7 +82,7 @@ def test_point_without_digits_is_an_error() -> None:
 
 @pytest.mark.parametrize(
     ("source", "char", "position"),
-    [("2 % 3", "%", 2), ("x!", "!", 1), ("a_b", "_", 1), ("2 & 3", "&", 2), ("½", "½", 0)],
+    [("2 % 3", "%", 2), ("x#", "#", 1), ("a_b", "_", 1), ("2 & 3", "&", 2), ("½", "½", 0)],
 )
 def test_rejects_unsupported_characters_pointing_at_the_original(
     source: str, char: str, position: int

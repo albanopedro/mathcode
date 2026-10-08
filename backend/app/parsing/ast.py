@@ -41,7 +41,9 @@ class Binary:
 
 @dataclass(frozen=True)
 class Call:
-    name: str  # canonical name from vocabulary.FUNCTIONS
+    """A function: a name of vocabulary.FUNCTIONS, C or A (COUNTING), or "factorial" (n!)."""
+
+    name: str
     args: tuple[Node, ...]
     position: int
 

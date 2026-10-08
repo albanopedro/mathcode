@@ -23,6 +23,7 @@ from app.formatting.results import (
     present_integral,
     present_limit,
     present_matrices,
+    present_probability,
     present_rewrite,
     present_statistics,
     present_system,
@@ -35,6 +36,7 @@ from app.math_engine.equations import solve_equation
 from app.math_engine.geometry import geometry
 from app.math_engine.graphing import graph
 from app.math_engine.matrices import matrices
+from app.math_engine.probability import probability
 from app.math_engine.statistics import statistics
 from app.math_engine.systems import solve_system
 from app.math_engine.vectors import vectors
@@ -50,6 +52,7 @@ from app.models.intents import (
     LimitParams,
     MatrixParams,
     PolynomialDivisionParams,
+    ProbabilityParams,
     SimplifyParams,
     SolveEquationParams,
     SolveSystemParams,
@@ -57,7 +60,6 @@ from app.models.intents import (
     VectorParams,
 )
 from app.models.result import VerificationReport
-from app.parsing import ParseResult
 from app.verification.algebra import verify_division, verify_factor, verify_rewrite
 from app.verification.arithmetic import verify_arithmetic
 from app.verification.calculus import verify_derivative, verify_integral, verify_limit
@@ -65,13 +67,21 @@ from app.verification.equations import verify_equation, verify_system
 from app.verification.geometry import verify_geometry
 from app.verification.graphing import verify_graph
 from app.verification.matrices import verify_matrices
+from app.verification.probability import verify_probability
 from app.verification.statistics import verify_statistics
 from app.verification.vectors import verify_vectors
 
 
+class Readable(Protocol):
+    """How the input was read: a ``ParseResult``, or the reading of an intent of its own."""
+
+    @property
+    def canonical(self) -> str: ...
+
+
 class Outcome(Protocol):
     @property
-    def parsed(self) -> ParseResult: ...
+    def parsed(self) -> Readable: ...
 
     @property
     def notices(self) -> tuple[Notice, ...]: ...
@@ -135,6 +145,13 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
         IntentSpec(IntentName.VECTOR, VectorParams, vectors, verify_vectors, present_vectors),
         IntentSpec(
             IntentName.GEOMETRY, GeometryParams, geometry, verify_geometry, present_geometry
+        ),
+        IntentSpec(
+            IntentName.PROBABILITY,
+            ProbabilityParams,
+            probability,
+            verify_probability,
+            present_probability,
         ),
     )
 }

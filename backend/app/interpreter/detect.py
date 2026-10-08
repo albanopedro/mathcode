@@ -22,6 +22,7 @@ from app.models.intents import (
     LimitParams,
     MatrixParams,
     PolynomialDivisionParams,
+    ProbabilityParams,
     SimplifyParams,
     SolveEquationParams,
     SolveSystemParams,
@@ -58,6 +59,7 @@ _TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
     IntentName.MATRIX: (MatrixParams, "expression"),
     IntentName.VECTOR: (VectorParams, "expression"),
     IntentName.GEOMETRY: (GeometryParams, "measures"),
+    IntentName.PROBABILITY: (ProbabilityParams, "data"),
 }
 
 # User-facing explanation of an invalid option.
@@ -83,8 +85,12 @@ _OPTION_PROBLEMS = {
         "parallelogram, cube, box, sphere, cylinder, cone, right_triangle ou points."
     ),
     "calculation": (
-        "Cálculo de geometria desconhecido. Use area, perimeter, volume, surface_area, "
-        "classify, missing_side, distance, midpoint, line ou polygon_area."
+        "Cálculo desconhecido. Para geometria: area, perimeter, volume, surface_area, "
+        "classify, missing_side, distance, midpoint, line ou polygon_area; para "
+        "probabilidade: factorial, arrangement, arrangement_repetition, combination, "
+        "combination_repetition, anagrams, complement, intersection, "
+        "intersection_independent, union, union_independent, conditional, binomial_exact, "
+        "binomial_at_most, binomial_at_least ou binomial_summary."
     ),
 }
 

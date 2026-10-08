@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-07, Fase 10: geometria concluída (aguardando revisão).
+> Última atualização: 2026-10-08, Fase 10: probabilidade concluída (aguardando revisão).
 
 ## O que é
 
@@ -55,7 +55,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 7: Gráficos | concluída e commitada (`978dab5`) |
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
-| 10: Matemática avançada | estatística, matrizes e vetores concluídos; **geometria concluída, aguardando revisão e commit**; restam probabilidade e trigonometria |
+| 10: Matemática avançada | estatística, matrizes, vetores e geometria concluídos e commitados; **probabilidade concluída, aguardando revisão e commit**; resta trigonometria (já escolhida) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -266,6 +266,29 @@ Backend, continuação:
   - frases: regras `points`, `geometry`, `geometry_without_figure`
     (`_GEOMETRY_MEASURE` ≠ `_MEASURE` da estatística); "área" de sólido =
     superfície.
+- **Probabilidade e contagem** ([ADR 0015](docs/decisions/0015-probabilidade.md)):
+  - na linguagem: `5!` (`Call("factorial")`, pós-fixo, força do `°`), `C(n, k)`
+    e `A(n, k)` só com vírgula logo dentro dos parênteses (*lookahead*); senão
+    `C` é variável. `3!!`, `C(10,3)` e `c(10, 3)` são erros explicados; só
+    inteiros ≥ 0 sem variáveis; tamanho estimado por `lgamma` antes (4 000
+    dígitos); `C(3, 5) = 0` com `COUNT_IS_ZERO`. `exact.py` (definições com
+    inteiros) e `numeric.py` (mpmath, arredonda o argumento) também contam;
+  - intent `probability`, `ProbabilityParams(data, calculation)`; `CATALOG`
+    em `math_engine/probability.py` (16 cálculos: contagem, eventos, binomial)
+    e espelho em `frontend/src/utils/probability.ts`;
+  - leitor próprio: itens por `;` ou `, `, `n = 10`, `P(A e B) = 1/6`
+    (∩/∪ também), `%` só aqui; valores pelo parser seguro, só racionais;
+    `outcome.parsed` é um `ReadInput` com `canonical` (o `Outcome` do registro
+    aceita qualquer objeto com `canonical`);
+  - valores não usados → `UNUSED_VALUES`; eventos a mais são conferidos
+    (coerência); acentos dos anagramas → `ACCENTS_IGNORED`;
+  - resultado: fração exata **sem** decimal + `details.percent` com vírgula
+    (exata até 6 casas; senão 2 casas ≥ 1%, 4 algarismos abaixo, "≈" na tela);
+    anagramas em notação P₆^{3,2} (cabe no celular);
+  - verificação: definições com inteiros, listagem uma a uma (≤ 100 000),
+    regiões de Venn + regras não usadas pelo motor, recorrência da binomial;
+  - frases antes da estatística ("média da binomial…"); problemas em palavras
+    ("tirar 6 num dado") não têm regra e vão para a IA.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -371,8 +394,15 @@ Backend, continuação:
   use `[[` (o helper `calculateText` já escapa).
 - Em seletores CSS, `\d...` vira escape hexadecimal: para comparar LaTeX, leia
   o atributo `data-latex` direto (`latexOf` nos testes do Calculator).
-- O `ruff` tem `allowed-confusables` para `× · − º ℝ` etc. Em testes, caracteres
-  de largura total vão como escapes `\uXXXX`.
+- O `ruff` tem `allowed-confusables` para `× · − º ℝ ∪` etc. Em testes, caracteres
+  de largura total vão como escapes `\uXXXX` (e aspas curvas no código também).
+- `match_language` apaga a pontuação final, mas **não** o `!` depois de dígito
+  ou `)`: é fatorial ("quanto é 5!").
+- `latexOf` (testes do Calculator) devolve uma lista: para procurar um trecho
+  de LaTeX, use `latexOf(result).join(" ")`.
+- KaTeX em linha com raiz, numa linha que quebra, passa da altura da linha: num
+  `<p>` com `overflow-x-auto` aparece uma barra vertical. Use
+  `overflow-y-hidden py-1` (feito na fórmula da probabilidade).
 
 ## Como rodar
 
@@ -449,12 +479,28 @@ cd frontend && npm test && npm run build
      frases também;
   3. pontos `(1, 2)` (hoje erro; nada muda de significado);
   4. sem unidades (números puros).
-  - Aguardando a revisão e a escolha do próximo domínio (probabilidade/
-    combinatória ou trigonometria).
+  - Revisada e commitada pelo usuário.
   - Desenho: intent `geometry`, `GeometryParams(measures, figure, calculation)`
     com catálogo único de figuras; nó `Point` no parser; verificação por outro
     caminho (vértices + cadarço, integração/sólido de revolução, Heron ×
     coordenadas, a²+b²=c², triangulação × cadarço, substituição na reta).
+- **Probabilidade (5º domínio, concluído, ADR 0015).** Decisões do usuário
+  (2026-10-08): fazer **os dois** domínios restantes, um por alteração,
+  probabilidade primeiro;
+  1. conteúdos (todos): fatorial e contagem (com e sem repetição), anagramas,
+     eventos (não A, e, ou, condicional), binomial (=, ≤, ≥, média/variância);
+  2. `5!`, `C(10, 3)` e `A(6, 2)` na linguagem (C/A só com dois argumentos);
+  3. eventos `P(A) = 1/2; P(B) = 1/3`, `P(A e B)` opcional; sem ela, só o
+     cálculo "independentes";
+  4. fração + porcentagem; `30%` aceito só na entrada da operação;
+  5. operação "Probabilidade" + campo Cálculo.
+  - Aguardando a revisão e o "pode seguir" para a trigonometria.
+- **Trigonometria (6º domínio, a fazer).** Conteúdos já escolhidos (todos):
+  valores e conversões (sec, csc, cot, graus ↔ radianos, redução ao 1º
+  quadrante), equações trigonométricas (soluções gerais e num intervalo),
+  identidades (conferir e simplificar, com contraexemplo) e resolução de
+  triângulos (leis dos senos e dos cossenos). Falta decidir o formato com o
+  usuário.
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -473,8 +519,11 @@ cd frontend && npm test && npm run build
   rótulo "Dados" no campo de entrada; matrizes: autovalores (complexos),
   matrizes com letras, editor em grade; vetores: projeção, produto misto,
   vetor × matriz, vetores com letras; geometria: unidades, perímetro do
-  trapézio, polígonos regulares, setor, pirâmide/prisma, distância ponto-reta;
-  resumir o texto de ajuda da calculadora (Fase 11).
+  trapézio, polígonos regulares, setor, pirâmide/prisma, distância ponto-reta,
+  pontos com nome; probabilidade: fatorial com variáveis, fatorial duplo,
+  permutação circular, outras distribuições, tabela/gráfico da binomial, mais
+  de dois eventos, probabilidades irracionais; resumir o texto de ajuda da
+  calculadora (Fase 11).
 
 ## Histórico
 
@@ -519,3 +568,7 @@ cd frontend && npm test && npm run build
 - **Fase 10.4 (geometria):** pontos `(1, 2)`, intent `geometry` com catálogo de
   14 figuras e 10 cálculos, frases, verificação por outro método; 1 275 testes
   no backend e 239 no frontend.
+- **Fase 10.5 (probabilidade):** `5!`, `C(n, k)` e `A(n, k)` na linguagem;
+  intent `probability` com 16 cálculos (contagem, anagramas, eventos,
+  binomial), frases, fração + porcentagem, verificação por definições,
+  listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.

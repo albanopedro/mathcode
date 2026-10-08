@@ -1,0 +1,57 @@
+{
+  "success": true,
+  "intent": "probability",
+  "input": "n = 10; p = 30%",
+  "normalized_input": "n = 10; p = 30%",
+  "result": {
+    "plain": "μ = 3; σ² = 21/10; σ = sqrt(210)/10 ≈ 1.44914",
+    "latex": "\\begin{aligned} \\mu &= 3 \\\\ \\sigma^2 &= \\frac{21}{10} \\\\ \\sigma &= \\frac{\\sqrt{210}}{10} \\approx 1.44914 \\end{aligned}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "calculation": "binomial_summary",
+    "group": "binomial",
+    "values": {
+      "n": "10",
+      "p": "3/10"
+    },
+    "formula": "\\mu = np, \\ \\sigma^2 = np(1 - p), \\ \\sigma = \\sqrt{np(1 - p)}",
+    "percent": null,
+    "percent_exact": null,
+    "summary": {
+      "mean": "3",
+      "variance": "21/10",
+      "std": "sqrt(210)/10"
+    }
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os valores, relidos da entrada com frações exatas (sem o SymPy), são os usados no cálculo: n = 10, p = 3/10."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A distribuição, refeita termo a termo pela recorrência P(i + 1) = P(i) · (n − i)/(i + 1) · p/(1 − p) com frações exatas, soma exatamente 1 (11 termos)."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Pelas somas Σ i · P(i) e Σ i² · P(i) − μ² sobre a distribuição refeita, obtêm-se a mesma média e a mesma variância; σ² é a variância."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

@@ -1,0 +1,62 @@
+{
+  "success": true,
+  "intent": "probability",
+  "input": "probabilidade de A ou B com P(A) = 1/2, P(B) = 1/3 e P(A e B) = 1/6",
+  "normalized_input": "P(A) = 1/2; P(B) = 1/3; P(A ∩ B) = 1/6",
+  "result": {
+    "plain": "P(A ∪ B) = 2/3",
+    "latex": "P(A \\cup B) = \\frac{2}{3}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "calculation": "union",
+    "group": "events",
+    "values": {
+      "P(A)": "1/2",
+      "P(B)": "1/3",
+      "P(A ∩ B)": "1/6"
+    },
+    "formula": "P(A \\cup B) = P(A) + P(B) - P(A \\cap B)",
+    "percent": "66,67%",
+    "percent_exact": false
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os valores, relidos da entrada com frações exatas (sem o SymPy), são os usados no cálculo: P(A) = 1/2, P(B) = 1/3, P(A ∩ B) = 1/6."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "As quatro regiões do diagrama de Venn são probabilidades que somam 1: só A = 1/3, só B = 1/6, A e B = 1/6, nem A nem B = 1/3."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Somando as regiões só A, só B e A e B, obtém-se o resultado."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "probability",
+    "expression": "P(A) = 1/2, P(B) = 1/3; P(A e B) = 1/6",
+    "options": {
+      "calculation": "union"
+    },
+    "provider": null,
+    "model": null
+  }
+}

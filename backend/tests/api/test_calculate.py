@@ -310,3 +310,36 @@ def test_geometry_needs_both_options(api: TestClient) -> None:
     )
     assert status == 200
     assert data["error"]["code"] == "INVALID_INPUT_FOR_INTENT"
+
+
+# -- probability (Phase 10) -----------------------------------------------------------------------
+
+
+def test_probability_operation(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {
+            "input": "n = 5; k = 3; p = 50%",
+            "intent": "probability",
+            "options": {"calculation": "binomial_exact"},
+        },
+    )
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.result is not None and result.result.plain == "P(X = 3) = 5/16"
+    assert data["details"]["percent"] == "31,25%"
+    assert data["details"]["percent_exact"] is True
+    assert data["verification"]["status"] == "verified_symbolic"
+
+
+def test_counting_in_automatic(api: TestClient) -> None:
+    status, data = post(api, {"input": "C(4, 2)/C(52, 2)"})
+    assert status == 200
+    assert data["intent"] == "arithmetic"
+    assert data["result"]["plain"] == "1/221"
+
+
+def test_probability_needs_a_calculation(api: TestClient) -> None:
+    status, data = post(api, {"input": "n = 5", "intent": "probability"})
+    assert status == 200
+    assert data["error"]["code"] == "INVALID_INPUT_FOR_INTENT"

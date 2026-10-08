@@ -38,6 +38,12 @@ def match_language(request: str) -> LanguageMatch | None:
     folded = _fold(request)
     start, end = 0, len(request)
     while end > start and folded[end - 1] in "?.! \t":
+        if (
+            folded[end - 1] == "!"
+            and end >= 2
+            and (folded[end - 2].isdigit() or folded[end - 2] == ")")
+        ):
+            break  # "5!" is a factorial, not an exclamation (ADR 0015)
         end -= 1
 
     stripped = False
@@ -72,6 +78,7 @@ _LEADS = re.compile(
     r"(?:por\s+favor,?|me\s+(?:diga|mostre|de|da|ajude\s+a|ajuda\s+a)|voce\s+pode|pode|poderia"
     r"|qual\s+(?:e|eh|seria)|quais\s+(?:sao|seriam)|quanto\s+(?:e|eh|vale|da|daria)|quanto"
     r"|calcule|calcular|calcula|encontre|encontrar|ache|achar|determine|obtenha|qual|quais"
+    r"|quantos|quantas"
     r"|(?:o\s+)?valor\s+(?:de|da|do))\s+"
 )
 _KEYWORD = (
@@ -80,7 +87,9 @@ _KEYWORD = (
     r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor|inversa|transposta|traco|posto"
     r"|norma|modulo|comprimento|vetor|versor|produto|angulo"
     r"|perimetro|volume|distancia|ponto|reta|equacao|hipotenusa|cateto|classificacao"
-    r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo)"
+    r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo"
+    r"|fatorial|permutac(?:ao|oes)|arranjos?|combinac(?:ao|oes)|anagramas|binomial"
+    r"|distribuicao)"
 )
 _ARTICLE = re.compile(rf"(?:o|a|os|as)\s+(?={_KEYWORD})")
 
@@ -434,17 +443,147 @@ def _geometry_without_figure(found: re.Match[str], request: str, rule: str) -> L
     )
 
 
+# -- probability and counting (Phase 10, ADR 0015) -----------------------------------------------
+
+
+def _probability(calculation: str, data: str, rule: str) -> LanguageMatch:
+    return LanguageMatch(IntentName.PROBABILITY, data, {"calculation": calculation}, rule=rule)
+
+
+def _factorial(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    return _probability("factorial", f"n = {found.group('n')}", rule)
+
+
+def _count(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    kind = "arrangement" if found.group("kind").startswith("arranjo") else "combination"
+    if found.group("rep") or found.group("rep2"):
+        kind += "_repetition"
+    return _probability(kind, f"n = {found.group('n')}; k = {found.group('k')}", rule)
+
+
+def _anagrams(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    return _probability("anagrams", _grab(found, request, "word") or "", rule)
+
+
+def _and_to_separator(text: str) -> str:
+    """'n = 5, k = 3 e p = 1/2' -> 'n = 5, k = 3; p = 1/2'; 'e' inside P(A e B) stays."""
+    depth, out, i = 0, [], 0
+    while i < len(text):
+        ch = text[i]
+        depth += ch == "("
+        depth -= ch == ")"
+        found = re.match(r"\s+e\s+", text[i:]) if depth == 0 else None
+        if found:
+            out.append("; ")
+            i += found.end()
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
+
+
+_INDEPENDENT = re.compile(
+    r",?\s*(?:e\s+)?(?:sendo\s+|que\s+sao\s+|sao\s+)?(?:os\s+)?(?:eventos\s+)?independentes\s*$"
+)
+
+
+def _binomial(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    if found.group("summary"):
+        calculation = "binomial_summary"
+    else:
+        which = re.sub(r"\s+", " ", found.group("which") or "")
+        calculation = {
+            "no maximo": "binomial_at_most",
+            "ate": "binomial_at_most",
+            "pelo menos": "binomial_at_least",
+            "no minimo": "binomial_at_least",
+        }.get(which, "binomial_exact")
+    return _probability(calculation, _and_to_separator(_grab(found, request, "values") or ""), rule)
+
+
+def _events(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    values = _grab(found, request, "values") or ""
+    independent = bool(found.group("indep"))
+    tail = _INDEPENDENT.search(_fold(values))
+    if tail is not None:
+        independent, values = True, values[: tail.start()]
+    event = re.sub(r"\s+", " ", found.group("event")).replace(" ", "")
+    calculation = {
+        "naoa": "complement",
+        "aeb": "intersection",
+        "a∩b": "intersection",
+        "aoub": "union",
+        "a∪b": "union",
+        "adadob": "conditional",
+        "a|b": "conditional",
+    }[event]
+    if independent and calculation in ("intersection", "union"):
+        calculation += "_independent"
+    return _probability(calculation, _and_to_separator(values.strip().rstrip(",")), rule)
+
+
 def _future(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     raise MathError(
         ErrorCode.UNSUPPORTED_FEATURE,
-        "Probabilidade e pontos como vértice e máximo de uma função ainda não são "
-        "suportados; eles estão previstos para as próximas etapas.",
+        "Pontos como vértice e máximo de uma função ainda não são suportados; eles estão "
+        "previstos para as próximas etapas.",
     )
 
 
 # -- rules, in order ------------------------------------------------------------------------------
 
 _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], LanguageMatch]]] = [
+    # Probability first: "média da binomial com n = 10..." is not a list of data.
+    (
+        "factorial",
+        re.compile(
+            r"(?:fatorial\s+(?:de|do\s+numero)\s+(?P<n>\d+)|(?P<n2>\d+)\s+fatorial"
+            r"|permutac(?:ao|oes)(?:\s+simples)?\s+de\s+(?P<n3>\d+)(?:\s+elementos?)?)"
+        ),
+        lambda found, request, rule: _probability(
+            "factorial",
+            f"n = {found.group('n') or found.group('n2') or found.group('n3')}",
+            rule,
+        ),
+    ),
+    (
+        "counting",
+        re.compile(
+            r"(?P<kind>arranjos?|combinac(?:ao|oes))(?:\s+(?P<rep>com\s+repeticao)|\s+simples)?"
+            r"\s+de\s+(?P<n>\d+)(?:\s+elementos?)?\s*,?\s+(?:tomad[oa]s\s+)?(?P<k>\d+)"
+            r"\s+a\s+(?P=k)(?:\s+(?P<rep2>com\s+repeticao))?"
+        ),
+        _count,
+    ),
+    (
+        "anagrams",
+        re.compile(
+            r"(?:(?:numero|quantidade)\s+de\s+)?anagramas"
+            r"(?:\s+(?:tem|possui|existem|ha|de|da|do|para|com|a|o|palavra|nome))*"
+            r"\s+[\"'\u201c\u201d\u2018\u2019]?(?P<word>[a-z]+)[\"'\u201c\u201d\u2018\u2019]?"
+        ),
+        _anagrams,
+    ),
+    (
+        "binomial",
+        re.compile(
+            r"(?:(?P<summary>media\s+e\s+(?:a\s+)?variancia|media|variancia|desvio[\s-]+padrao)"
+            r"\s+(?:da|de\s+uma)\s+)?(?:(?:a\s+)?probabilidade\s+)?(?:distribuicao\s+)?binomial"
+            r"(?:\s+(?P<which>no\s+maximo|ate|pelo\s+menos|no\s+minimo|exatamente))?"
+            r"\s*(?:,|:|com|de|para|em)?\s*(?P<values>[nkp]\s*=.*)"
+        ),
+        _binomial,
+    ),
+    (
+        "events",
+        re.compile(
+            r"(?:probabilidade\s+(?:de\s+|da\s+|do\s+)?|p\s*\(\s*)"
+            r"(?P<event>nao\s+a|a\s+e\s+b|a\s*∩\s*b|a\s+ou\s+b|a\s*∪\s*b|a\s+dado\s+b|a\s*\|\s*b)"
+            r"\s*\)?(?P<indep>,?\s+(?:sendo\s+|que\s+sao\s+)?(?:eventos\s+)?independentes)?"
+            r"\s*(?:,|:)?\s*(?:com|sendo|se|dados?|onde|quando|em\s+que)?\s*(?P<values>p\s*\(.*)"
+        ),
+        _events,
+    ),
     ("statistics", re.compile(rf"{_MEASURE}{_FILLER}\s+{_DATA}"), _statistics),
     (
         "statistics_without_data",
@@ -508,7 +647,7 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
     ),
     (
         "future",
-        re.compile(r"(?:probabilidade|vertice|maximo|minimo)\b.*"),
+        re.compile(r"(?:vertice|maximo|minimo)\b.*"),
         _future,
     ),
     (

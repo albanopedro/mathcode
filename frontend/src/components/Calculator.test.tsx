@@ -751,3 +751,88 @@ describe("Calculator: geometry", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/não formam um triângulo/);
   });
 });
+
+describe("Calculator: probability", () => {
+  it("offers the calculations in groups, with the values each one takes", async () => {
+    answer(fixtures.probabilityBinomial);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Probabilidade");
+    expect(screen.getByLabelText("Cálculo")).toHaveValue("factorial");
+    expect(screen.getByRole("group", { name: "Distribuição binomial" })).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Cálculo"), "P(X ≤ k)");
+    expect(screen.getByText(/n \(tentativas\), k \(sucessos\) e p/)).toBeInTheDocument();
+    expect(screen.getAllByText("n = 5; k = 3; p = 1/2").length).toBeGreaterThan(0);
+
+    await user.type(screen.getByLabelText("Expressão ou equação"), "n = 5; k = 3; p = 50%{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({
+      input: "n = 5; k = 3; p = 50%",
+      intent: "probability",
+      options: { calculation: "binomial_at_most" },
+    });
+  });
+
+  it("shows a probability as a fraction and a percentage, with its formula", async () => {
+    answer(fixtures.probabilityBinomial);
+    await calculateText("n = 5; k = 3; p = 50%", "Probabilidade");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Probabilidade")).toBeInTheDocument();
+    expect(latexOf(result)).toContain("P(X \\le 3) = \\frac{13}{16}");
+    expect(within(result).getByText("Em porcentagem: 81,25%")).toBeInTheDocument();
+    expect(latexOf(result).join(" ")).toContain("\\sum_{i=0}^{k}");
+    expect(within(result).queryByLabelText("aproximadamente")).not.toBeInTheDocument();
+  });
+
+  it("marks a rounded percentage and names the phrase's calculation", async () => {
+    answer(fixtures.probabilityUnionPhrase);
+    await calculateText("probabilidade de A ou B com P(A) = 1/2, P(B) = 1/3 e P(A e B) = 1/6");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Em porcentagem: ≈ 66,67%")).toBeInTheDocument();
+    expect(within(result).getByLabelText("Interpretação da frase")).toHaveTextContent(
+      "(cálculo: A ou B)",
+    );
+    // The values as they were read: "P(A e B)" is P(A ∩ B).
+    expect(within(result).getByText("P(A) = 1/2; P(B) = 1/3; P(A ∩ B) = 1/6")).toBeInTheDocument();
+  });
+
+  it("lists the repeated letters of anagrams", async () => {
+    answer(fixtures.probabilityAnagrams);
+    await calculateText("BANANA", "Probabilidade");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Letras repetidas: A (3 vezes), N (2 vezes).")).toBeInTheDocument();
+    expect(latexOf(result)).toContain("P_{6}^{3, 2} = 60");
+    expect(latexOf(result)).toContain("P_{6}^{3, 2} = \\frac{6!}{3! \\, 2!}");
+    expect(within(result).queryByText(/Em porcentagem/)).not.toBeInTheDocument();
+  });
+
+  it("shows the mean, variance and standard deviation of a binomial", async () => {
+    answer(fixtures.probabilitySummary);
+    await calculateText("n = 10; p = 30%", "Probabilidade");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(latexOf(result).join(" ")).toContain("\\mu &= 3");
+    expect(latexOf(result).join(" ")).toContain("\\sigma^2 &= \\frac{21}{10}");
+  });
+
+  it("explains events that are not independent", async () => {
+    answer(fixtures.probabilityNotIndependent);
+    await calculateText("P(A) = 1/2; P(B) = 1/3; P(A e B) = 1/5", "Probabilidade");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/não são independentes/);
+  });
+
+  it("calculates combinations inside any expression", async () => {
+    answer(fixtures.countingArithmetic);
+    await calculateText("C(4, 2)/C(52, 2)");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(latexOf(result)).toContain("\\frac{1}{221}");
+    expect(within(result).getByText("C(4, 2)/C(52, 2)")).toBeInTheDocument();
+  });
+});

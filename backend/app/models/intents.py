@@ -34,6 +34,7 @@ class IntentName(StrEnum):
     MATRIX = "matrix"
     VECTOR = "vector"
     GEOMETRY = "geometry"
+    PROBABILITY = "probability"
 
 
 class _Params(BaseModel):
@@ -192,6 +193,35 @@ class GeometryParams(_Params):
     calculation: GeometryCalculation
 
 
+# Probability and counting (Phase 10, ADR 0015). The values each calculation takes are
+# in math_engine/probability.py; here only the names.
+type ProbabilityCalculation = Literal[
+    "factorial",
+    "arrangement",
+    "arrangement_repetition",
+    "combination",
+    "combination_repetition",
+    "anagrams",
+    "complement",
+    "intersection",
+    "intersection_independent",
+    "union",
+    "union_independent",
+    "conditional",
+    "binomial_exact",
+    "binomial_at_most",
+    "binomial_at_least",
+    "binomial_summary",
+]
+
+
+class ProbabilityParams(_Params):
+    """The values ("n = 10; k = 3", "P(A) = 1/2; P(B) = 1/3") or the word of anagrams."""
+
+    data: str
+    calculation: ProbabilityCalculation
+
+
 type IntentParams = (
     ArithmeticParams
     | SimplifyParams
@@ -208,6 +238,7 @@ type IntentParams = (
     | MatrixParams
     | VectorParams
     | GeometryParams
+    | ProbabilityParams
 )
 
 # Options a request may carry for each intent, besides the input text.
@@ -221,6 +252,7 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.MATRIX: frozenset({"operation"}),
     IntentName.VECTOR: frozenset({"operation"}),
     IntentName.GEOMETRY: frozenset({"figure", "calculation"}),
+    IntentName.PROBABILITY: frozenset({"calculation"}),
 }
 
 # An option value: a short text (variable, bound, point, side) or a small number

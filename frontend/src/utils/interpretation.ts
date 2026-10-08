@@ -43,6 +43,26 @@ const GEOMETRY_NAMES: Record<string, string> = {
   polygon_area: "área do polígono",
 };
 
+// The "calculation" option of probability (geometry's are in GEOMETRY_NAMES).
+const PROBABILITY_NAMES: Record<string, string> = {
+  factorial: "fatorial",
+  arrangement: "arranjo",
+  arrangement_repetition: "arranjo com repetição",
+  combination: "combinação",
+  combination_repetition: "combinação com repetição",
+  anagrams: "anagramas",
+  complement: "não A",
+  intersection: "A e B",
+  intersection_independent: "A e B, independentes",
+  union: "A ou B",
+  union_independent: "A ou B, independentes",
+  conditional: "A dado B",
+  binomial_exact: "binomial, P(X = k)",
+  binomial_at_most: "binomial, P(X ≤ k)",
+  binomial_at_least: "binomial, P(X ≥ k)",
+  binomial_summary: "binomial, média e variância",
+};
+
 // The "operation" option of matrices and vectors.
 const OPERATION_NAMES: Record<string, string> = {
   evaluate: "calcular expressão",
@@ -100,7 +120,7 @@ export function describeInterpretation(interpretation: Interpretation): Interpre
           measure: MEASURES,
           operation: OPERATION_NAMES,
           figure: GEOMETRY_NAMES,
-          calculation: GEOMETRY_NAMES,
+          calculation: { ...GEOMETRY_NAMES, ...PROBABILITY_NAMES },
         }[key] ?? {};
       const shown = names[String(value)] ?? String(value);
       return `${OPTION_LABELS[key] ?? key}: ${shown}`;

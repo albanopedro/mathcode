@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "intent": "arithmetic",
+  "input": "C(4, 2)/C(52, 2)",
+  "normalized_input": "C(4, 2)/C(52, 2)",
+  "result": {
+    "plain": "1/221",
+    "latex": "\\frac{1}{221}",
+    "approx": "0.00452488687782805"
+  },
+  "steps": [],
+  "details": {},
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Um avaliador independente (mpmath, com precisão ajustada ao tamanho dos números) obteve 0.00452488687782805, igual ao resultado em pelo menos 30 algarismos significativos."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Refazendo a conta com frações exatas (aritmética racional do Python, sem o SymPy), obtém-se exatamente o mesmo número."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "comparison"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

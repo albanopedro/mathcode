@@ -4,6 +4,7 @@ from enum import StrEnum
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import Notice, NoticeCode
 from app.parsing.normalize import NormalizedText
+from app.parsing.vocabulary import COUNTING
 
 DIGITS = frozenset("0123456789")
 _LETTERS = frozenset("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
@@ -25,6 +26,7 @@ class TokenKind(StrEnum):
     EQUALS = "="
     SQRT = "√"
     DEGREE = "°"
+    BANG = "!"
     EOF = "EOF"
 
 
@@ -43,6 +45,7 @@ _SINGLE_CHAR = {
     "=": TokenKind.EQUALS,
     "√": TokenKind.SQRT,
     "°": TokenKind.DEGREE,
+    "!": TokenKind.BANG,
 }
 
 
@@ -62,7 +65,10 @@ def tokenize(norm: NormalizedText, notices: list[Notice]) -> list[Token]:
         if ch == " ":
             i += 1
         elif ch in DIGITS or (ch == "." and _is_digit_at(text, i + 1)):
+            start = i
             token, i = _read_number(norm, i, notices)
+            if "," in text[start:i]:
+                _check_counting_comma(tokens, text[start:i], token)
             tokens.append(token)
         elif ch in _LETTERS:
             start = i
@@ -84,6 +90,25 @@ def tokenize(norm: NormalizedText, notices: list[Notice]) -> list[Token]:
             )
     tokens.append(Token(TokenKind.EOF, "", len(norm.source)))
     return tokens
+
+
+def _check_counting_comma(tokens: list[Token], number: str, token: Token) -> None:
+    """C(10,3): the combination, or C·10,3 with a decimal comma? Refuse to guess."""
+    if (
+        len(tokens) >= 2
+        and tokens[-1].kind is TokenKind.LPAREN
+        and tokens[-2].kind is TokenKind.IDENT
+        and tokens[-2].text in COUNTING
+    ):
+        name = tokens[-2].text
+        n, k = number.split(",")
+        raise MathError(
+            ErrorCode.AMBIGUOUS_INPUT,
+            f"'{name}({number})' é ambíguo: {name}({n}, {k}) ou {name}·{number} com vírgula "
+            f"decimal? Para {'a combinação' if name == 'C' else 'o arranjo'}, escreva "
+            f"{name}({n}, {k}), com espaço depois da vírgula.",
+            token.position,
+        )
 
 
 def _is_digit_at(text: str, i: int) -> bool:

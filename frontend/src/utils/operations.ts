@@ -10,7 +10,8 @@ export type OperationField =
   | "x_range"
   | "matrix_operation"
   | "vector_operation"
-  | "geometry";
+  | "geometry"
+  | "probability";
 
 /** What to compute from a matrix expression (ADR 0012), in the order of the field. */
 export const MATRIX_OPERATIONS = [
@@ -117,6 +118,12 @@ export const OPERATIONS: readonly Operation[] = [
     placeholder: "Ex.: r = 5 ou b = 4; h = 3",
     fields: ["geometry"],
   },
+  {
+    intent: "probability",
+    label: "Probabilidade",
+    placeholder: "Ex.: n = 10; k = 3 ou P(A) = 1/2; P(B) = 1/3",
+    fields: ["probability"],
+  },
 ];
 
 /** Short name shown next to a result. */
@@ -136,6 +143,7 @@ export const INTENT_LABELS: Record<IntentName, string> = {
   matrix: "Matriz",
   vector: "Vetor",
   geometry: "Geometria",
+  probability: "Probabilidade",
 };
 
 /** What the extra inputs hold; empty texts mean "not given". */
@@ -154,6 +162,8 @@ export interface FieldValues {
   /** A figure of utils/geometry.ts and one of its calculations. */
   geometry_figure: string;
   geometry_calculation: string;
+  /** A calculation of utils/probability.ts. */
+  probability_calculation: string;
 }
 
 export const EMPTY_FIELDS: FieldValues = {
@@ -169,6 +179,7 @@ export const EMPTY_FIELDS: FieldValues = {
   vector_operation: "norm",
   geometry_figure: "circle",
   geometry_calculation: "area",
+  probability_calculation: "factorial",
 };
 
 export type CalculationOptions = Record<string, string | number>;
@@ -216,6 +227,9 @@ export function buildOptions(operation: Operation, values: FieldValues): Calcula
       case "geometry":
         options.figure = values.geometry_figure;
         options.calculation = values.geometry_calculation;
+        break;
+      case "probability":
+        options.calculation = values.probability_calculation;
         break;
       case "x_range":
         if (values.x_min.trim()) {

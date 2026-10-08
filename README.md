@@ -5,15 +5,17 @@ cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
 informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
 pedido: nunca é ela que calcula.
 
-> **Estado: Fase 10 (matemática avançada): estatística, matrizes, vetores e
-> geometria.**
+> **Estado: Fase 10 (matemática avançada): estatística, matrizes, vetores,
+> geometria e probabilidade.**
 > Pelo navegador ou pela API, o Mathcode já: calcula; simplifica, fatora e expande; resolve equações
 > (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
 > deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;
 > calcula média, mediana, moda e desvio padrão de uma lista; opera com
 > matrizes (determinante, inversa, transposta, traço, posto, produto) e
 > vetores (escalar, vetorial, norma, ângulo); calcula áreas, perímetros e
-> volumes, Pitágoras e geometria analítica; e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
+> volumes, Pitágoras e geometria analítica; conta (fatorial, arranjo,
+> combinação, anagramas) e calcula probabilidades de eventos e da binomial;
+> e entende frases como "qual a derivada de x^3?". Com "Permitir IA", frases
 > mais livres são traduzidas por um modelo gratuito. Tudo vem com verificação
 > independente, que diz quando provou o resultado, quando só tem evidência e
 > quando não conseguiu conferir, e mostra cada checagem feita: substituição,
@@ -76,7 +78,9 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Automático (matrizes) | `[[1, 2], [3, 4]] * [[5, 6], [7, 8]]` |
 | Vetores (cálculo: Produto vetorial) | `[1, 2, 3]; [4, 5, 6]` |
 | Geometria (Cone, Volume) | `r = 3; h = 4` |
-| Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1`, `qual a média de 10, 20 e 30?`, `determinante de [[1, 2], [3, 4]]`, `ângulo entre os vetores [1, 0] e [1, 1]`, `qual a área de um círculo de raio 5?` |
+| Probabilidade (cálculo: A ou B) | `P(A) = 1/2; P(B) = 1/3; P(A e B) = 1/6` |
+| Calcular | `C(4, 2)/C(52, 2)` ou `5!` |
+| Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1`, `qual a média de 10, 20 e 30?`, `determinante de [[1, 2], [3, 4]]`, `ângulo entre os vetores [1, 0] e [1, 1]`, `qual a área de um círculo de raio 5?`, `quantos anagramas tem a palavra BANANA?` |
 
 Em desenvolvimento, o Vite encaminha `/api` para o backend na porta 8100, então
 rode os dois juntos.

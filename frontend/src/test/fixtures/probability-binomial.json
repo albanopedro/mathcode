@@ -1,0 +1,53 @@
+{
+  "success": true,
+  "intent": "probability",
+  "input": "n = 5; k = 3; p = 50%",
+  "normalized_input": "n = 5; k = 3; p = 50%",
+  "result": {
+    "plain": "P(X ≤ 3) = 13/16",
+    "latex": "P(X \\le 3) = \\frac{13}{16}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "calculation": "binomial_at_most",
+    "group": "binomial",
+    "values": {
+      "n": "5",
+      "k": "3",
+      "p": "1/2"
+    },
+    "formula": "P(X \\le k) = \\sum_{i=0}^{k} C(n, i) \\, p^i \\, (1 - p)^{n - i}",
+    "percent": "81,25%",
+    "percent_exact": true
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os valores, relidos da entrada com frações exatas (sem o SymPy), são os usados no cálculo: n = 5, k = 3, p = 1/2."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A distribuição, refeita termo a termo pela recorrência P(i + 1) = P(i) · (n − i)/(i + 1) · p/(1 − p) com frações exatas, soma exatamente 1 (6 termos)."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Por a soma dos termos de 0 a 3, obtém-se exatamente o resultado."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

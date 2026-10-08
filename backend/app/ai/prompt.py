@@ -30,16 +30,23 @@ Operations (intent) and their options:
   parallelogram, cube, box, sphere, cylinder, cone, right_triangle, points) and calculation
   (area, perimeter, volume, surface_area, classify, missing_side, distance, midpoint, line,
   polygon_area).
+- "probability": option calculation (required). Values as "n = 10; k = 3" for factorial,
+  arrangement, arrangement_repetition, combination, combination_repetition; a single word for
+  anagrams (e.g. "BANANA"); "P(A) = 1/2; P(B) = 1/3; P(A e B) = 1/6" (P(A ou B) also) for
+  complement, intersection, intersection_independent, union, union_independent, conditional
+  (A given B); "n = 5; k = 3; p = 1/2" for binomial_exact, binomial_at_most,
+  binomial_at_least, and "n = 10; p = 30%" for binomial_summary (mean and variance).
 
 Expression syntax: ^ for powers, sqrt(x), abs(x), sin cos tan asin acos atan, exp, ln
-(natural log), log (base 10), pi, e, ° for degrees. Single-letter variables only.
+(natural log), log (base 10), pi, e, ° for degrees, n! (factorial), C(n, k) (combinations)
+and A(n, k) (arrangements). Single-letter variables only.
 The expression contains ONLY math: no words, no "d/dx", no "=" with the result,
 never the answer.
 
 If the request is not math, is ambiguous, or needs information that is missing,
 set "intent" to null, "expression" to "" and ask in "clarification".
 If it asks for something that is not in the list above (double integrals, partial
-derivatives, eigenvalues, probability, complex numbers...), do NOT turn it into
+derivatives, eigenvalues, complex numbers...), do NOT turn it into
 a similar operation: set "intent" to null and say in "clarification" that it is not
 supported yet.
 
@@ -52,6 +59,8 @@ Examples:
 "quando o seno de x vale meio?" ->
 {"intent": "solve_equation", "expression": "sin(x) = 1/2", "options": {},
  "clarification": null}
+"de quantas formas posso escolher 3 de 10 pessoas?" ->
+{"intent": "arithmetic", "expression": "C(10, 3)", "options": {}, "clarification": null}
 "quanto é aquilo?" ->
 {"intent": null, "expression": "", "options": {}, "clarification": "Qual é a conta?"}
 """
