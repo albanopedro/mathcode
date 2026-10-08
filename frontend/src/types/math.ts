@@ -17,7 +17,8 @@ export type IntentName =
   | "graph"
   | "statistics"
   | "matrix"
-  | "vector";
+  | "vector"
+  | "geometry";
 
 export type VerificationStatus =
   | "verified_symbolic"
@@ -131,6 +132,7 @@ const INTENTS: readonly string[] = [
   "statistics",
   "matrix",
   "vector",
+  "geometry",
 ];
 const STATUSES: readonly string[] = [
   "verified_symbolic",

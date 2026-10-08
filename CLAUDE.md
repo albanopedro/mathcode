@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-07, Fase 10: vetores concluídos (aguardando revisão).
+> Última atualização: 2026-10-07, Fase 10: geometria concluída (aguardando revisão).
 
 ## O que é
 
@@ -55,7 +55,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 7: Gráficos | concluída e commitada (`978dab5`) |
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
-| 10: Matemática avançada | estatística e matrizes concluídas; **vetores concluídos, aguardando revisão e commit**; próximo domínio a escolher |
+| 10: Matemática avançada | estatística, matrizes e vetores concluídos; **geometria concluída, aguardando revisão e commit**; restam probabilidade e trigonometria |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -253,6 +253,19 @@ Backend, continuação:
     (3D), `angle` (rad exato + graus; 6 algarismos na manchete);
   - verificação reaproveita `exact_linear`/`numeric_linear` de
     `verification/matrices.py`; ‖u‖² = u·u, ortogonalidade + Lagrange, cos θ.
+- **Geometria** ([ADR 0014](docs/decisions/0014-geometria.md)):
+  - nó `Point` (`(1, 2)`; vírgula dentro de parênteses); `has_points`;
+  - intent `geometry`, `GeometryParams(measures, figure, calculation)`;
+    `CATALOG` em `math_engine/geometry.py` (figura → medidas → conjuntos por
+    cálculo) e espelho em `frontend/src/utils/geometry.ts`;
+  - medidas como `r = 5` / `b = 4; h = 3` (Equation/System); uma medida só
+    pode ir sem nome; erros explicados (falta, sobra, repetida, ≤ 0,
+    desigualdade triangular, polígono que se cruza ou alinhado);
+  - verificação por outro método (vértices + cadarço, integração/revolução,
+    coordenadas × Heron, a²+b²=c², leque × cadarço, substituição na reta);
+  - frases: regras `points`, `geometry`, `geometry_without_figure`
+    (`_GEOMETRY_MEASURE` ≠ `_MEASURE` da estatística); "área" de sólido =
+    superfície.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -425,8 +438,23 @@ cd frontend && npm test && npm run build
      Produto escalar, Produto vetorial, Ângulo, Calcular expressão); dois
      vetores separados por `;`; frases e Automático também;
   4. ângulo em radianos exatos **e** em graus (θ = π/4 = 45°).
-  - Aguardando a revisão e a escolha do próximo domínio (geometria,
-    probabilidade/combinatória ou trigonometria).
+- **Geometria (4º domínio, concluído, ADR 0014).** Decisões do usuário (2026-10-07):
+  1. conteúdos (todos): figuras planas (área/perímetro: círculo, quadrado,
+     retângulo, triângulo [b,h ou 3 lados/Heron], trapézio, losango,
+     paralelogramo); sólidos (volume/superfície: cubo, paralelepípedo, esfera,
+     cilindro, cone); analítica (distância, ponto médio, reta por 2 pontos,
+     área de polígono); Pitágoras e classificação de triângulos;
+  2. interface: operação "Geometria" + campos Figura e Cálculo; medidas no
+     texto como `r = 5` ou `b = 4; h = 3` (o parser já lê como equações);
+     frases também;
+  3. pontos `(1, 2)` (hoje erro; nada muda de significado);
+  4. sem unidades (números puros).
+  - Aguardando a revisão e a escolha do próximo domínio (probabilidade/
+    combinatória ou trigonometria).
+  - Desenho: intent `geometry`, `GeometryParams(measures, figure, calculation)`
+    com catálogo único de figuras; nó `Point` no parser; verificação por outro
+    caminho (vértices + cadarço, integração/sólido de revolução, Heron ×
+    coordenadas, a²+b²=c², triangulação × cadarço, substituição na reta).
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -444,7 +472,9 @@ cd frontend && npm test && npm run build
   quartis/IQR, média ponderada, tabela de frequências, dados irracionais,
   rótulo "Dados" no campo de entrada; matrizes: autovalores (complexos),
   matrizes com letras, editor em grade; vetores: projeção, produto misto,
-  vetor × matriz, vetores com letras.
+  vetor × matriz, vetores com letras; geometria: unidades, perímetro do
+  trapézio, polígonos regulares, setor, pirâmide/prisma, distância ponto-reta;
+  resumir o texto de ajuda da calculadora (Fase 11).
 
 ## Histórico
 
@@ -486,3 +516,6 @@ cd frontend && npm test && npm run build
 - **Fase 10.3 (vetores):** `[1, 2, 3]`, álgebra comum com matrizes (A·v),
   escalar, vetorial, norma, unitário e ângulo (rad e graus), verificação por
   outro caminho; 1 160 testes no backend e 225 no frontend.
+- **Fase 10.4 (geometria):** pontos `(1, 2)`, intent `geometry` com catálogo de
+  14 figuras e 10 cálculos, frases, verificação por outro método; 1 275 testes
+  no backend e 239 no frontend.

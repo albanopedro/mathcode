@@ -21,6 +21,7 @@ from app.parsing.ast import (
     Negate,
     Node,
     Number,
+    Point,
     Variable,
     Vector,
     walk,
@@ -100,6 +101,13 @@ class ExpressionBuilder:
                 return self._binary(node)
             case Call():
                 return self._call(node)
+            case Point():
+                raise MathError(
+                    ErrorCode.INVALID_INPUT_FOR_INTENT,
+                    "Pontos, como (1, 2), só entram na operação Geometria ou em frases como "
+                    "'distância entre (1, 2) e (4, 6)'.",
+                    node.position,
+                )
             case Matrix() | Vector():
                 raise MathError(
                     ErrorCode.INVALID_INPUT_FOR_INTENT,

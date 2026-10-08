@@ -18,6 +18,7 @@ from app.formatting.results import (
     present_division,
     present_equation,
     present_factor,
+    present_geometry,
     present_graph,
     present_integral,
     present_limit,
@@ -31,6 +32,7 @@ from app.math_engine.algebra import divide, expand, factor, simplify
 from app.math_engine.arithmetic import evaluate
 from app.math_engine.calculus import derivative, integral, limit
 from app.math_engine.equations import solve_equation
+from app.math_engine.geometry import geometry
 from app.math_engine.graphing import graph
 from app.math_engine.matrices import matrices
 from app.math_engine.statistics import statistics
@@ -41,6 +43,7 @@ from app.models.intents import (
     DerivativeParams,
     ExpandParams,
     FactorParams,
+    GeometryParams,
     GraphParams,
     IntegralParams,
     IntentName,
@@ -59,6 +62,7 @@ from app.verification.algebra import verify_division, verify_factor, verify_rewr
 from app.verification.arithmetic import verify_arithmetic
 from app.verification.calculus import verify_derivative, verify_integral, verify_limit
 from app.verification.equations import verify_equation, verify_system
+from app.verification.geometry import verify_geometry
 from app.verification.graphing import verify_graph
 from app.verification.matrices import verify_matrices
 from app.verification.statistics import verify_statistics
@@ -129,5 +133,8 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
         ),
         IntentSpec(IntentName.MATRIX, MatrixParams, matrices, verify_matrices, present_matrices),
         IntentSpec(IntentName.VECTOR, VectorParams, vectors, verify_vectors, present_vectors),
+        IntentSpec(
+            IntentName.GEOMETRY, GeometryParams, geometry, verify_geometry, present_geometry
+        ),
     )
 }

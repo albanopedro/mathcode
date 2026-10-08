@@ -283,3 +283,30 @@ def test_matrix_times_vector_in_automatic(api: TestClient) -> None:
     assert status == 200
     assert data["intent"] == "matrix"
     assert data["result"]["plain"] == "[17, 39]"
+
+
+# -- geometry (Phase 10) --------------------------------------------------------------------------
+
+
+def test_geometry_operation(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {
+            "input": "r = 3; h = 4",
+            "intent": "geometry",
+            "options": {"figure": "cone", "calculation": "volume"},
+        },
+    )
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.result is not None and result.result.plain == "V = 12*pi"
+    assert data["details"]["formula"] == r"V = \frac{\pi r^2 h}{3}"
+    assert data["verification"]["status"] == "verified_symbolic"
+
+
+def test_geometry_needs_both_options(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "r = 3", "intent": "geometry", "options": {"figure": "circle"}}
+    )
+    assert status == 200
+    assert data["error"]["code"] == "INVALID_INPUT_FOR_INTENT"

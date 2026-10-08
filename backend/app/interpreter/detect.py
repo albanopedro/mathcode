@@ -14,6 +14,7 @@ from app.models.intents import (
     DerivativeParams,
     ExpandParams,
     FactorParams,
+    GeometryParams,
     GraphParams,
     IntegralParams,
     IntentName,
@@ -28,7 +29,15 @@ from app.models.intents import (
     VectorParams,
 )
 from app.parsing import parse
-from app.parsing.ast import Equation, Matrix, System, has_brackets, variables, walk
+from app.parsing.ast import (
+    Equation,
+    Matrix,
+    System,
+    has_brackets,
+    has_points,
+    variables,
+    walk,
+)
 
 type Options = Mapping[str, str | int]
 
@@ -48,6 +57,7 @@ _TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
     IntentName.STATISTICS: (StatisticsParams, "data"),
     IntentName.MATRIX: (MatrixParams, "expression"),
     IntentName.VECTOR: (VectorParams, "expression"),
+    IntentName.GEOMETRY: (GeometryParams, "measures"),
 }
 
 # User-facing explanation of an invalid option.
@@ -67,6 +77,14 @@ _OPTION_PROBLEMS = {
     "operation": (
         "Cálculo desconhecido. Para matrizes: evaluate, determinant, inverse, transpose, trace "
         "ou rank; para vetores: evaluate, norm, unit, dot, cross ou angle."
+    ),
+    "figure": (
+        "Figura desconhecida. Use circle, square, rectangle, triangle, trapezoid, rhombus, "
+        "parallelogram, cube, box, sphere, cylinder, cone, right_triangle ou points."
+    ),
+    "calculation": (
+        "Cálculo de geometria desconhecido. Use area, perimeter, volume, surface_area, "
+        "classify, missing_side, distance, midpoint, line ou polygon_area."
     ),
 }
 
@@ -128,6 +146,12 @@ def _detect(text: str) -> IntentName:
         return IntentName.MATRIX
     if has_brackets(tree):  # "[1, 2] + [3, 4]"
         return IntentName.VECTOR
+    if has_points(tree):  # "(1, 2); (4, 6)": which calculation is up to the user
+        raise MathError(
+            ErrorCode.INVALID_INPUT_FOR_INTENT,
+            "Para pontos, escolha a operação Geometria (Figura: Pontos) e o cálculo, ou "
+            "escreva uma frase como 'distância entre (1, 2) e (4, 6)'.",
+        )
     if is_graph_input(tree):  # "x^2; 2x + 1" or "y = x^2"
         return IntentName.GRAPH
     if isinstance(tree, System):

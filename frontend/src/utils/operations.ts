@@ -9,7 +9,8 @@ export type OperationField =
   | "side"
   | "x_range"
   | "matrix_operation"
-  | "vector_operation";
+  | "vector_operation"
+  | "geometry";
 
 /** What to compute from a matrix expression (ADR 0012), in the order of the field. */
 export const MATRIX_OPERATIONS = [
@@ -110,6 +111,12 @@ export const OPERATIONS: readonly Operation[] = [
     placeholder: "Ex.: [1, 2, 3] ou [1, 2, 3]; [4, 5, 6]",
     fields: ["vector_operation"],
   },
+  {
+    intent: "geometry",
+    label: "Geometria",
+    placeholder: "Ex.: r = 5 ou b = 4; h = 3",
+    fields: ["geometry"],
+  },
 ];
 
 /** Short name shown next to a result. */
@@ -128,6 +135,7 @@ export const INTENT_LABELS: Record<IntentName, string> = {
   statistics: "Estatística",
   matrix: "Matriz",
   vector: "Vetor",
+  geometry: "Geometria",
 };
 
 /** What the extra inputs hold; empty texts mean "not given". */
@@ -143,6 +151,9 @@ export interface FieldValues {
   x_max: string;
   matrix_operation: MatrixOperation;
   vector_operation: VectorOperation;
+  /** A figure of utils/geometry.ts and one of its calculations. */
+  geometry_figure: string;
+  geometry_calculation: string;
 }
 
 export const EMPTY_FIELDS: FieldValues = {
@@ -156,6 +167,8 @@ export const EMPTY_FIELDS: FieldValues = {
   x_max: "",
   matrix_operation: "determinant",
   vector_operation: "norm",
+  geometry_figure: "circle",
+  geometry_calculation: "area",
 };
 
 export type CalculationOptions = Record<string, string | number>;
@@ -199,6 +212,10 @@ export function buildOptions(operation: Operation, values: FieldValues): Calcula
         break;
       case "vector_operation":
         options.operation = values.vector_operation;
+        break;
+      case "geometry":
+        options.figure = values.geometry_figure;
+        options.calculation = values.geometry_calculation;
         break;
       case "x_range":
         if (values.x_min.trim()) {

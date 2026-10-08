@@ -1,0 +1,54 @@
+{
+  "success": true,
+  "intent": "geometry",
+  "input": "(1, 2); (4, 6)",
+  "normalized_input": "(1, 2); (4, 6)",
+  "result": {
+    "plain": "y = 4*x/3 + 2/3",
+    "latex": "y = \\frac{4 x}{3} + \\frac{2}{3}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "figure": "points",
+    "calculation": "line",
+    "measures": {},
+    "points": [
+      "(1, 2)",
+      "(4, 6)"
+    ],
+    "formula": "m = \\frac{y_2 - y_1}{x_2 - x_1}, \\ y - y_1 = m (x - x_1)",
+    "quantity": null,
+    "equation": "4*x - 3*y = -2",
+    "slope": "4/3"
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os pontos, relidos da expressão sem o SymPy, são os usados no cálculo."
+      },
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Substituindo os dois pontos na equação da reta, ela vale nos dois."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "A inclinação Δy/Δx, refeita, é a mesma."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "substitution"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

@@ -25,6 +25,11 @@ Operations (intent) and their options:
   operation (evaluate, determinant, inverse, transpose, trace, rank); default evaluate.
 - "vector": vectors in one bracket, e.g. "[1, 2, 3]"; two vectors separated by "; ". Option:
   operation (evaluate, norm, unit, dot, cross, angle); dot, cross and angle take two vectors.
+- "geometry": the measures as "r = 5" or "b = 4; h = 3", or points as "(1, 2); (4, 6)".
+  Options (both required): figure (circle, square, rectangle, triangle, trapezoid, rhombus,
+  parallelogram, cube, box, sphere, cylinder, cone, right_triangle, points) and calculation
+  (area, perimeter, volume, surface_area, classify, missing_side, distance, midpoint, line,
+  polygon_area).
 
 Expression syntax: ^ for powers, sqrt(x), abs(x), sin cos tan asin acos atan, exp, ln
 (natural log), log (base 10), pi, e, ° for degrees. Single-letter variables only.
@@ -34,7 +39,7 @@ never the answer.
 If the request is not math, is ambiguous, or needs information that is missing,
 set "intent" to null, "expression" to "" and ask in "clarification".
 If it asks for something that is not in the list above (double integrals, partial
-derivatives, eigenvalues, geometry, probability, complex numbers...), do NOT turn it into
+derivatives, eigenvalues, probability, complex numbers...), do NOT turn it into
 a similar operation: set "intent" to null and say in "clarification" that it is not
 supported yet.
 

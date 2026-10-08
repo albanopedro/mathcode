@@ -16,11 +16,13 @@ from app.parsing.ast import (
     Negate,
     Node,
     Number,
+    Point,
     System,
     Tree,
     Variable,
     Vector,
     has_brackets,
+    has_points,
     variables,
 )
 from app.parsing.tokenizer import Token, TokenKind
@@ -91,7 +93,9 @@ class _Parser:
                     separator.position,
                 )
             return ExpressionList(tuple(expressions), separator.position)
-        if not any(variables(item) or has_brackets(item) for item in expressions):
+        if not any(
+            variables(item) or has_brackets(item) or has_points(item) for item in expressions
+        ):
             raise MathError(ErrorCode.PARSE_ERROR, _NUMBERS_NEED_STATISTICS, separator.position)
         if len(expressions) > MAX_SYSTEM_EQUATIONS:
             raise MathError(
@@ -183,6 +187,8 @@ class _Parser:
                 return self._expression(_PREFIX_BP)
             case TokenKind.LPAREN:
                 inner = self._expression(0)
+                if self._peek().kind is TokenKind.COMMA:
+                    return self._point(token, inner)
                 self._expect_close(token)
                 return replace(inner, grouped=True) if isinstance(inner, Binary) else inner
             case TokenKind.SQRT:
@@ -320,6 +326,28 @@ class _Parser:
                 opening.position,
             )
         return Matrix(tuple(tuple(entries) for _, entries in rows), opening.position)
+
+    def _point(self, opening: Token, first: Node) -> Point:
+        """(1, 2) or (1, 2, 3): a comma inside parentheses makes a point."""
+        coordinates = [first]
+        while self._peek().kind is TokenKind.COMMA:
+            self._advance()
+            coordinates.append(self._expression(0))
+        self._expect_close(opening)
+        if len(coordinates) > 3:
+            raise MathError(
+                ErrorCode.PARSE_ERROR,
+                "Um ponto tem 2 ou 3 coordenadas, como (1, 2) ou (1, 2, 3).",
+                opening.position,
+            )
+        for coordinate in coordinates:
+            if has_brackets(coordinate) or has_points(coordinate):
+                raise MathError(
+                    ErrorCode.PARSE_ERROR,
+                    "As coordenadas de um ponto são números.",
+                    coordinate.position,
+                )
+        return Point(tuple(coordinates), opening.position)
 
     def _vector(self, opening: Token) -> Vector:
         """[1, 2, 3]: one bracket holds the components."""

@@ -11,6 +11,7 @@ from app.parsing.ast import (
     Negate,
     Node,
     Number,
+    Point,
     System,
     Tree,
     Variable,
@@ -59,6 +60,8 @@ def _text(node: Node) -> str:
             return _wrap(operand, _precedence(operand) < _ATOM) + "°"
         case Call(name=name, args=args):
             return f"{name}({', '.join(_text(arg) for arg in args)})"
+        case Point(coordinates=coordinates):
+            return "(" + ", ".join(_text(c) for c in coordinates) + ")"
         case Vector(entries=entries):
             return "[" + ", ".join(_text(entry) for entry in entries) + "]"
         case Matrix(rows=rows):

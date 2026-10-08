@@ -20,7 +20,7 @@ Regras gerais:
 | 7 | Gráficos | concluída |
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
-| 10 | Matemática avançada | em andamento: estatística, matrizes e vetores feitos (vetores aguardando revisão) |
+| 10 | Matemática avançada | em andamento: estatística, matrizes, vetores e geometria feitos (geometria aguardando revisão) |
 | 11 | UX e histórico | — |
 | 12 | Assistente matemático | — |
 
@@ -319,8 +319,24 @@ domínio por alteração**.
     ortogonalidade e Lagrange no vetorial, cos θ);
   - "u = (…)", "v = (…)" na interface.
 - **Testes:** 1 160 no backend (eram 1 089) e 225 no frontend (eram 213).
-- **Próximos domínios:** geometria, probabilidade/combinatória e
-  trigonometria, um por vez, com a ordem decidida pelo usuário.
+
+### 10.4 — Geometria (feita)
+
+- **Decidido com o usuário** ([ADR 0014](decisions/0014-geometria.md)): figuras
+  planas, sólidos, geometria analítica, Pitágoras e classificação; operação
+  "Geometria" com Figura e Cálculo e medidas `r = 5`; pontos `(1, 2)`; sem
+  unidades.
+- **Entregue:**
+  - catálogo de 14 figuras e 10 cálculos, com erros explicados;
+  - pontos no parser;
+  - frases ("qual a área de um círculo de raio 5?", "hipotenusa de um
+    triângulo de catetos 3 e 4", "distância entre (1, 2) e (4, 6)");
+  - verificação por outro método (vértices e cadarço, integração e sólidos de
+    revolução, coordenadas no lugar de Heron, leque de triângulos);
+  - fórmula usada e tipo de grandeza na interface.
+- **Testes:** 1 275 no backend (eram 1 160) e 239 no frontend (eram 225).
+- **Próximos domínios:** probabilidade/combinatória e trigonometria, um por
+  vez, com a ordem decidida pelo usuário.
 
 ## Fase 11 — UX e histórico
 
@@ -351,5 +367,8 @@ determinística.
 - Matrizes: autovalores e autovetores (tratar complexos), matrizes com letras,
   editor em grade (Fase 11).
 - Vetores: projeção, produto misto, vetor × matriz (linha), vetores com letras.
+- Geometria: unidades, perímetro do trapézio, polígonos regulares, setor
+  circular, pirâmide e prisma, distância de ponto a reta; resumir o texto de
+  ajuda da calculadora (Fase 11).
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

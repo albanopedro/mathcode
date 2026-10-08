@@ -68,7 +68,17 @@ class Vector:
     position: int  # of the "["
 
 
-type Node = Number | Variable | Constant | Negate | Binary | Call | Degrees | Matrix | Vector
+@dataclass(frozen=True)
+class Point:
+    """(1, 2): coordinates that are numbers (ADR 0014)."""
+
+    coordinates: tuple[Node, ...]
+    position: int  # of the "("
+
+
+type Node = (
+    Number | Variable | Constant | Negate | Binary | Call | Degrees | Matrix | Vector | Point
+)
 
 
 @dataclass(frozen=True)
@@ -113,6 +123,8 @@ def children(node: Tree) -> tuple[Tree, ...]:
             return tuple(entry for row in rows for entry in row)
         case Vector(entries=entries):
             return entries
+        case Point(coordinates=coordinates):
+            return coordinates
         case _:
             return ()
 
@@ -126,6 +138,11 @@ def walk(node: Tree) -> Iterator[Tree]:
 def has_brackets(node: Tree) -> bool:
     """True if a matrix or a vector appears anywhere in ``node``."""
     return any(isinstance(inner, Matrix | Vector) for inner in walk(node))
+
+
+def has_points(node: Tree) -> bool:
+    """True if a point, such as (1, 2), appears anywhere in ``node``."""
+    return any(isinstance(inner, Point) for inner in walk(node))
 
 
 def variables(node: Tree) -> set[str]:

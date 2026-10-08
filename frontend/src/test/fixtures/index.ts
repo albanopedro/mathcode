@@ -18,6 +18,11 @@ import aiUnavailable from "./ai-unavailable.json";
 import allReals from "./all-reals.json";
 import allRealsExcept from "./all-reals-except.json";
 import arithmetic from "./arithmetic.json";
+import geometryCircle from "./geometry-circle.json";
+import geometryClassify from "./geometry-classify.json";
+import geometryConePhrase from "./geometry-cone-phrase.json";
+import geometryLine from "./geometry-line.json";
+import geometryNotATriangle from "./geometry-not-a-triangle.json";
 import graphNoPoints from "./graph-no-points.json";
 import graphParabola from "./graph-parabola.json";
 import graphTan from "./graph-tan.json";
@@ -69,6 +74,11 @@ import vectorZeroUnit from "./vector-zero-unit.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  geometryCircle,
+  geometryClassify,
+  geometryConePhrase,
+  geometryLine,
+  geometryNotATriangle,
   vectorAnglePhrase,
   vectorCross,
   vectorIrrational,

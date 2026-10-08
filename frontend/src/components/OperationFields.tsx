@@ -1,3 +1,4 @@
+import { FIGURE_GROUPS, FIGURES, figure } from "../utils/geometry";
 import {
   type FieldValues,
   MATRIX_OPERATIONS,
@@ -155,6 +156,54 @@ export function OperationFields({ operation, values, onChange }: OperationFields
             ))}
           </select>
         </label>
+      )}
+      {has("geometry") && (
+        <>
+          <label className={LABEL_CLASS}>
+            Figura
+            <select
+              value={values.geometry_figure}
+              onChange={(event) => {
+                const chosen = figure(event.target.value);
+                set({
+                  geometry_figure: chosen.value,
+                  geometry_calculation: chosen.calculations[0]!.value,
+                });
+              }}
+              className={INPUT_CLASS}
+            >
+              {FIGURE_GROUPS.map((group) => (
+                <optgroup key={group} label={group}>
+                  {FIGURES.filter((option) => option.group === group).map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </label>
+          <label className={LABEL_CLASS}>
+            Cálculo
+            <select
+              value={values.geometry_calculation}
+              onChange={(event) => set({ geometry_calculation: event.target.value })}
+              className={INPUT_CLASS}
+            >
+              {figure(values.geometry_figure).calculations.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="basis-full text-sm text-slate-500">
+            Medidas: {figure(values.geometry_figure).measures}. Ex.:{" "}
+            <code className="font-mono text-slate-700">
+              {figure(values.geometry_figure).example}
+            </code>
+          </p>
+        </>
       )}
       {has("vector_operation") && (
         <label className={LABEL_CLASS}>

@@ -33,6 +33,7 @@ class IntentName(StrEnum):
     STATISTICS = "statistics"
     MATRIX = "matrix"
     VECTOR = "vector"
+    GEOMETRY = "geometry"
 
 
 class _Params(BaseModel):
@@ -151,6 +152,46 @@ class VectorParams(_Params):
     operation: VectorOperation = "evaluate"
 
 
+# Geometry (Phase 10, ADR 0014). The catalog (measures and formulas of each figure)
+# is in math_engine/geometry.py; here only the names.
+type Figure = Literal[
+    "circle",
+    "square",
+    "rectangle",
+    "triangle",
+    "trapezoid",
+    "rhombus",
+    "parallelogram",
+    "cube",
+    "box",
+    "sphere",
+    "cylinder",
+    "cone",
+    "right_triangle",
+    "points",
+]
+type GeometryCalculation = Literal[
+    "area",
+    "perimeter",
+    "volume",
+    "surface_area",
+    "classify",
+    "missing_side",
+    "distance",
+    "midpoint",
+    "line",
+    "polygon_area",
+]
+
+
+class GeometryParams(_Params):
+    """The measures ("r = 5", "b = 4; h = 3") or the points ("(1, 2); (4, 6)") of a figure."""
+
+    measures: str
+    figure: Figure
+    calculation: GeometryCalculation
+
+
 type IntentParams = (
     ArithmeticParams
     | SimplifyParams
@@ -166,6 +207,7 @@ type IntentParams = (
     | StatisticsParams
     | MatrixParams
     | VectorParams
+    | GeometryParams
 )
 
 # Options a request may carry for each intent, besides the input text.
@@ -178,6 +220,7 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.STATISTICS: frozenset({"measure"}),
     IntentName.MATRIX: frozenset({"operation"}),
     IntentName.VECTOR: frozenset({"operation"}),
+    IntentName.GEOMETRY: frozenset({"figure", "calculation"}),
 }
 
 # An option value: a short text (variable, bound, point, side) or a small number

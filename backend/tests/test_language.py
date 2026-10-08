@@ -109,7 +109,7 @@ def test_the_math_text_is_cut_from_what_was_typed() -> None:
 @pytest.mark.parametrize(
     "text",
     [
-        "qual a área de um círculo de raio 5?",
+        "qual o máximo de x^2 - 4x?",
         "qual a probabilidade de tirar 6 num dado?",
         "qual o vértice dessa função?",
     ],
@@ -292,3 +292,77 @@ def test_vector_words_without_brackets_explain_the_syntax() -> None:
     with pytest.raises(MathError) as exc:
         match_language("produto escalar de u e v")
     assert "[1, 2]" in exc.value.message
+
+
+# -- geometry (Phase 10) --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "measures", "figure", "calculation"),
+    [
+        ("qual a área de um círculo de raio 5?", "r = 5", "circle", "area"),
+        ("comprimento da circunferência de raio 2", "r = 2", "circle", "perimeter"),
+        ("perímetro do quadrado de lado 4", "l = 4", "square", "perimeter"),
+        ("área do retângulo de base 4 e altura 3", "b = 4; h = 3", "rectangle", "area"),
+        ("área do triângulo de lados 3, 4 e 5", "a = 3; b = 4; c = 5", "triangle", "area"),
+        (
+            "classifique o triângulo de lados 2, 2 e 3",
+            "a = 2; b = 2; c = 3",
+            "triangle",
+            "classify",
+        ),
+        ("área do trapézio de bases 6 e 4 e altura 3", "B = 6; b = 4; h = 3", "trapezoid", "area"),
+        ("área do losango de diagonais 6 e 8", "D = 6; d = 8", "rhombus", "area"),
+        ("área da esfera de raio 3", "r = 3", "sphere", "surface_area"),  # a solid: its surface
+        ("volume do cilindro de raio 2 e altura 5", "r = 2; h = 5", "cylinder", "volume"),
+        (
+            "volume do paralelepípedo de comprimento 2, largura 3 e altura 4",
+            "a = 2; b = 3; c = 4",
+            "box",
+            "volume",
+        ),
+        (
+            "hipotenusa de um triângulo de catetos 3 e 4",
+            "a = 3; b = 4",
+            "right_triangle",
+            "missing_side",
+        ),
+        (
+            "cateto do triângulo retângulo de hipotenusa 13 e cateto 5",
+            "c = 13; a = 5",
+            "right_triangle",
+            "missing_side",
+        ),
+        ("distância entre (1, 2) e (4, 6)", "(1, 2); (4, 6)", "points", "distance"),
+        ("ponto médio entre (1, 2) e (3, 4)", "(1, 2); (3, 4)", "points", "midpoint"),
+        ("equação da reta que passa por (1, 2) e (3, 4)", "(1, 2); (3, 4)", "points", "line"),
+        (
+            "área do polígono de vértices (0, 0), (4, 0), (4, 3) e (0, 3)",
+            "(0, 0); (4, 0); (4, 3); (0, 3)",
+            "points",
+            "polygon_area",
+        ),
+    ],
+)
+def test_geometry_phrases(text: str, measures: str, figure: str, calculation: str) -> None:
+    found = match_language(text)
+    assert found is not None
+    assert found.intent is I.GEOMETRY
+    assert found.text == measures
+    assert found.options == {"figure": figure, "calculation": calculation}
+
+
+def test_geometry_phrase_without_measures_explains() -> None:
+    with pytest.raises(MathError) as exc:
+        match_language("área do círculo")
+    assert "raio 5" in exc.value.message
+
+
+def test_area_under_a_curve_is_not_geometry() -> None:
+    assert match_language("área sob a curva de x^2 de 0 a 2") is None
+
+
+def test_geometry_phrase_through_the_pipeline() -> None:
+    result = calculate("qual a área de um círculo de raio 5?")
+    assert result.success and result.intent is I.GEOMETRY
+    assert result.result is not None and result.result.plain == "A = 25*pi"

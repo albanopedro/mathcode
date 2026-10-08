@@ -12,6 +12,35 @@ const OPTION_LABELS: Record<string, string> = {
   x_max: "x até",
   measure: "medida",
   operation: "cálculo",
+  figure: "figura",
+  calculation: "cálculo",
+};
+
+const GEOMETRY_NAMES: Record<string, string> = {
+  circle: "círculo",
+  square: "quadrado",
+  rectangle: "retângulo",
+  triangle: "triângulo",
+  trapezoid: "trapézio",
+  rhombus: "losango",
+  parallelogram: "paralelogramo",
+  cube: "cubo",
+  box: "paralelepípedo",
+  sphere: "esfera",
+  cylinder: "cilindro",
+  cone: "cone",
+  right_triangle: "triângulo retângulo",
+  points: "pontos",
+  area: "área",
+  perimeter: "perímetro",
+  volume: "volume",
+  surface_area: "área da superfície",
+  classify: "classificação",
+  missing_side: "lado que falta",
+  distance: "distância",
+  midpoint: "ponto médio",
+  line: "reta",
+  polygon_area: "área do polígono",
 };
 
 // The "operation" option of matrices and vectors.
@@ -66,7 +95,13 @@ export function describeInterpretation(interpretation: Interpretation): Interpre
     expression: interpretation.expression,
     options: Object.entries(interpretation.options).map(([key, value]) => {
       const names: Record<string, string> =
-        { side: SIDES, measure: MEASURES, operation: OPERATION_NAMES }[key] ?? {};
+        {
+          side: SIDES,
+          measure: MEASURES,
+          operation: OPERATION_NAMES,
+          figure: GEOMETRY_NAMES,
+          calculation: GEOMETRY_NAMES,
+        }[key] ?? {};
       const shown = names[String(value)] ?? String(value);
       return `${OPTION_LABELS[key] ?? key}: ${shown}`;
     }),

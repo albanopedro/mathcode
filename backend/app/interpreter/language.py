@@ -79,6 +79,7 @@ _KEYWORD = (
     r"|simplificacao|segunda|terceira|quarta|quinta|media|mediana|moda|desvio|variancia"
     r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor|inversa|transposta|traco|posto"
     r"|norma|modulo|comprimento|vetor|versor|produto|angulo"
+    r"|perimetro|volume|distancia|ponto|reta|equacao|hipotenusa|cateto|classificacao"
     r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo)"
 )
 _ARTICLE = re.compile(rf"(?:o|a|os|as)\s+(?={_KEYWORD})")
@@ -305,11 +306,139 @@ def _vector_without_brackets(found: re.Match[str], request: str, rule: str) -> L
     )
 
 
+# -- geometry (Phase 10, ADR 0014) ----------------------------------------------------------------
+
+_FIGURES = {
+    "circulo": "circle",
+    "circunferencia": "circle",
+    "quadrado": "square",
+    "retangulo": "rectangle",
+    "triangulo retangulo": "right_triangle",
+    "triangulo": "triangle",
+    "trapezio": "trapezoid",
+    "losango": "rhombus",
+    "paralelogramo": "parallelogram",
+    "cubo": "cube",
+    "paralelepipedo": "box",
+    "esfera": "sphere",
+    "cilindro": "cylinder",
+    "cone": "cone",
+}
+_SOLIDS = {"cube", "box", "sphere", "cylinder", "cone"}
+_GEOMETRY_VALUE = r"[-+]?\d+(?:[.,]\d+)?(?:\s*/\s*\d+(?:[.,]\d+)?)?"
+_MEASURE_WORDS = (
+    r"(?P<word>raio|diametro|lados|lado|bases|base\s+maior|base\s+menor|base|altura|aresta"
+    r"|diagonais|diagonal\s+maior|diagonal\s+menor|catetos|cateto|hipotenusa|comprimento"
+    r"|largura)"
+)
+_GEOMETRY_MEASURE = re.compile(
+    rf"{_MEASURE_WORDS}\s*(?:de\s+|igual\s+a\s+|=\s*)?"
+    rf"(?P<values>{_GEOMETRY_VALUE}(?:\s*(?:,|\be\b)\s*{_GEOMETRY_VALUE})*)"
+)
+
+
+def _measure_symbols(figure: str, word: str, count: int) -> list[str] | None:
+    """The symbols that ``count`` values after ``word`` stand for, for this figure."""
+    word = re.sub(r"\s+", " ", word)
+    plural = {
+        ("lados", 3): ["a", "b", "c"],
+        ("bases", 2): ["B", "b"],
+        ("diagonais", 2): ["D", "d"],
+        ("catetos", 2): ["a", "b"],
+    }
+    if (word, count) in plural:
+        return plural[(word, count)]
+    if count != 1:
+        return None
+    single = {
+        "raio": "r",
+        "diametro": "d",
+        "base maior": "B",
+        "base menor": "b",
+        "base": "b",
+        "altura": "c" if figure == "box" else "h",
+        "aresta": "a",
+        "diagonal maior": "D",
+        "diagonal menor": "d",
+        "hipotenusa": "c",
+        "comprimento": "a",
+        "largura": "b",
+        "lado": "l" if figure == "square" else None,
+        "cateto": "a",
+    }
+    symbol = single.get(word)
+    return None if symbol is None else [symbol]
+
+
+def _geometry(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    figure = _FIGURES[re.sub(r"\s+", " ", found.group("figure"))]
+    calculation = {
+        "area": "surface_area" if figure in _SOLIDS else "area",
+        "area da superficie": "surface_area",
+        "area total": "surface_area",
+        "perimetro": "perimeter",
+        "comprimento": "perimeter",
+        "volume": "volume",
+        "classifique": "classify",
+        "classificacao": "classify",
+        "hipotenusa": "missing_side",
+        "cateto": "missing_side",
+    }[re.sub(r"\s+", " ", found.group("calc"))]
+    if calculation == "missing_side":
+        figure = "right_triangle"
+    rest = _fold(request)[found.start("rest") : found.end("rest")]
+    assignments: list[str] = []
+    for measure in _GEOMETRY_MEASURE.finditer(rest):
+        start, end = (
+            found.start("rest") + measure.start("values"),
+            found.start("rest") + measure.end("values"),
+        )
+        values = re.split(r"\s*(?:,\s|\be\b|,(?=\s*\D))\s*", request[start:end].strip())
+        values = [v for v in values if v]
+        symbols = _measure_symbols(figure, measure.group("word"), len(values))
+        if symbols is None:
+            continue
+        taken = {a.split(" = ")[0] for a in assignments}
+        if symbols == ["a"] and "a" in taken:  # "cateto 3" after another cateto
+            symbols = ["b"]
+        assignments += [f"{s} = {v}" for s, v in zip(symbols, values, strict=True)]
+    if not assignments:
+        raise MathError(
+            ErrorCode.INVALID_INPUT_FOR_INTENT,
+            "Informe as medidas com números, como em 'área do círculo de raio 5' ou 'volume "
+            "do cilindro de raio 2 e altura 5'.",
+        )
+    options: Options = {"figure": figure, "calculation": calculation}
+    return LanguageMatch(IntentName.GEOMETRY, "; ".join(assignments), options, rule=rule)
+
+
+def _points(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    calculation = {
+        "distancia": "distance",
+        "ponto medio": "midpoint",
+        "reta": "line",
+        "equacao da reta": "line",
+        "area do poligono": "polygon_area",
+    }[re.sub(r"\s+", " ", found.group("calc"))]
+    text = _grab(found, request, "points") or ""
+    listed = re.sub(r"\)\s*(?:,|\be\b)\s*\(", "); (", text)
+    options: Options = {"figure": "points", "calculation": calculation}
+    return LanguageMatch(IntentName.GEOMETRY, listed, options, rule=rule)
+
+
+def _geometry_without_figure(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    raise MathError(
+        ErrorCode.INVALID_INPUT_FOR_INTENT,
+        "Para geometria, escreva a figura e as medidas, como em 'área do círculo de raio 5', "
+        "'volume da esfera de raio 3' ou 'distância entre (1, 2) e (4, 6)'.",
+    )
+
+
 def _future(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     raise MathError(
         ErrorCode.UNSUPPORTED_FEATURE,
-        "Geometria, probabilidade e pontos como vértice e máximo de uma função ainda não "
-        "são suportados; eles estão previstos para as próximas etapas.",
+        "Probabilidade e pontos como vértice e máximo de uma função ainda não são "
+        "suportados; eles estão previstos para as próximas etapas.",
     )
 
 
@@ -350,8 +479,36 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
         _matrix_without_brackets,
     ),
     (
+        "points",
+        re.compile(
+            r"(?P<calc>distancia|ponto\s+medio|equacao\s+da\s+reta|reta|area\s+do\s+poligono)"
+            r"(?:\s+(?:que\s+passa|entre|de|do|da|dos|por|pelos))*"
+            r"(?:\s+(?:os\s+)?(?:pontos|vertices|segmento))?(?:\s+(?:de|por))?"
+            r"\s*:?\s+(?P<points>\(.*)"
+        ),
+        _points,
+    ),
+    (
+        "geometry",
+        re.compile(
+            r"(?P<calc>area\s+da\s+superficie|area\s+total|area|perimetro|comprimento|volume"
+            r"|classifique|classificacao|hipotenusa|cateto)"
+            r"(?:\s+(?:de|do|da)(?:\s+(?:um|uma|o|a))?|\s+o|\s+a)?"
+            r"(?:\s+(?:circunferencia\s+do|da\s+circunferencia\s+do))?"
+            r"\s+(?P<figure>circulo|circunferencia|quadrado|retangulo|triangulo\s+retangulo"
+            r"|triangulo|trapezio|losango|paralelogramo|cubo|paralelepipedo|esfera|cilindro"
+            r"|cone)\b(?P<rest>.*)"
+        ),
+        _geometry,
+    ),
+    (
+        "geometry_without_figure",
+        re.compile(r"(?:area|perimetro|volume)\b(?!\s+(?:sob|abaixo|entre))[^(]*"),
+        _geometry_without_figure,
+    ),
+    (
         "future",
-        re.compile(r"(?:area|perimetro|volume|probabilidade|vertice|maximo|minimo)\b.*"),
+        re.compile(r"(?:probabilidade|vertice|maximo|minimo)\b.*"),
         _future,
     ),
     (

@@ -1,0 +1,56 @@
+{
+  "success": true,
+  "intent": "geometry",
+  "input": "volume do cone de raio 3 e altura 4",
+  "normalized_input": "r = 3; h = 4",
+  "result": {
+    "plain": "V = 12*pi",
+    "latex": "V = 12 \\pi",
+    "approx": "37.6991118430775"
+  },
+  "steps": [],
+  "details": {
+    "figure": "cone",
+    "calculation": "volume",
+    "measures": {
+      "r": "3",
+      "h": "4"
+    },
+    "points": [],
+    "formula": "V = \\frac{\\pi r^2 h}{3}",
+    "quantity": "volume"
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "As medidas, relidas da expressão sem o SymPy, são as usadas no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Como sólido de revolução, ∫ π (r·x/h)² dx de 0 a h, o volume é o mesmo."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "geometry",
+    "expression": "r = 3; h = 4",
+    "options": {
+      "figure": "cone",
+      "calculation": "volume"
+    },
+    "provider": null,
+    "model": null
+  }
+}

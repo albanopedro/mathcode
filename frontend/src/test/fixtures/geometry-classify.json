@@ -1,0 +1,49 @@
+{
+  "success": true,
+  "intent": "geometry",
+  "input": "a = 3; b = 4; c = 5",
+  "normalized_input": "a = 3; b = 4; c = 5",
+  "result": {
+    "plain": "triângulo escaleno e retângulo",
+    "latex": "\\text{triângulo escaleno e retângulo}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "figure": "triangle",
+    "calculation": "classify",
+    "measures": {
+      "a": "3",
+      "b": "4",
+      "c": "5"
+    },
+    "points": [],
+    "formula": null,
+    "quantity": null,
+    "by_sides": "escaleno",
+    "by_angles": "retângulo"
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "As medidas, relidas da expressão sem o SymPy, são as usadas no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Comparando os lados e o sinal do produto escalar no vértice do maior ângulo (pelas coordenadas do triângulo), a classificação é a mesma."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

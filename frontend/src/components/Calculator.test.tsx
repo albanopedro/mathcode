@@ -687,3 +687,67 @@ describe("Calculator: vectors", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/vetor nulo/);
   });
 });
+
+describe("Calculator: geometry", () => {
+  it("offers figure and calculation, with the measures of the figure", async () => {
+    answer(fixtures.geometryCircle);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Geometria");
+    expect(screen.getByLabelText("Figura")).toHaveValue("circle");
+    expect(screen.getByText(/r \(raio\) ou d \(diâmetro\)/)).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Figura"), "Cone");
+    // The calculation follows the figure: a cone has volume, not area.
+    expect(screen.getByLabelText("Cálculo")).toHaveValue("volume");
+    expect(screen.getByText(/r \(raio\) e h \(altura\)/)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Expressão ou equação"), "r = 3; h = 4{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({
+      input: "r = 3; h = 4",
+      intent: "geometry",
+      options: { figure: "cone", calculation: "volume" },
+    });
+  });
+
+  it("shows the result with its formula, measures and kind of quantity", async () => {
+    answer(fixtures.geometryCircle);
+    await calculateText("r = 5", "Geometria");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Geometria")).toBeInTheDocument();
+    expect(latexOf(result)).toContain("A = 25 \\pi");
+    expect(latexOf(result)).toContain("A = \\pi r^2");
+    expect(within(result).getByText("r = 5")).toBeInTheDocument(); // "Entendido como"
+    expect(within(result).getByText("Resultado em unidades de área.")).toBeInTheDocument();
+  });
+
+  it("shows a line with its general equation and slope", async () => {
+    answer(fixtures.geometryLine);
+    await calculateText("(1, 2); (4, 6)", "Geometria");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText(/Equação geral/)).toHaveTextContent(
+      "Equação geral: 4*x - 3*y = -2; inclinação m = 4/3",
+    );
+  });
+
+  it("names a phrase's figure and calculation in Portuguese", async () => {
+    answer(fixtures.geometryConePhrase);
+    await calculateText("volume do cone de raio 3 e altura 4");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByLabelText("Interpretação da frase")).toHaveTextContent(
+      "(figura: cone, cálculo: volume)",
+    );
+  });
+
+  it("explains impossible triangles", async () => {
+    answer(fixtures.geometryNotATriangle);
+    await calculateText("a = 1; b = 2; c = 3", "Geometria");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(/não formam um triângulo/);
+  });
+});

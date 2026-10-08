@@ -1,6 +1,7 @@
 import type { MathResult, ResultValue, VerificationReport } from "../types/math";
 import { captions } from "../utils/captions";
 import { LONG_RESULT_CHARS } from "../utils/display";
+import { geometryDetails, QUANTITY_LABELS } from "../utils/geometry";
 import { graphDetails } from "../utils/graph";
 import { matrixDetails } from "../utils/matrices";
 import { vectorDetails } from "../utils/vectors";
@@ -24,6 +25,7 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
   const statistics = statisticsDetails(result);
   const matrix = matrixDetails(result);
   const vector = vectorDetails(result);
+  const geometry = geometryDetails(result);
   // Matrices and vectors are drawn as formulas however long their text: their width is
   // bounded by their columns (at most 8).
   const asText = !matrix && !vector && value.plain.length > LONG_RESULT_CHARS;
@@ -71,6 +73,22 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
       ))}
 
       {statistics && <StatisticsView details={statistics} />}
+      {geometry && (
+        <div className="flex flex-col gap-1 text-sm text-slate-600">
+          {geometry.quantity && <p>Resultado {QUANTITY_LABELS[geometry.quantity]}.</p>}
+          {geometry.formula && (
+            <p className="overflow-x-auto">
+              Fórmula: <MathFormula latex={geometry.formula} />
+            </p>
+          )}
+          {geometry.equation && (
+            <p>
+              Equação geral: <span className="font-mono text-slate-700">{geometry.equation}</span>
+              {geometry.slope && `; inclinação m = ${geometry.slope}`}
+            </p>
+          )}
+        </div>
+      )}
       {vector && vector.operation !== "evaluate" && (
         <p className="overflow-x-auto text-sm text-slate-600">
           {vector.vectors_latex.map((latex, index) => (

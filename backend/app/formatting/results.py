@@ -17,6 +17,7 @@ from app.math_engine.calculus import (
     show_value,
 )
 from app.math_engine.equations import EquationOutcome, SolutionKind
+from app.math_engine.geometry import Classification, GeometryOutcome, Line
 from app.math_engine.graphing import GraphOutcome
 from app.math_engine.matrices import MatrixOutcome, VectorValue
 from app.math_engine.statistics import StatisticsOutcome, rational
@@ -24,6 +25,7 @@ from app.math_engine.systems import SystemKind, SystemOutcome
 from app.math_engine.vectors import VectorOutcome
 from app.models.intents import Measure
 from app.models.result import ResultValue
+from app.parsing.build import symbol
 
 _EMPTY = ResultValue(plain="∅", latex=r"\varnothing")
 
@@ -527,3 +529,73 @@ def present_vectors(outcome: VectorOutcome) -> Presentation:
             approx=f"{radians_approx} rad" if radians_approx else None,
         )
     return Presentation(value, details)
+
+
+# -- geometry (Phase 10) -----------------------------------------------------------------------
+
+_QUANTITY: dict[str, str] = {
+    "area": "area",
+    "surface_area": "area",
+    "polygon_area": "area",
+    "perimeter": "length",
+    "missing_side": "length",
+    "distance": "length",
+    "volume": "volume",
+}
+
+
+def _point_plain(point: tuple[sp.Expr, ...]) -> str:
+    return "(" + ", ".join(plain(c) for c in point) + ")"
+
+
+def _point_latex(point: tuple[sp.Expr, ...]) -> str:
+    return r"\left(" + ", ".join(latex(c) for c in point) + r"\right)"
+
+
+def present_geometry(outcome: GeometryOutcome) -> Presentation:
+    result = outcome.result
+    details: dict[str, Any] = {
+        "figure": outcome.figure,
+        "calculation": outcome.calculation,
+        "measures": {name: plain(value) for name, value in outcome.measures.items()},
+        "points": [_point_plain(point) for point in outcome.points],
+        "formula": outcome.formula or None,
+        "quantity": _QUANTITY.get(outcome.calculation),
+    }
+    if isinstance(result, Classification):
+        text = f"triângulo {result.by_sides} e {result.by_angles}"
+        details |= {"by_sides": result.by_sides, "by_angles": result.by_angles}
+        return Presentation(ResultValue(plain=text, latex=rf"\text{{{text}}}"), details)
+    if isinstance(result, Line):
+        x, y = symbol("x"), symbol("y")
+        details["equation"] = f"{plain(result.a * x + result.b * y)} = {plain(result.c)}"
+        if result.slope is None:
+            value = result.c / result.a
+            details["slope"] = None
+            shown = ResultValue(plain=f"x = {plain(value)}", latex=f"x = {latex(value)}")
+            return Presentation(shown, details)
+        line = result.slope * x + (result.intercept or 0)
+        details["slope"] = plain(result.slope)
+        return Presentation(
+            ResultValue(plain=f"y = {plain(line)}", latex=f"y = {latex(line)}"), details
+        )
+    if isinstance(result, tuple):
+        approximate = None
+        if not all(c.is_Rational for c in result):
+            approximate = "(" + ", ".join(approx(c) or plain(c) for c in result) + ")"
+        return Presentation(
+            ResultValue(
+                plain=f"M = {_point_plain(result)}",
+                latex=f"M = {_point_latex(result)}",
+                approx=approximate,
+            ),
+            details,
+        )
+    return Presentation(
+        ResultValue(
+            plain=f"{outcome.symbol} = {plain(result)}",
+            latex=f"{outcome.symbol} = {latex(result)}",
+            approx=approx(result),
+        ),
+        details,
+    )

@@ -66,6 +66,11 @@ CASES: dict[IntentName, tuple[str, dict[str, str | int] | None, Tamper]] = {
         {"operation": "cross"},
         lambda o: replace(o, result=replace(o.result, column=o.result.column * 2)),
     ),
+    IntentName.GEOMETRY: (
+        "r = 5",
+        {"figure": "circle", "calculation": "area"},
+        lambda o: replace(o, result=o.result + 1),
+    ),
     IntentName.GRAPH: (
         "x^2 - 4x + 3",
         None,
