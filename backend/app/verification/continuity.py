@@ -2,7 +2,8 @@
 
 Every function of the vocabulary is continuous on the interior of its real
 domain. So, if at the point every denominator is nonzero, every square root
-and logarithm has a positive argument, ``tan`` is away from its poles, ``asin``
+and logarithm has a positive argument, ``tan``, ``sec``, ``csc`` and ``cot`` are
+away from their poles, ``asin``
 and ``acos`` are inside (−1, 1) and every power with a variable exponent has a
 positive base, the function is continuous there, and its limit is its value.
 Each condition is decided exactly (SymPy at the point); if one cannot be
@@ -13,6 +14,8 @@ import sympy as sp
 
 from app.parsing.ast import Binary, Call, Degrees, Negate, Node, variables
 from app.parsing.build import ExpressionBuilder, symbol
+
+_NAMES = {"tan": "a tangente", "sec": "a secante", "csc": "a cossecante", "cot": "a cotangente"}
 
 
 def continuity_obstacle(tree: Node, name: str, point: sp.Expr) -> str | None:
@@ -83,11 +86,13 @@ class _Walker:
                     if not (base.is_positive and (base - 1).is_zero is False):
                         return "não foi possível provar que a base do logaritmo é válida no ponto"
                 return problem
-            case "tan":
-                cosine = sp.cos(self._at_point(argument))
-                if cosine.is_zero is False:
+            case "tan" | "sec" | "csc" | "cot":
+                # tan and sec have poles where cos = 0; csc and cot, where sin = 0.
+                at = self._at_point(argument)
+                denominator = sp.cos(at) if node.name in ("tan", "sec") else sp.sin(at)
+                if denominator.is_zero is False:
                     return None
-                return "a tangente tem um polo no ponto"
+                return f"{_NAMES[node.name]} tem um polo no ponto"
             case "asin" | "acos":
                 inside = 1 - sp.Abs(self._at_point(argument))
                 if inside.is_positive:

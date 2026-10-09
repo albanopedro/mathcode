@@ -63,6 +63,14 @@ const PROBABILITY_NAMES: Record<string, string> = {
   binomial_summary: "binomial, média e variância",
 };
 
+// The "calculation" option of trigonometry.
+const TRIGONOMETRY_NAMES: Record<string, string> = {
+  convert: "converter ângulo",
+  reduce: "redução ao 1º quadrante",
+  identity: "verificar identidade",
+  triangle: "resolver triângulo",
+};
+
 // The "operation" option of matrices and vectors.
 const OPERATION_NAMES: Record<string, string> = {
   evaluate: "calcular expressão",
@@ -120,7 +128,7 @@ export function describeInterpretation(interpretation: Interpretation): Interpre
           measure: MEASURES,
           operation: OPERATION_NAMES,
           figure: GEOMETRY_NAMES,
-          calculation: { ...GEOMETRY_NAMES, ...PROBABILITY_NAMES },
+          calculation: { ...GEOMETRY_NAMES, ...PROBABILITY_NAMES, ...TRIGONOMETRY_NAMES },
         }[key] ?? {};
       const shown = names[String(value)] ?? String(value);
       return `${OPTION_LABELS[key] ?? key}: ${shown}`;

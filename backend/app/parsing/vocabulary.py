@@ -7,6 +7,9 @@ FUNCTIONS: dict[str, tuple[int, int]] = {
     "sin": (1, 1),
     "cos": (1, 1),
     "tan": (1, 1),
+    "sec": (1, 1),
+    "csc": (1, 1),
+    "cot": (1, 1),
     "asin": (1, 1),
     "acos": (1, 1),
     "atan": (1, 1),
@@ -25,6 +28,10 @@ ALIASES: dict[str, str] = {
     "arccos": "acos",
     "arctan": "atan",
     "arctg": "atan",
+    "cossec": "csc",
+    "cosec": "csc",
+    "cotg": "cot",
+    "cotan": "cot",
 }
 
 # Counting (ADR 0015): C(n, k) and A(n, k) are functions only when two arguments
@@ -36,7 +43,7 @@ FACTORIAL = "factorial"
 
 CONSTANTS = frozenset({"pi", "e"})
 
-TRIGONOMETRIC = frozenset({"sin", "cos", "tan"})
+TRIGONOMETRIC = frozenset({"sin", "cos", "tan", "sec", "csc", "cot"})
 
 # Single letters that are not variables.
 RESERVED: dict[str, str] = {

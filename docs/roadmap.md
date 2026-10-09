@@ -20,7 +20,7 @@ Regras gerais:
 | 7 | Gráficos | concluída |
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
-| 10 | Matemática avançada | em andamento: estatística, matrizes, vetores, geometria e probabilidade feitos (probabilidade aguardando revisão); falta trigonometria |
+| 10 | Matemática avançada | concluída: estatística, matrizes, vetores, geometria, probabilidade e trigonometria (trigonometria aguardando revisão) |
 | 11 | UX e histórico | — |
 | 12 | Assistente matemático | — |
 
@@ -355,8 +355,27 @@ domínio por alteração**.
     regiões de Venn, recorrência da binomial);
   - porcentagem com vírgula e a fórmula usada na interface.
 - **Testes:** 1 451 no backend (eram 1 275) e 257 no frontend (eram 239).
-- **Próximo domínio:** trigonometria (já escolhida: valores e conversões,
-  equações trigonométricas, identidades e resolução de triângulos).
+
+### 10.6 — Trigonometria (feita)
+
+- **Decidido com o usuário** ([ADR 0016](decisions/0016-trigonometria.md)):
+  todos os conteúdos (valores e conversões, equações, identidades,
+  triângulos); operação "Trigonometria" + Cálculo, com as equações onde já
+  estavam; solução geral + as soluções de [0, 2π) (ou do intervalo dado);
+  `a = 5; b = 7; C = 60°` → triângulo completo; identidade com prova ou
+  contraexemplo.
+- **Entregue:**
+  - sec, csc e cot na linguagem;
+  - equações periódicas em famílias (junção, domínio, intervalo, até 100
+    listadas), com completude provada por redução a um polinômio em
+    sin/cos/tan (Sturm) ou evidência por varredura;
+  - conversão, redução ao 1º quadrante, identidades e triângulos (inclusive
+    o caso ambíguo), verificados por outro caminho (avaliador independente,
+    exponenciais, triângulo no plano);
+  - frases e os campos "Soluções de / até";
+  - um bug do SymPy contornado: `tan(2kπ + 2π/3)` com k inteiro.
+- **Testes:** 1 563 no backend (eram 1 451) e 274 no frontend (eram 257).
+- **Próxima fase:** 11 (UX e histórico).
 
 ## Fase 11 — UX e histórico
 
@@ -372,8 +391,7 @@ determinística.
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
-- Sistemas não lineares; equações trigonométricas (infinitas soluções);
-  divisão de polinômios com várias variáveis.
+- Sistemas não lineares; divisão de polinômios com várias variáveis.
 - Passos de resolução gerados por regras próprias.
 - `docker-compose.yml`, quando houver Docker para testar.
 - Provedor de IA Ollama (local), quando estiver instalado.
@@ -394,5 +412,8 @@ determinística.
   permutação circular, outras distribuições (geométrica, Poisson, normal),
   tabela e gráfico da binomial, mais de dois eventos, probabilidades
   irracionais.
+- Trigonometria: inequações trigonométricas; completude provada para equações
+  como sin(x) = cos(x); graus, minutos e segundos; área do triângulo pelos
+  senos; filtrar por intervalo as equações com soluções finitas.
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

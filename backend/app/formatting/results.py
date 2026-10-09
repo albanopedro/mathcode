@@ -21,9 +21,18 @@ from app.math_engine.equations import EquationOutcome, SolutionKind
 from app.math_engine.geometry import Classification, GeometryOutcome, Line
 from app.math_engine.graphing import GraphOutcome
 from app.math_engine.matrices import MatrixOutcome, VectorValue
+from app.math_engine.periodic import Family
 from app.math_engine.probability import BinomialSummary, ProbabilityOutcome
 from app.math_engine.statistics import StatisticsOutcome, rational
 from app.math_engine.systems import SystemKind, SystemOutcome
+from app.math_engine.trigonometry import (
+    SIDES,
+    ConversionOutcome,
+    IdentityOutcome,
+    ReductionOutcome,
+    TriangleOutcome,
+    TrigonometryOutcome,
+)
 from app.math_engine.vectors import VectorOutcome
 from app.models.intents import Measure
 from app.models.result import ResultValue
@@ -127,7 +136,72 @@ def present_equation(outcome: EquationOutcome) -> Presentation:
                 )
             else:
                 value = ResultValue(plain=f"{name} ∈ ℝ", latex=rf"{latex(var)} \in \mathbb{{R}}")
+        case SolutionKind.PERIODIC:
+            value = _present_periodic(outcome, details)
+    if outcome.rejected_families:
+        k = _integer_name(outcome)
+        details["rejected_families"] = [
+            f"{latex(var)} = {_family_latex(f, k)}" for f in outcome.rejected_families
+        ]
     return Presentation(value, details)
+
+
+# -- periodic solutions (ADR 0016) ----------------------------------------------------------------
+
+
+def _integer_name(outcome: EquationOutcome) -> str:
+    return "n" if outcome.variable.name == "k" else "k"
+
+
+def _family_latex(family: Family, k: str) -> str:
+    """π/6 + 2kπ, kπ, \frac{2k\\pi}{3}: the period written as in school books."""
+    ratio = family.period / sp.pi
+    if ratio.is_Rational:
+        p, q = int(ratio.p), int(ratio.q)
+        top = rf"{'' if p == 1 else p}{k}\pi"
+        term = top if q == 1 else rf"\frac{{{top}}}{{{q}}}"
+    else:
+        term = latex(family.period * sp.Symbol(k))
+    return term if family.offset == 0 else f"{latex(family.offset)} + {term}"
+
+
+def _family_plain(family: Family, k: str) -> str:
+    term = plain(family.period * sp.Symbol(k))
+    return term if family.offset == 0 else f"{plain(family.offset)} + {term}"
+
+
+def _present_periodic(outcome: EquationOutcome, details: dict[str, Any]) -> ResultValue:
+    var, name = outcome.variable, outcome.variable.name
+    k = _integer_name(outcome)
+    interval = outcome.interval
+    lines = [f"{latex(var)} &= {_family_latex(f, k)}" for f in outcome.families]
+    lines += [f"{latex(var)} &= {latex(v)}" for v in outcome.isolated]
+    plains = [f"{name} = {_family_plain(f, k)}" for f in outcome.families]
+    plains += [f"{name} = {plain(v)}" for v in outcome.isolated]
+    details |= {
+        "integer": k,
+        "families": [
+            {"offset": plain(f.offset), "period": plain(f.period), "latex": _family_latex(f, k)}
+            for f in outcome.families
+        ],
+        "isolated": [plain(v) for v in outcome.isolated],
+        "solutions_latex": [latex(s) for s in outcome.solutions],
+        "listed_total": outcome.listed_total,
+    }
+    if interval is not None:
+        closing = "]" if interval.closed else ")"
+        details["interval"] = {
+            "lower": plain(interval.lower),
+            "upper": plain(interval.upper),
+            "closed": interval.closed,
+            "given": interval.given,
+            "latex": rf"[{latex(interval.lower)}, {latex(interval.upper)}{closing}",
+        }
+    joined = r" \\ ".join([*lines, rf"& {k} \in \mathbb{{Z}}"])
+    return ResultValue(
+        plain=" ou ".join(plains) + f" ({k} inteiro)",
+        latex=rf"\begin{{aligned}} {joined} \end{{aligned}}",
+    )
 
 
 # -- systems -----------------------------------------------------------------------------
@@ -692,5 +766,227 @@ def present_probability(outcome: ProbabilityOutcome) -> Presentation:
             plain=f"{outcome.plain_symbol} = {plain(result)}",
             latex=f"{outcome.symbol} = {latex(result)}",
         ),
+        details,
+    )
+
+
+# -- trigonometry (ADR 0016) ----------------------------------------------------------------------
+
+
+# Exact forms up to this many characters (sqrt(39)) stay in a triangle's headline.
+_SHORT_EXACT = 12
+
+
+def _six(value: sp.Expr) -> str:
+    """6 significant digits, without trailing zeros: 6.245, 114.592."""
+    text = str(sp.N(value, 6))
+    return text.rstrip("0").rstrip(".") if "." in text and "e" not in text else text
+
+
+def _degrees(radians: sp.Expr) -> tuple[str, str, bool]:
+    """An angle in degrees: (plain, LaTeX, exact). 6 significant digits when not exact."""
+    value = sp.simplify(radians * 180 / sp.pi)
+    if value.is_Rational:
+        return f"{plain(value)}°", rf"{latex(value)}^\circ", True
+    short = _six(value)
+    return f"≈ {short}°", rf"\approx {short}^\circ", False
+
+
+def _side(value: sp.Expr) -> tuple[str, str]:
+    if value.is_Rational:
+        return plain(value), latex(value)
+    short = _six(value)
+    return f"{plain(value)} ≈ {short}", rf"{latex(value)} \approx {short}"
+
+
+def _angle_text(angle: sp.Expr, in_degrees: bool) -> tuple[str, str]:
+    if in_degrees:
+        shown, shown_latex, _ = _degrees(angle)
+        return shown, shown_latex
+    return plain(angle), latex(angle)
+
+
+def present_trigonometry(outcome: TrigonometryOutcome) -> Presentation:
+    match outcome:
+        case ConversionOutcome():
+            return _present_conversion(outcome)
+        case ReductionOutcome():
+            return _present_reduction(outcome)
+        case IdentityOutcome():
+            return _present_identity(outcome)
+        case TriangleOutcome():
+            return _present_triangle(outcome)
+
+
+def _present_conversion(outcome: ConversionOutcome) -> Presentation:
+    degrees_plain, degrees_latex, _ = _degrees(outcome.radians)
+    details: dict[str, Any] = {
+        "calculation": "convert",
+        "to": "degrees" if outcome.to_degrees else "radians",
+        "radians": plain(outcome.radians),
+        "degrees": degrees_plain,
+    }
+    if outcome.to_degrees:
+        exact = outcome.degrees.is_Rational
+        shown = degrees_plain if exact else f"{plain(outcome.degrees)}° {degrees_plain}"
+        shown_latex = (
+            degrees_latex
+            if exact
+            else rf"\left({latex(outcome.degrees)}\right)^\circ {degrees_latex}"
+        )
+        return Presentation(ResultValue(plain=shown, latex=shown_latex), details)
+    return Presentation(
+        ResultValue(
+            plain=f"{plain(outcome.radians)} rad",
+            latex=rf"{latex(outcome.radians)}\ \text{{rad}}",
+            approx=approx(outcome.radians),
+        ),
+        details,
+    )
+
+
+def _present_reduction(outcome: ReductionOutcome) -> Presentation:
+    angle_plain, angle_latex = _angle_text(outcome.angle, outcome.in_degrees)
+    first_plain, first_latex = _angle_text(outcome.first, outcome.in_degrees)
+    reference_plain, reference_latex = _angle_text(outcome.reference, outcome.in_degrees)
+    rows = []
+    for name, value in outcome.values.items():
+        sign = outcome.signs[name]
+        reduced = rf"{'-' if sign < 0 else ''}\{name}\left({reference_latex}\right)"
+        rows.append(
+            {
+                "function": name,
+                "plain": None if value is None else plain(value),
+                "latex": None if value is None else latex(value),
+                "sign": sign,
+                "reduced_latex": reduced if outcome.quadrant is not None else None,
+            }
+        )
+    details: dict[str, Any] = {
+        "calculation": "reduce",
+        "degrees": outcome.in_degrees,
+        "angle": angle_plain,
+        "first": first_plain,
+        "first_latex": first_latex,
+        "turns": outcome.turns,
+        "quadrant": outcome.quadrant,
+        "reference": reference_plain,
+        "reference_latex": reference_latex,
+        "function": outcome.function,
+        "values": rows,
+    }
+    function = outcome.function
+    # The engine refuses a function that is undefined at the angle.
+    if function is not None and (value := outcome.values[function]) is not None:
+        sign = outcome.signs[function]
+        steps = [rf"\{function}\left({angle_latex}\right)"]
+        plains = [f"{function}({angle_plain})"]
+        if outcome.quadrant is not None:
+            steps.append(rf"{'-' if sign < 0 else ''}\{function}\left({reference_latex}\right)")
+            plains.append(f"{'-' if sign < 0 else ''}{function}({reference_plain})")
+        steps.append(latex(value))
+        plains.append(plain(value))
+        return Presentation(
+            ResultValue(plain=" = ".join(plains), latex=" = ".join(steps), approx=approx(value)),
+            details,
+        )
+    if outcome.quadrant is None:
+        text = f"{angle_plain} está sobre um eixo (primeira determinação {first_plain})"
+        shown = rf"{angle_latex}:\ \text{{sobre um eixo}}"
+    else:
+        text = (
+            f"{angle_plain} está no {outcome.quadrant}º quadrante; ângulo de referência "
+            f"{reference_plain}"
+        )
+        shown = (
+            rf"{angle_latex}:\ {outcome.quadrant}^\text{{o}}\ \text{{quadrante}},"
+            rf"\ \alpha = {reference_latex}"
+        )
+    return Presentation(ResultValue(plain=text, latex=shown), details)
+
+
+def _present_identity(outcome: IdentityOutcome) -> Presentation:
+    left, right = latex(outcome.left), latex(outcome.right)
+    details: dict[str, Any] = {
+        "calculation": "identity",
+        "holds": outcome.holds,
+        "proved": outcome.proved,
+        "variables": list(outcome.names),
+        "counterexample": None,
+    }
+    if outcome.holds:
+        return Presentation(
+            ResultValue(
+                plain=f"{plain(outcome.left)} ≡ {plain(outcome.right)} (é identidade)",
+                latex=rf"{left} \equiv {right}",
+            ),
+            details,
+        )
+    point = outcome.counterexample or {}
+    details["counterexample"] = {
+        "point": {name: {"plain": plain(v), "latex": latex(v)} for name, v in point.items()},
+        "left_latex": latex(outcome.left_value) if outcome.left_value is not None else None,
+        "right_latex": latex(outcome.right_value) if outcome.right_value is not None else None,
+    }
+    return Presentation(
+        ResultValue(
+            plain=f"{plain(outcome.left)} ≢ {plain(outcome.right)} (não é identidade)",
+            latex=rf"{left} \not\equiv {right}",
+        ),
+        details,
+    )
+
+
+def _present_triangle(outcome: TriangleOutcome) -> Presentation:
+    """The headline has the computed values (long exact forms only approximated: they would
+    not fit a phone); the table in ``details`` has all six, exact and approximate."""
+    triangles: list[dict[str, Any]] = []
+    plains: list[str] = []
+    lines: list[str] = []
+    several = len(outcome.triangles) > 1
+    for number, triangle in enumerate(outcome.triangles, start=1):
+        rows = []
+        if several:
+            lines.append(rf"\text{{Triângulo {number}:}}")
+        found: list[str] = []
+        for side_name, angle_name in zip(SIDES, ("A", "B", "C"), strict=True):
+            side = triangle.sides[side_name]
+            side_plain, side_latex = _side(side)
+            angle = triangle.angles[angle_name]
+            degrees_plain, degrees_latex, exact = _degrees(angle)
+            rows.append(
+                {
+                    "side": side_name,
+                    "side_latex": side_latex,
+                    "side_given": side_name in outcome.given,
+                    "angle": angle_name,
+                    "angle_latex": degrees_latex,
+                    "angle_radians_latex": latex(angle),
+                    "angle_given": angle_name in outcome.given,
+                }
+            )
+            if side_name not in outcome.given:
+                short = side.is_Rational or len(plain(side)) <= _SHORT_EXACT
+                lines.append(
+                    f"{side_name} = {side_latex}" if short else rf"{side_name} \approx {_six(side)}"
+                )
+                found.append(f"{side_name} = {side_plain}")
+            if angle_name not in outcome.given:
+                lines.append(f"{angle_name} {'= ' if exact else ''}{degrees_latex}")
+                found.append(f"{angle_name} {'= ' if exact else ''}{degrees_plain}")
+        triangles.append({"rows": rows})
+        plains.append("; ".join(found))
+    details: dict[str, Any] = {
+        "calculation": "triangle",
+        "case": outcome.case,
+        "law": outcome.law,
+        "triangles": triangles,
+    }
+    joined = r" \\ ".join(lines)
+    plain_text = " | ".join(
+        f"triângulo {n}: {text}" if several else text for n, text in enumerate(plains, start=1)
+    )
+    return Presentation(
+        ResultValue(plain=plain_text, latex=rf"\begin{{array}}{{l}} {joined} \end{{array}}"),
         details,
     )

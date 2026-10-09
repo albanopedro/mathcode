@@ -457,3 +457,56 @@ def test_a_factorial_at_the_end_of_a_phrase_is_kept() -> None:
 def test_probability_word_problems_go_to_the_ai() -> None:
     # No rule can model "tirar 6 num dado": with "Permitir IA", the AI translates it.
     assert needs_ai("qual a probabilidade de tirar 6 num dado?")
+
+
+# -- trigonometry (Phase 10) ----------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("text", "expression", "calculation"),
+    [
+        ("converta 30° para radianos", "30°", "convert"),
+        ("30 graus em radianos", "30°", "convert"),
+        ("pi/6 em graus", "pi/6", "convert"),
+        ("converter pi/4 rad para graus", "pi/4", "convert"),
+        ("reduza 150° ao primeiro quadrante", "150°", "reduce"),
+        ("redução de 210 graus ao 1º quadrante", "210°", "reduce"),
+        ("redução ao primeiro quadrante de sin(150°)", "sin(150°)", "reduce"),
+        ("em que quadrante está o ângulo de 300°?", "300°", "reduce"),
+        ("verifique a identidade sin(x)^2 + cos(x)^2 = 1", "sin(x)^2 + cos(x)^2 = 1", "identity"),
+        ("prove que sin(2x) = 2sin(x)cos(x)", "sin(2x) = 2sin(x)cos(x)", "identity"),
+        ("tan(x) = sin(x) é uma identidade?", "tan(x) = sin(x)", "identity"),
+        ("resolva o triângulo com a = 5, b = 7 e C = 60°", "a = 5, b = 7; C = 60°", "triangle"),
+        (
+            "lei dos senos com a = 10, B = 30 graus e C = 45°",
+            "a = 10, B = 30°; C = 45°",
+            "triangle",
+        ),
+        ("quais os ângulos do triângulo de lados 3, 4 e 5?", "a = 3; b = 4; c = 5", "triangle"),
+    ],
+)
+def test_trigonometry_phrases(text: str, expression: str, calculation: str) -> None:
+    found = match(text)
+    assert found.intent is I.TRIGONOMETRY
+    assert found.text == expression
+    assert found.options == {"calculation": calculation}
+
+
+@pytest.mark.parametrize(
+    ("text", "equation", "lower", "upper"),
+    [
+        ("resolva sin(x) = 1/2 de 0 a 4pi", "sin(x) = 1/2", "0", "4pi"),
+        ("resolva sin(x) = 1/2 no intervalo [0, pi]", "sin(x) = 1/2", "0", "pi"),
+        ("raízes de cos(x) entre 0 e 2pi", "cos(x) = 0", "0", "2pi"),
+        ("resolva tan(x) = 1 entre menos pi e pi", "tan(x) = 1", "-pi", "pi"),
+    ],
+)
+def test_equations_with_an_interval(text: str, equation: str, lower: str, upper: str) -> None:
+    found = match(text)
+    assert found.intent is I.SOLVE_EQUATION
+    assert found.text == equation
+    assert found.options == {"lower": lower, "upper": upper}
+
+
+def test_show_the_graph_is_not_an_identity() -> None:
+    assert match("mostre o gráfico de y = x^2").intent is I.GRAPH

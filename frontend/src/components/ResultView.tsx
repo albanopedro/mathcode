@@ -7,11 +7,13 @@ import { matrixDetails } from "../utils/matrices";
 import { vectorDetails } from "../utils/vectors";
 import { INTENT_LABELS } from "../utils/operations";
 import { probabilityDetails, repeatedLetters } from "../utils/probability";
+import { listedLatex, periodicDetails, trigDetails } from "../utils/trigonometry";
 import { statisticsDetails } from "../utils/statistics";
 import { GraphView } from "./GraphView";
 import { InterpretationNote } from "./InterpretationNote";
 import { MathFormula } from "./MathFormula";
 import { StatisticsView } from "./StatisticsView";
+import { TrigonometryView } from "./TrigonometryView";
 import { Verification } from "./Verification";
 
 interface ResultViewProps {
@@ -28,9 +30,20 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
   const vector = vectorDetails(result);
   const geometry = geometryDetails(result);
   const probability = probabilityDetails(result);
-  // Matrices and vectors are drawn as formulas however long their text: their width is
-  // bounded by their columns (at most 8).
-  const asText = !matrix && !vector && value.plain.length > LONG_RESULT_CHARS;
+  const periodic = periodicDetails(result);
+  const trig = trigDetails(result);
+  // Matrices, vectors, periodic solutions and triangles are drawn as formulas however long
+  // their text: they are laid out in short lines (columns, or one line per value).
+  const asText =
+    !matrix &&
+    !vector &&
+    !periodic &&
+    trig?.calculation !== "triangle" &&
+    value.plain.length > LONG_RESULT_CHARS;
+  const rejected =
+    result.intent === "solve_equation" && Array.isArray(result.details.rejected_families)
+      ? (result.details.rejected_families as string[])
+      : [];
 
   return (
     <section
@@ -74,6 +87,37 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
         </p>
       ))}
 
+      {periodic && (
+        <div className="flex flex-col gap-1 text-sm text-slate-600">
+          {periodic.interval &&
+            (periodic.solutions_latex.length > 0 ? (
+              <p className="overflow-x-auto overflow-y-hidden py-1">
+                Em <MathFormula latex={periodic.interval.latex} />:{" "}
+                <MathFormula latex={listedLatex(periodic)} />
+                {periodic.listed_total > periodic.solutions_latex.length &&
+                  ` (${periodic.listed_total} no total; aparecem as ${periodic.solutions_latex.length} primeiras)`}
+              </p>
+            ) : (
+              <p>
+                Nenhuma solução em <MathFormula latex={periodic.interval.latex} />.
+              </p>
+            ))}
+          <p>
+            {periodic.integer} pode ser qualquer número inteiro (…, −1, 0, 1, 2, …).
+          </p>
+        </div>
+      )}
+      {rejected.length > 0 && (
+        <p className="overflow-x-auto text-sm text-slate-600">
+          Descartado por estar fora do domínio da equação:{" "}
+          {rejected.map((latex) => (
+            <span key={latex} className="mr-2 inline-block">
+              <MathFormula latex={latex} />
+            </span>
+          ))}
+        </p>
+      )}
+      {trig && <TrigonometryView details={trig} />}
       {statistics && <StatisticsView details={statistics} />}
       {geometry && (
         <div className="flex flex-col gap-1 text-sm text-slate-600">

@@ -27,6 +27,7 @@ from app.formatting.results import (
     present_rewrite,
     present_statistics,
     present_system,
+    present_trigonometry,
     present_vectors,
 )
 from app.math_engine.algebra import divide, expand, factor, simplify
@@ -39,6 +40,7 @@ from app.math_engine.matrices import matrices
 from app.math_engine.probability import probability
 from app.math_engine.statistics import statistics
 from app.math_engine.systems import solve_system
+from app.math_engine.trigonometry import trigonometry
 from app.math_engine.vectors import vectors
 from app.models.intents import (
     ArithmeticParams,
@@ -57,6 +59,7 @@ from app.models.intents import (
     SolveEquationParams,
     SolveSystemParams,
     StatisticsParams,
+    TrigonometryParams,
     VectorParams,
 )
 from app.models.result import VerificationReport
@@ -69,6 +72,7 @@ from app.verification.graphing import verify_graph
 from app.verification.matrices import verify_matrices
 from app.verification.probability import verify_probability
 from app.verification.statistics import verify_statistics
+from app.verification.trigonometry import verify_trigonometry
 from app.verification.vectors import verify_vectors
 
 
@@ -152,6 +156,13 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
             probability,
             verify_probability,
             present_probability,
+        ),
+        IntentSpec(
+            IntentName.TRIGONOMETRY,
+            TrigonometryParams,
+            trigonometry,
+            verify_trigonometry,
+            present_trigonometry,
         ),
     )
 }

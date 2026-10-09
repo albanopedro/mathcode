@@ -37,6 +37,9 @@ _SIMPLE_FUNCTIONS = {
     "sin": sp.sin,
     "cos": sp.cos,
     "tan": sp.tan,
+    "sec": sp.sec,
+    "csc": sp.csc,
+    "cot": sp.cot,
     "atan": sp.atan,
     "exp": sp.exp,
 }

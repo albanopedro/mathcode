@@ -1,0 +1,111 @@
+{
+  "success": true,
+  "intent": "trigonometry",
+  "input": "a = 5; b = 7; A = 30°",
+  "normalized_input": "a = 5; b = 7; A = 30°",
+  "result": {
+    "plain": "triângulo 1: B ≈ 44.427°; c = (sqrt(51) + 7*sqrt(3))/2 ≈ 9.63289; C ≈ 105.573° | triângulo 2: B ≈ 135.573°; c = (-sqrt(51) + 7*sqrt(3))/2 ≈ 2.49146; C ≈ 14.427°",
+    "latex": "\\begin{array}{l} \\text{Triângulo 1:} \\\\ B \\approx 44.427^\\circ \\\\ c \\approx 9.63289 \\\\ C \\approx 105.573^\\circ \\\\ \\text{Triângulo 2:} \\\\ B \\approx 135.573^\\circ \\\\ c \\approx 2.49146 \\\\ C \\approx 14.427^\\circ \\end{array}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "calculation": "triangle",
+    "case": "LLA",
+    "law": "lei dos senos (caso ambíguo)",
+    "triangles": [
+      {
+        "rows": [
+          {
+            "side": "a",
+            "side_latex": "5",
+            "side_given": true,
+            "angle": "A",
+            "angle_latex": "30^\\circ",
+            "angle_radians_latex": "\\frac{\\pi}{6}",
+            "angle_given": true
+          },
+          {
+            "side": "b",
+            "side_latex": "7",
+            "side_given": true,
+            "angle": "B",
+            "angle_latex": "\\approx 44.427^\\circ",
+            "angle_radians_latex": "\\operatorname{asin}{\\left(\\frac{7}{10} \\right)}",
+            "angle_given": false
+          },
+          {
+            "side": "c",
+            "side_latex": "\\frac{\\sqrt{51} + 7 \\sqrt{3}}{2} \\approx 9.63289",
+            "side_given": false,
+            "angle": "C",
+            "angle_latex": "\\approx 105.573^\\circ",
+            "angle_radians_latex": "- \\operatorname{asin}{\\left(\\frac{7}{10} \\right)} + \\frac{5 \\pi}{6}",
+            "angle_given": false
+          }
+        ]
+      },
+      {
+        "rows": [
+          {
+            "side": "a",
+            "side_latex": "5",
+            "side_given": true,
+            "angle": "A",
+            "angle_latex": "30^\\circ",
+            "angle_radians_latex": "\\frac{\\pi}{6}",
+            "angle_given": true
+          },
+          {
+            "side": "b",
+            "side_latex": "7",
+            "side_given": true,
+            "angle": "B",
+            "angle_latex": "\\approx 135.573^\\circ",
+            "angle_radians_latex": "\\pi - \\operatorname{asin}{\\left(\\frac{7}{10} \\right)}",
+            "angle_given": false
+          },
+          {
+            "side": "c",
+            "side_latex": "\\frac{- \\sqrt{51} + 7 \\sqrt{3}}{2} \\approx 2.49146",
+            "side_given": false,
+            "angle": "C",
+            "angle_latex": "\\approx 14.427^\\circ",
+            "angle_radians_latex": "- \\frac{\\pi}{6} + \\operatorname{asin}{\\left(\\frac{7}{10} \\right)}",
+            "angle_given": false
+          }
+        ]
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Montando cada triângulo num plano (C na origem, B no eixo x), as distâncias e os ângulos medidos pelo produto escalar dão os mesmos valores, em 30 algarismos."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Pela lei dos cossenos, o lado que falta é raiz positiva de uma equação do 2º grau, que tem exatamente 2 raiz(es) positiva(s): são os dois triângulos."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Exatamente, os ângulos somam π (180°) e a lei dos cossenos vale para os três lados."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "completeness",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

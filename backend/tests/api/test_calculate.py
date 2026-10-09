@@ -125,7 +125,7 @@ def test_warnings_are_returned(api: TestClient) -> None:
         ("sqrt(-1)", "DOMAIN_ERROR"),
         ("2 +", "PARSE_ERROR"),
         ("", "EMPTY_INPUT"),
-        ("sin(x) = 0", "UNSUPPORTED_FEATURE"),
+        ("sin(x) = x/10", "UNSUPPORTED_FEATURE"),
         ("10^5000", "LIMIT_EXCEEDED"),
         ("1" * (MAX_INPUT_LENGTH + 1), "INPUT_TOO_LONG"),
         ("__import__('os')", "PARSE_ERROR"),
@@ -343,3 +343,40 @@ def test_probability_needs_a_calculation(api: TestClient) -> None:
     status, data = post(api, {"input": "n = 5", "intent": "probability"})
     assert status == 200
     assert data["error"]["code"] == "INVALID_INPUT_FOR_INTENT"
+
+
+# -- trigonometry (Phase 10) ----------------------------------------------------------------------
+
+
+def test_periodic_equation_with_an_interval(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {
+            "input": "sin(x) = 1/2",
+            "intent": "solve_equation",
+            "options": {"lower": "0", "upper": "4pi"},
+        },
+    )
+    assert status == 200
+    assert data["details"]["solution_set"] == "periodic"
+    assert data["details"]["solutions"] == ["pi/6", "5*pi/6", "13*pi/6", "17*pi/6"]
+    assert data["verification"]["status"] == "verified_symbolic"
+
+
+def test_trigonometry_operation(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {"input": "sin(150°)", "intent": "trigonometry", "options": {"calculation": "reduce"}},
+    )
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.result is not None and result.result.plain == "sin(150°) = sin(30°) = 1/2"
+    assert data["details"]["quadrant"] == 2
+
+
+def test_an_equation_needs_both_ends_of_the_interval(api: TestClient) -> None:
+    status, data = post(
+        api, {"input": "sin(x) = 0", "intent": "solve_equation", "options": {"lower": "0"}}
+    )
+    assert status == 200
+    assert "início e o fim" in data["error"]["message"]

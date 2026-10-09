@@ -27,6 +27,7 @@ from app.models.intents import (
     SolveEquationParams,
     SolveSystemParams,
     StatisticsParams,
+    TrigonometryParams,
     VectorParams,
 )
 from app.parsing import parse
@@ -60,14 +61,15 @@ _TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
     IntentName.VECTOR: (VectorParams, "expression"),
     IntentName.GEOMETRY: (GeometryParams, "measures"),
     IntentName.PROBABILITY: (ProbabilityParams, "data"),
+    IntentName.TRIGONOMETRY: (TrigonometryParams, "expression"),
 }
 
 # User-facing explanation of an invalid option.
 _OPTION_PROBLEMS = {
     "variable": "A variável precisa ser uma única letra, como x.",
     "order": f"A ordem da derivada precisa ser um número inteiro de 1 a {MAX_DERIVATIVE_ORDER}.",
-    "lower": "O limite inferior precisa ter de 1 a 100 caracteres.",
-    "upper": "O limite superior precisa ter de 1 a 100 caracteres.",
+    "lower": "O início (limite inferior) precisa ter de 1 a 100 caracteres.",
+    "upper": "O fim (limite superior) precisa ter de 1 a 100 caracteres.",
     "point": "Informe o ponto do limite, como 0, pi/2 ou inf.",
     "side": "O lado do limite precisa ser 'both', 'left' ou 'right'.",
     "x_min": "O início da faixa de x precisa ter de 1 a 100 caracteres.",
@@ -90,7 +92,8 @@ _OPTION_PROBLEMS = {
         "probabilidade: factorial, arrangement, arrangement_repetition, combination, "
         "combination_repetition, anagrams, complement, intersection, "
         "intersection_independent, union, union_independent, conditional, binomial_exact, "
-        "binomial_at_most, binomial_at_least ou binomial_summary."
+        "binomial_at_most, binomial_at_least ou binomial_summary; para trigonometria: "
+        "convert, reduce, identity ou triangle."
     ),
 }
 
@@ -142,6 +145,8 @@ def _explain(exc: ValidationError) -> str:
             return _OPTION_PROBLEMS[location]
         if "both_bounds" in str(error.get("msg", "")):
             return "Informe os dois limites de integração, ou nenhum (integral indefinida)."
+        if "both_ends" in str(error.get("msg", "")):
+            return "Informe o início e o fim do intervalo das soluções, ou nenhum dos dois."
     return "Parâmetros inválidos para a operação."
 
 

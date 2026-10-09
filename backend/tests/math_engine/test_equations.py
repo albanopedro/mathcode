@@ -156,7 +156,7 @@ def test_other_equation_without_solution() -> None:
 
 @pytest.mark.parametrize(
     ("equation", "fragment"),
-    [("sin(x) = 0", "periódicas"), ("x = cos(x)", "forma exata")],
+    [("sin(x) = x/10", "forma exata"), ("x = cos(x)", "forma exata")],
 )
 def test_unsupported_equations(equation: str, fragment: str) -> None:
     with pytest.raises(MathError) as exc:

@@ -122,10 +122,18 @@ def test_roots_without_radicals() -> None:
 
 
 def test_numeric_roots_by_sign_change() -> None:
-    outcome = draw("sin(x)")
-    assert [round(r, 9) for r in roots(outcome)] == [round(k * math.pi, 9) for k in range(-3, 4)]
+    outcome = draw("sin(x) - x/10")  # no exact form: found by sign change and bisection
+    found = roots(outcome)
+    assert len(found) == 7
+    assert all(abs(math.sin(r) - r / 10) < 1e-9 for r in found)
     assert not any(p.exact for p in outcome.points if p.kind == "root")
     assert NoticeCode.NUMERIC_ROOTS in {n.code for n in outcome.notices}
+
+
+def test_periodic_roots_are_exact_in_the_visible_range() -> None:
+    outcome = draw("sin(x)")  # x = kπ (ADR 0016), listed inside [-10, 10]
+    assert [round(r, 9) for r in roots(outcome)] == [round(k * math.pi, 9) for k in range(-3, 4)]
+    assert all(p.exact for p in outcome.points if p.kind == "root")
 
 
 def test_roots_at_the_edges_of_the_range() -> None:

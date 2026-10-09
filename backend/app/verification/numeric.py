@@ -213,6 +213,11 @@ class _Evaluator:
                 return mp.cos(x)
             case "tan":
                 return mp.tan(x)
+            case "sec" | "csc" | "cot":
+                denominator = mp.cos(x) if node.name == "sec" else mp.sin(x)
+                if denominator == 0:
+                    raise OutsideDomain
+                return (1 if node.name != "cot" else mp.cos(x)) / denominator
             case "asin" | "acos":
                 if abs(x) > 1:
                     raise OutsideDomain

@@ -1,0 +1,44 @@
+{
+  "success": true,
+  "intent": "solve_equation",
+  "input": "cos(x)tan(x) = 1",
+  "normalized_input": "cos(x)*tan(x) = 1",
+  "result": {
+    "plain": "∅",
+    "latex": "\\varnothing",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "solution_set": "none",
+    "solutions": [],
+    "rejected_families": [
+      "x = \\frac{\\pi}{2} + 2k\\pi"
+    ]
+  },
+  "verification": {
+    "status": "unverified",
+    "checks": [
+      {
+        "kind": "domain",
+        "outcome": "passed",
+        "message": "Descartado por estar fora do domínio da equação original: x = pi/2 + 2*pi*k."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "inconclusive",
+        "message": "Nenhuma solução real foi encontrada, mas não foi provado que não existe."
+      }
+    ],
+    "message": "Não foi possível verificar este resultado.",
+    "reason": "completeness_not_proved",
+    "methods": [
+      "domain",
+      "completeness"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

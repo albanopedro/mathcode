@@ -20,7 +20,7 @@ def test_exact_and_complete_roots_are_verified(expression: str) -> None:
     assert verify_graph(draw(expression)).status is S.VERIFIED_NUMERIC
 
 
-@pytest.mark.parametrize("expression", ["sin(x)", "tan(x)"])
+@pytest.mark.parametrize("expression", ["sin(x) - x/10", "tan(x) - x"])
 def test_roots_by_sign_change_are_partial(expression: str) -> None:
     report = verify_graph(draw(expression))
     assert report.status is S.PARTIAL

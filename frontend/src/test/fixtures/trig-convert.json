@@ -1,0 +1,41 @@
+{
+  "success": true,
+  "intent": "trigonometry",
+  "input": "2",
+  "normalized_input": "2",
+  "result": {
+    "plain": "360/pi° ≈ 114.592°",
+    "latex": "\\left(\\frac{360}{\\pi}\\right)^\\circ \\approx 114.592^\\circ",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "calculation": "convert",
+    "to": "degrees",
+    "radians": "2",
+    "degrees": "≈ 114.592°"
+  },
+  "verification": {
+    "status": "verified_numeric",
+    "checks": [
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente lê o ângulo como 2 rad, o mesmo do resultado em 30 algarismos."
+      }
+    ],
+    "message": "Resultado conferido numericamente por um avaliador independente.",
+    "reason": null,
+    "methods": [
+      "numeric"
+    ]
+  },
+  "warnings": [
+    {
+      "code": "ANGLE_IN_RADIANS",
+      "message": "Sem °, o ângulo foi lido em radianos e convertido para graus. Para converter graus em radianos, use o símbolo °, como em 30°."
+    }
+  ],
+  "error": null,
+  "interpretation": null
+}

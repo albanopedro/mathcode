@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "intent": "trigonometry",
+  "input": "cos(750°)",
+  "normalized_input": "cos(750°)",
+  "result": {
+    "plain": "cos(750°) = cos(30°) = sqrt(3)/2",
+    "latex": "\\cos\\left(750^\\circ\\right) = \\cos\\left(30^\\circ\\right) = \\frac{\\sqrt{3}}{2}",
+    "approx": "0.866025403784439"
+  },
+  "steps": [],
+  "details": {
+    "calculation": "reduce",
+    "degrees": true,
+    "angle": "750°",
+    "first": "30°",
+    "first_latex": "30^\\circ",
+    "turns": 2,
+    "quadrant": 1,
+    "reference": "30°",
+    "reference_latex": "30^\\circ",
+    "function": "cos",
+    "values": [
+      {
+        "function": "sin",
+        "plain": "1/2",
+        "latex": "\\frac{1}{2}",
+        "sign": 1,
+        "reduced_latex": "\\sin\\left(30^\\circ\\right)"
+      },
+      {
+        "function": "cos",
+        "plain": "sqrt(3)/2",
+        "latex": "\\frac{\\sqrt{3}}{2}",
+        "sign": 1,
+        "reduced_latex": "\\cos\\left(30^\\circ\\right)"
+      },
+      {
+        "function": "tan",
+        "plain": "sqrt(3)/3",
+        "latex": "\\frac{\\sqrt{3}}{3}",
+        "sign": 1,
+        "reduced_latex": "\\tan\\left(30^\\circ\\right)"
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "pi/6 está em [0, 2π) e difere do ângulo por 2 volta(s) inteira(s); o ângulo de referência pi/6 está em [0, π/2]."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente calcula sin, cos e tan direto do ângulo original e obtém os mesmos valores, com os sinais do quadrante."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Cada valor é exatamente ± a mesma função no ângulo de referência, com o sinal do quadrante."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "symbolic",
+      "numeric"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

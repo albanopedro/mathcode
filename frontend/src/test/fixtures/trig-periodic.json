@@ -1,0 +1,82 @@
+{
+  "success": true,
+  "intent": "solve_equation",
+  "input": "sin(x) = 1/2",
+  "normalized_input": "sin(x) = 1/2",
+  "result": {
+    "plain": "x = pi/6 + 2*pi*k ou x = 5*pi/6 + 2*pi*k (k inteiro)",
+    "latex": "\\begin{aligned} x &= \\frac{\\pi}{6} + 2k\\pi \\\\ x &= \\frac{5 \\pi}{6} + 2k\\pi \\\\ & k \\in \\mathbb{Z} \\end{aligned}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "solution_set": "periodic",
+    "solutions": [
+      "pi/6",
+      "5*pi/6"
+    ],
+    "integer": "k",
+    "families": [
+      {
+        "offset": "pi/6",
+        "period": "2*pi",
+        "latex": "\\frac{\\pi}{6} + 2k\\pi"
+      },
+      {
+        "offset": "5*pi/6",
+        "period": "2*pi",
+        "latex": "\\frac{5 \\pi}{6} + 2k\\pi"
+      }
+    ],
+    "isolated": [],
+    "solutions_latex": [
+      "\\frac{\\pi}{6}",
+      "\\frac{5 \\pi}{6}"
+    ],
+    "listed_total": 2,
+    "interval": {
+      "lower": "0",
+      "upper": "2*pi",
+      "closed": false,
+      "given": false,
+      "latex": "[0, 2 \\pi)"
+    }
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Substituindo a solução geral x = pi/6 + 2*pi*k ou x = 5*pi/6 + 2*pi*k (k inteiro qualquer) na equação original, a diferença entre os lados se reduz a 0."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O avaliador independente confirma a igualdade dos lados em k = −1, 0, 1 e 2 de cada família."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "A lista do intervalo foi refeita contando, em cada família, os inteiros k que caem nele: 2 solução(ões)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Com u = sin(x), a equação vira o polinômio 2*u - 1 = 0, cujas raízes reais (u = 1/2) são todas as que o teorema de Sturm conta. Elas dão exatamente as 2 soluções da resposta em [0, 2*pi): nenhuma falta."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "substitution",
+      "numeric",
+      "comparison",
+      "completeness"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null
+}

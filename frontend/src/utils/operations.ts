@@ -11,7 +11,9 @@ export type OperationField =
   | "matrix_operation"
   | "vector_operation"
   | "geometry"
-  | "probability";
+  | "probability"
+  | "interval"
+  | "trig_calculation";
 
 /** What to compute from a matrix expression (ADR 0012), in the order of the field. */
 export const MATRIX_OPERATIONS = [
@@ -55,8 +57,8 @@ export const OPERATIONS: readonly Operation[] = [
   {
     intent: "solve_equation",
     label: "Resolver equação",
-    placeholder: "Ex.: x² - 5x + 6 = 0",
-    fields: [],
+    placeholder: "Ex.: x² - 5x + 6 = 0 ou sin(x) = 1/2",
+    fields: ["interval"],
   },
   {
     intent: "solve_system",
@@ -124,6 +126,12 @@ export const OPERATIONS: readonly Operation[] = [
     placeholder: "Ex.: n = 10; k = 3 ou P(A) = 1/2; P(B) = 1/3",
     fields: ["probability"],
   },
+  {
+    intent: "trigonometry",
+    label: "Trigonometria",
+    placeholder: "Ex.: 30°, sin(150°) ou a = 5; b = 7; C = 60°",
+    fields: ["trig_calculation"],
+  },
 ];
 
 /** Short name shown next to a result. */
@@ -144,6 +152,7 @@ export const INTENT_LABELS: Record<IntentName, string> = {
   vector: "Vetor",
   geometry: "Geometria",
   probability: "Probabilidade",
+  trigonometry: "Trigonometria",
 };
 
 /** What the extra inputs hold; empty texts mean "not given". */
@@ -164,6 +173,8 @@ export interface FieldValues {
   geometry_calculation: string;
   /** A calculation of utils/probability.ts. */
   probability_calculation: string;
+  /** A calculation of utils/trigonometry.ts. */
+  trig_calculation: string;
 }
 
 export const EMPTY_FIELDS: FieldValues = {
@@ -180,6 +191,7 @@ export const EMPTY_FIELDS: FieldValues = {
   geometry_figure: "circle",
   geometry_calculation: "area",
   probability_calculation: "factorial",
+  trig_calculation: "convert",
 };
 
 export type CalculationOptions = Record<string, string | number>;
@@ -203,6 +215,7 @@ export function buildOptions(operation: Operation, values: FieldValues): Calcula
         break;
       }
       case "bounds":
+      case "interval":
         if (values.lower.trim()) {
           options.lower = values.lower.trim();
         }
@@ -230,6 +243,9 @@ export function buildOptions(operation: Operation, values: FieldValues): Calcula
         break;
       case "probability":
         options.calculation = values.probability_calculation;
+        break;
+      case "trig_calculation":
+        options.calculation = values.trig_calculation;
         break;
       case "x_range":
         if (values.x_min.trim()) {

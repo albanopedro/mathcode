@@ -89,7 +89,7 @@ _KEYWORD = (
     r"|perimetro|volume|distancia|ponto|reta|equacao|hipotenusa|cateto|classificacao"
     r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo"
     r"|fatorial|permutac(?:ao|oes)|arranjos?|combinac(?:ao|oes)|anagramas|binomial"
-    r"|distribuicao)"
+    r"|distribuicao|angulos|triangulo|reducao|identidade|quadrante)"
 )
 _ARTICLE = re.compile(rf"(?:o|a|os|as)\s+(?={_KEYWORD})")
 
@@ -177,11 +177,28 @@ def _limit(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
 
 
 def _roots(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
-    """'raízes de x² - 4' and 'resolva x² - 4' mean f(x) = 0."""
+    """'raízes de x² - 4' and 'resolva x² - 4' mean f(x) = 0.
+
+    'resolva sin(x) = 1/2 de 0 a pi' also gives the interval of periodic solutions.
+    """
     expr = _grab(found, request, "expr") or ""
+    lower = _bound(_grab(found, request, "a") or _grab(found, request, "a2"))
+    upper = _bound(_grab(found, request, "b") or _grab(found, request, "b2"))
+    if lower is not None and upper is not None:
+        equation = expr if "=" in expr else f"{expr} = 0"
+        options: Options = {"lower": lower, "upper": upper}
+        return LanguageMatch(IntentName.SOLVE_EQUATION, equation, options, rule=rule)
     if "=" in expr:
         return LanguageMatch(None, expr, offset=found.start("expr"), rule=rule)
     return LanguageMatch(IntentName.SOLVE_EQUATION, f"{expr} = 0", rule=rule)
+
+
+# "de 0 a 2pi", "entre 0 e pi", "no intervalo [0, 2pi]": where periodic solutions are listed.
+_INTERVAL = (
+    r"(?:\s*,?\s+(?:no\s+intervalo\s+(?:de\s+)?|para\s+x\s+(?:de|entre)\s+|entre\s+|de\s+)"
+    r"(?P<a>(?:menos\s+)?[^\s\[\]]+)\s+(?:a|e|ate)\s+(?P<b>(?:menos\s+)?[^\s\[\]]+)"
+    r"|\s*,?\s+(?:no\s+intervalo|em)\s+\[\s*(?P<a2>[^,;\]]+?)\s*[,;]\s*(?P<b2>[^\]\)]+?)\s*[\]\)])?"
+)
 
 
 def _graph(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
@@ -522,6 +539,35 @@ def _events(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     return _probability(calculation, _and_to_separator(values.strip().rstrip(",")), rule)
 
 
+# -- trigonometry (Phase 10, ADR 0016) ------------------------------------------------------------
+
+
+def _trigonometry(calculation: str, text: str, rule: str) -> LanguageMatch:
+    return LanguageMatch(IntentName.TRIGONOMETRY, text, {"calculation": calculation}, rule=rule)
+
+
+def _degree_words(text: str) -> str:
+    """'30 graus' -> '30°'; 'pi/6 rad' or 'pi/6 radianos' -> 'pi/6'."""
+    text = re.sub(r"\s*\b(?:graus?)\b", "°", text, flags=re.IGNORECASE)
+    return re.sub(r"\s*\b(?:radianos?|rad)\b", "", text, flags=re.IGNORECASE).strip()
+
+
+def _convert(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    return _trigonometry("convert", _degree_words(_grab(found, request, "angle") or ""), rule)
+
+
+def _triangle(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    if found.group("sides"):  # "ângulos do triângulo de lados 3, 4 e 5"
+        sides = [
+            v for v in re.split(r"\s*(?:,\s|\be\b)\s*", _grab(found, request, "sides") or "") if v
+        ]
+        text = "; ".join(f"{n} = {v}" for n, v in zip(("a", "b", "c"), sides, strict=False))
+    else:
+        group = "values" if found.group("values") else "values2"
+        text = _and_to_separator(_degree_words(_grab(found, request, group) or ""))
+    return _trigonometry("triangle", text, rule)
+
+
 def _future(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     raise MathError(
         ErrorCode.UNSUPPORTED_FEATURE,
@@ -533,6 +579,63 @@ def _future(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
 # -- rules, in order ------------------------------------------------------------------------------
 
 _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], LanguageMatch]]] = [
+    (
+        "convert_angle",
+        re.compile(
+            r"(?:(?:converta|converter|converte|transforme|transformar|transforma|passe|passar)"
+            r"\s+)?(?:o\s+angulo\s+(?:de\s+)?)?(?P<angle>.+?)\s+(?:em|para)\s+"
+            r"(?:radianos?|rad|graus?)"
+        ),
+        _convert,
+    ),
+    (
+        "reduce_angle",
+        re.compile(
+            r"(?:reduza|reduzir|reduz|reducao\s+(?:de|do|da))\s+(?P<angle>.+?)\s+"
+            r"(?:ao|para\s+o)\s+(?:1\s*[o\u00ba\u00b0]|primeiro)\s+quadrante"
+            r"|reducao\s+ao\s+(?:1\s*[o\u00ba\u00b0]|primeiro)\s+quadrante\s+(?:de|do|da)\s+"
+            r"(?P<angle2>.+)"
+            r"|(?:em\s+)?(?:qual|que)\s+quadrante\s+(?:esta|fica|cai)\s+(?:o\s+angulo\s+(?:de\s+)?)?"
+            r"(?P<angle3>.+)"
+            r"|quadrante\s+(?:de|do|da)\s+(?:angulo\s+(?:de\s+)?)?(?P<angle4>.+)"
+        ),
+        lambda found, request, rule: _trigonometry(
+            "reduce",
+            _degree_words(
+                next(
+                    _grab(found, request, g) or ""
+                    for g in ("angle", "angle2", "angle3", "angle4")
+                    if found.group(g)
+                )
+            ),
+            rule,
+        ),
+    ),
+    (
+        "identity",
+        re.compile(
+            r"(?:verifique|verificar|verifica|prove|provar|prova|demonstre|demonstrar"
+            r"|confira|conferir)\s+(?:se\s+|que\s+)?(?:a\s+identidade\s+)?(?P<expr>[^=]+=.+?)"
+            r"(?:\s+e\s+(?:uma\s+)?identidade|\s+vale\s+sempre)?"
+            r"|(?P<expr2>[^=]+=.+?)\s+(?:e\s+(?:uma\s+)?identidade|vale\s+sempre)"
+        ),
+        lambda found, request, rule: _trigonometry(
+            "identity",
+            _grab(found, request, "expr") or _grab(found, request, "expr2") or "",
+            rule,
+        ),
+    ),
+    (
+        "triangle",
+        re.compile(
+            r"(?:(?:resolva|resolver|resolve|complete|completar)\s+)?(?:o\s+)?triangulo"
+            r"\s+(?:com|de|em\s+que|onde)\s+(?P<values>[abc]\s*=.*)"
+            r"|(?:lei\s+dos\s+(?:senos|cossenos))\s*(?:com|para|em|:)?\s*(?P<values2>[abc]\s*=.*)"
+            r"|(?:os\s+)?angulos\s+(?:do|de\s+um)\s+triangulo\s+(?:de|com)\s+lados\s+"
+            r"(?P<sides>\d+(?:[.,]\d+)?(?:\s*(?:,\s|\be\b)\s*\d+(?:[.,]\d+)?){2})"
+        ),
+        _triangle,
+    ),
     # Probability first: "média da binomial com n = 10..." is not a list of data.
     (
         "factorial",
@@ -682,7 +785,8 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
         "roots",
         re.compile(
             r"(?:raizes|raiz|zeros|zero)"
-            r"(?:\s+(?:de|da\s+funcao|do\s+polinomio|da\s+equacao|do|da))\s+(?P<expr>.+)"
+            r"(?:\s+(?:de|da\s+funcao|do\s+polinomio|da\s+equacao|do|da))\s+(?P<expr>.+?)"
+            rf"{_INTERVAL}"
         ),
         _roots,
     ),
@@ -690,7 +794,8 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
         "solve",
         re.compile(
             r"(?:resolva|resolve|resolver|solucione|solucionar)"
-            r"(?:\s+(?:a\s+equacao|o\s+sistema|as\s+equacoes))?\s+(?P<expr>.+)"
+            r"(?:\s+(?:a\s+equacao|o\s+sistema|as\s+equacoes))?\s+(?P<expr>.+?)"
+            rf"{_INTERVAL}"
         ),
         _roots,
     ),

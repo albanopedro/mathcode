@@ -71,6 +71,11 @@ CASES: dict[IntentName, tuple[str, dict[str, str | int] | None, Tamper]] = {
         {"figure": "circle", "calculation": "area"},
         lambda o: replace(o, result=o.result + 1),
     ),
+    IntentName.TRIGONOMETRY: (
+        "sin(150°)",
+        {"calculation": "reduce"},
+        lambda o: replace(o, values={**o.values, "sin": o.values["sin"] + 1}),
+    ),
     IntentName.PROBABILITY: (
         "P(A) = 1/2; P(B) = 1/3; P(A e B) = 1/6",
         {"calculation": "union"},

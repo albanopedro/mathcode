@@ -1,0 +1,63 @@
+{
+  "success": true,
+  "intent": "trigonometry",
+  "input": "tan(x) = sin(x) é uma identidade?",
+  "normalized_input": "tan(x) = sin(x)",
+  "result": {
+    "plain": "tan(x) ≢ sin(x) (não é identidade)",
+    "latex": "\\tan{\\left(x \\right)} \\not\\equiv \\sin{\\left(x \\right)}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "calculation": "identity",
+    "holds": false,
+    "proved": false,
+    "variables": [
+      "x"
+    ],
+    "counterexample": {
+      "point": {
+        "x": {
+          "plain": "pi/6",
+          "latex": "\\frac{\\pi}{6}"
+        }
+      },
+      "left_latex": "\\frac{\\sqrt{3}}{3}",
+      "right_latex": "\\frac{1}{2}"
+    }
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "Em x = pi/6, o avaliador independente obtém 0.577350269189626 à esquerda e 0.5 à direita: os lados diferem."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Exatamente, os lados valem sqrt(3)/3 e 1/2, números diferentes."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "numeric",
+      "symbolic"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "trigonometry",
+    "expression": "tan(x) = sin(x)",
+    "options": {
+      "calculation": "identity"
+    },
+    "provider": null,
+    "model": null
+  }
+}

@@ -19,6 +19,7 @@ from mpmath import mp, mpf
 from app.core.errors import ErrorCode, MathError
 from app.core.limits import GRAPH_SAMPLES, MAX_GRAPH_FUNCTIONS, MAX_GRAPH_WIDTH
 from app.core.notices import Notice, NoticeCode
+from app.formatting.expressions import plain
 from app.math_engine.calculus import parse_value
 from app.math_engine.equations import EquationOutcome, SolutionKind, solve_equation
 from app.models.intents import GraphParams, SolveEquationParams
@@ -314,8 +315,14 @@ def _roots(
     if not variables(tree):
         return [], None, False  # a constant: zero everywhere or nowhere
     try:
+        # The visible range is the interval of periodic roots (ADR 0016).
         outcome = solve_equation(
-            SolveEquationParams(equation=f"{to_text(tree)} = 0", variable=var.name)
+            SolveEquationParams(
+                equation=f"{to_text(tree)} = 0",
+                variable=var.name,
+                lower=plain(x_min),
+                upper=plain(x_max),
+            )
         )
     except MathError:
         outcome = None

@@ -127,7 +127,7 @@ def test_domain_change_warning() -> None:
         ("sqrt(-9)", ErrorCode.DOMAIN_ERROR),
         ("log(0)", ErrorCode.DOMAIN_ERROR),
         ("10^5000", ErrorCode.LIMIT_EXCEEDED),
-        ("sin(x) = 0", ErrorCode.UNSUPPORTED_FEATURE),
+        ("sin(x) = x/10", ErrorCode.UNSUPPORTED_FEATURE),
         ("2i", ErrorCode.UNSUPPORTED_FEATURE),
     ],
 )

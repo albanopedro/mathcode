@@ -12,6 +12,8 @@ Operations (intent) and their options:
 - "arithmetic": a numeric calculation, e.g. "2^10". No options.
 - "simplify", "factor", "expand": an expression. No options.
 - "solve_equation": one equation with "=", e.g. "x^2 - 5x + 6 = 0". Option: variable.
+  Periodic equations (sin(x) = 1/2) get the general solution; options lower and upper (both
+  or none) say where their solutions are listed, e.g. "0" and "2pi".
 - "solve_system": equations separated by ";", e.g. "x + y = 3; x - y = 1".
 - "polynomial_division": "(A)/(B)".
 - "derivative": options: variable, order (integer 1 to 10).
@@ -36,10 +38,16 @@ Operations (intent) and their options:
   complement, intersection, intersection_independent, union, union_independent, conditional
   (A given B); "n = 5; k = 3; p = 1/2" for binomial_exact, binomial_at_most,
   binomial_at_least, and "n = 10; p = 30%" for binomial_summary (mean and variance).
+- "trigonometry": option calculation (required): "convert" (an angle: "30°" becomes radians,
+  "pi/6" becomes degrees), "reduce" (an angle or a function of it, "sin(150°)": quadrant and
+  reduction to the first quadrant), "identity" (an equality to check: "sin(x)^2 + cos(x)^2 = 1")
+  or "triangle" (three measures, sides a, b, c and the opposite angles A, B, C, e.g.
+  "a = 5; b = 7; C = 60°").
 
 Expression syntax: ^ for powers, sqrt(x), abs(x), sin cos tan asin acos atan, exp, ln
-(natural log), log (base 10), pi, e, ° for degrees, n! (factorial), C(n, k) (combinations)
-and A(n, k) (arrangements). Single-letter variables only.
+(natural log), log (base 10), pi, e, ° for degrees (without °, angles are radians), sec csc
+cot, n! (factorial), C(n, k) (combinations) and A(n, k) (arrangements). Single-letter
+variables only.
 The expression contains ONLY math: no words, no "d/dx", no "=" with the result,
 never the answer.
 

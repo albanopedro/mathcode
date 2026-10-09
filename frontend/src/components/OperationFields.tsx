@@ -1,4 +1,5 @@
 import { FIGURE_GROUPS, FIGURES, figure } from "../utils/geometry";
+import { TRIG_CALCULATIONS, trigCalculation } from "../utils/trigonometry";
 import {
   PROBABILITY_CALCULATIONS,
   PROBABILITY_GROUPS,
@@ -85,6 +86,60 @@ export function OperationFields({ operation, values, onChange }: OperationFields
           </label>
           <p className="basis-full text-xs text-slate-500">
             Sem limites, a integral é indefinida. Use inf para infinito.
+          </p>
+        </>
+      )}
+      {has("interval") && (
+        <>
+          <label className={LABEL_CLASS}>
+            Soluções de
+            <input
+              type="text"
+              value={values.lower}
+              onChange={(event) => set({ lower: event.target.value })}
+              placeholder="0"
+              autoComplete="off"
+              className={`${INPUT_CLASS} w-28`}
+            />
+          </label>
+          <label className={LABEL_CLASS}>
+            até
+            <input
+              type="text"
+              value={values.upper}
+              onChange={(event) => set({ upper: event.target.value })}
+              placeholder="2pi"
+              autoComplete="off"
+              className={`${INPUT_CLASS} w-28`}
+            />
+          </label>
+          <p className="basis-full text-xs text-slate-500">
+            Para equações com infinitas soluções, como sin(x) = 1/2: onde listá-las. Vazios: de 0
+            a 2π.
+          </p>
+        </>
+      )}
+      {has("trig_calculation") && (
+        <>
+          <label className={LABEL_CLASS}>
+            Cálculo
+            <select
+              value={values.trig_calculation}
+              onChange={(event) => set({ trig_calculation: event.target.value })}
+              className={INPUT_CLASS}
+            >
+              {TRIG_CALCULATIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="basis-full text-sm text-slate-500">
+            Entrada: {trigCalculation(values.trig_calculation).input}. Ex.:{" "}
+            <code className="font-mono text-slate-700">
+              {trigCalculation(values.trig_calculation).example}
+            </code>
           </p>
         </>
       )}

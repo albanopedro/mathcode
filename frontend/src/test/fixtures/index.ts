@@ -70,6 +70,13 @@ import systemInfinite from "./system-infinite.json";
 import systemNone from "./system-none.json";
 import systemUnique from "./system-unique.json";
 import timeout from "./timeout.json";
+import trigConvert from "./trig-convert.json";
+import trigIdentityFalse from "./trig-identity-false.json";
+import trigOutsideDomain from "./trig-outside-domain.json";
+import trigPeriodic from "./trig-periodic.json";
+import trigPeriodicInterval from "./trig-periodic-interval.json";
+import trigReduce from "./trig-reduce.json";
+import trigTriangleAmbiguous from "./trig-triangle-ambiguous.json";
 import unverified from "./unverified.json";
 import vectorAnglePhrase from "./vector-angle-phrase.json";
 import vectorCross from "./vector-cross.json";
@@ -80,6 +87,13 @@ import vectorZeroUnit from "./vector-zero-unit.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  trigConvert,
+  trigIdentityFalse,
+  trigOutsideDomain,
+  trigPeriodic,
+  trigPeriodicInterval,
+  trigReduce,
+  trigTriangleAmbiguous,
   countingArithmetic,
   probabilityAnagrams,
   probabilityBinomial,

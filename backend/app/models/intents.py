@@ -35,6 +35,7 @@ class IntentName(StrEnum):
     VECTOR = "vector"
     GEOMETRY = "geometry"
     PROBABILITY = "probability"
+    TRIGONOMETRY = "trigonometry"
 
 
 class _Params(BaseModel):
@@ -58,8 +59,18 @@ class ExpandParams(_Params):
 
 
 class SolveEquationParams(_Params):
+    """``lower`` and ``upper``: where periodic solutions are listed (both or none, ADR 0016)."""
+
     equation: str
     variable: str | None = Field(default=None, pattern=_VARIABLE)
+    lower: str | None = Field(default=None, min_length=1, max_length=100)
+    upper: str | None = Field(default=None, min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def _both_ends_or_none(self) -> Self:
+        if (self.lower is None) != (self.upper is None):
+            raise ValueError("both_ends")
+        return self
 
 
 class SolveSystemParams(_Params):
@@ -222,6 +233,17 @@ class ProbabilityParams(_Params):
     calculation: ProbabilityCalculation
 
 
+# Trigonometry (Phase 10, ADR 0016). Equations such as sin(x) = 1/2 are solve_equation.
+type TrigonometryCalculation = Literal["convert", "reduce", "identity", "triangle"]
+
+
+class TrigonometryParams(_Params):
+    """An angle ("150°", "sin(150°)"), an identity ("lhs = rhs") or a triangle ("a = 5; ...")."""
+
+    expression: str
+    calculation: TrigonometryCalculation
+
+
 type IntentParams = (
     ArithmeticParams
     | SimplifyParams
@@ -239,11 +261,12 @@ type IntentParams = (
     | VectorParams
     | GeometryParams
     | ProbabilityParams
+    | TrigonometryParams
 )
 
 # Options a request may carry for each intent, besides the input text.
 INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
-    IntentName.SOLVE_EQUATION: frozenset({"variable"}),
+    IntentName.SOLVE_EQUATION: frozenset({"variable", "lower", "upper"}),
     IntentName.DERIVATIVE: frozenset({"variable", "order"}),
     IntentName.INTEGRAL: frozenset({"variable", "lower", "upper"}),
     IntentName.LIMIT: frozenset({"variable", "point", "side"}),
@@ -253,6 +276,7 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.VECTOR: frozenset({"operation"}),
     IntentName.GEOMETRY: frozenset({"figure", "calculation"}),
     IntentName.PROBABILITY: frozenset({"calculation"}),
+    IntentName.TRIGONOMETRY: frozenset({"calculation"}),
 }
 
 # An option value: a short text (variable, bound, point, side) or a small number

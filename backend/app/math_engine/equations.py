@@ -6,17 +6,30 @@ How the equation is solved depends on its shape (``polynomials.shape``):
 - rational: real roots of the numerator, minus the zeros of the denominators;
 - other (roots, logs, exponentials...): SymPy's ``solveset`` over ℝ, whose
   completeness cannot be proved here, so verification says "partial".
+
+Trigonometric equations have infinitely many solutions in periodic families
+(``math_engine/periodic.py``, ADR 0016): the answer is the general solution,
+plus the solutions inside an interval, [0, 2π) unless one is given.
 """
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import StrEnum
 
 import sympy as sp
 
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import Notice, NoticeCode
+from app.math_engine.calculus import parse_value
 from app.math_engine.inputs import require_equation
+from app.math_engine.periodic import (
+    DEFAULT_INTERVAL,
+    MAX_LISTED,
+    Family,
+    Interval,
+    families_of,
+    listed,
+)
 from app.math_engine.polynomials import (
     Shape,
     has_rational_coefficients,
@@ -33,6 +46,7 @@ class SolutionKind(StrEnum):
     FINITE = "finite"
     NONE = "none"
     ALL_REALS = "all_reals"
+    PERIODIC = "periodic"  # families offset + k·period (ADR 0016)
 
 
 @dataclass(frozen=True)
@@ -52,6 +66,13 @@ class EquationOutcome:
     # coefficients: verification counts its roots independently (Sturm).
     candidates: sp.Poly | None
     notices: tuple[Notice, ...]
+    # Periodic solutions: the general solution is ``families`` plus ``isolated``;
+    # ``solutions`` are then the ones inside ``interval`` (``listed_total`` in all).
+    families: tuple[Family, ...] = ()
+    isolated: tuple[sp.Expr, ...] = ()
+    interval: Interval | None = None
+    listed_total: int = 0
+    rejected_families: tuple[Family, ...] = ()  # outside the domain of the equation
 
 
 def solve_equation(params: SolveEquationParams) -> EquationOutcome:
@@ -66,13 +87,42 @@ def solve_equation(params: SolveEquationParams) -> EquationOutcome:
     found, _ = shape(equation, name)
 
     solver = _Solver(parsed, equation, var, left, right, found, builder)
+    solver.interval = _interval(params, solver.notices)
     match found:
         case Shape.POLYNOMIAL:
-            return solver.polynomial()
+            outcome = solver.polynomial()
         case Shape.RATIONAL:
-            return solver.rational()
+            outcome = solver.rational()
         case Shape.OTHER:
-            return solver.general()
+            outcome = solver.general()
+    if solver.interval is not None and outcome.kind is not SolutionKind.PERIODIC:
+        ignored = Notice(
+            NoticeCode.INTERVAL_IGNORED,
+            "O intervalo vale para equações com infinitas soluções periódicas; esta não "
+            "tem, e todas as soluções aparecem.",
+        )
+        outcome = replace(outcome, notices=(*outcome.notices, ignored))
+    return outcome
+
+
+def _interval(params: SolveEquationParams, notices: list[Notice]) -> Interval | None:
+    """The interval typed by the user, if any; checked only when the solutions are periodic."""
+    if params.lower is None or params.upper is None:
+        return None
+    lower, lower_notices = parse_value(params.lower, "início do intervalo")
+    upper, upper_notices = parse_value(params.upper, "fim do intervalo")
+    notices.extend((*lower_notices, *upper_notices))
+    if not (lower.is_finite and upper.is_finite):
+        raise MathError(
+            ErrorCode.INVALID_INPUT_FOR_INTENT,
+            "O intervalo das soluções precisa ser limitado, como de 0 a 2pi.",
+        )
+    if (upper - lower).is_positive is not True:
+        raise MathError(
+            ErrorCode.INVALID_INPUT_FOR_INTENT,
+            "O fim do intervalo precisa ser maior que o início.",
+        )
+    return Interval(lower, upper, closed=True, given=True)
 
 
 def _single_variable(equation: Equation, requested: str | None) -> str:
@@ -115,6 +165,7 @@ class _Solver:
         self.shape = found
         self.denominators = [d for d in builder.denominators if var in d.free_symbols]
         self.notices = list(parsed.notices) + builder.notices
+        self.interval: Interval | None = None
 
     # -- the three shapes -------------------------------------------------------
 
@@ -174,14 +225,49 @@ class _Solver:
             return self._outcome(SolutionKind.NONE)
         if isinstance(result, sp.FiniteSet) and all(_is_real_number(r) for r in result):
             return self._finite(_sorted(result), multiplicities=())
-        if result.has(sp.ImageSet):
-            message = (
-                "Esta equação tem infinitas soluções periódicas (como as "
-                "trigonométricas); isso ainda não é suportado."
+        periodic = families_of(result) if result.has(sp.ImageSet) else None
+        if periodic is None:
+            raise MathError(
+                ErrorCode.UNSUPPORTED_FEATURE,
+                "Não foi possível resolver esta equação de forma exata.",
             )
-        else:
-            message = "Não foi possível resolver esta equação de forma exata."
-        raise MathError(ErrorCode.UNSUPPORTED_FEATURE, message)
+        return self._periodic(*periodic)
+
+    def _periodic(self, families: list[Family], isolated: list[sp.Expr]) -> EquationOutcome:
+        # solveset may simplify the domain away: cos(x)·tan(x) = 1 "has" x = π/2 + 2kπ,
+        # where tan is not defined. Such families are discarded.
+        kept = [f for f in families if not any(self._undefined(f.at(k)) for k in (0, 1))]
+        rejected = tuple(f for f in families if f not in kept)
+        isolated = [value for value in isolated if not self._undefined(value)]
+        if not kept:
+            outcome = self._finite(isolated, multiplicities=())
+            return replace(outcome, rejected_families=rejected)
+        interval = self.interval or DEFAULT_INTERVAL
+        solutions, total = listed(kept, isolated, interval)
+        if total > MAX_LISTED:
+            self.notices.append(
+                Notice(
+                    NoticeCode.SOLUTIONS_TRUNCATED,
+                    f"Há {total} soluções no intervalo; aparecem as {MAX_LISTED} primeiras.",
+                )
+            )
+        return replace(
+            self._outcome(SolutionKind.PERIODIC, solutions=tuple(solutions)),
+            families=tuple(kept),
+            isolated=tuple(isolated),
+            interval=interval,
+            listed_total=total,
+            rejected_families=rejected,
+        )
+
+    def _undefined(self, value: sp.Expr) -> bool:
+        if self._is_excluded(value):
+            return True
+        for side in (self.left, self.right):
+            at = side.subs(self.var, value)
+            if at.has(sp.zoo, sp.nan, sp.oo, -sp.oo) or at.is_extended_real is False:
+                return True
+        return False
 
     # -- helpers ----------------------------------------------------------------------
 

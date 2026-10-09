@@ -17,6 +17,7 @@ import sympy as sp
 
 from app.formatting.expressions import plain
 from app.math_engine.equations import EquationOutcome, SolutionKind
+from app.math_engine.periodic import describe as describe_family
 from app.math_engine.polynomials import Shape, count_distinct_real_roots
 from app.math_engine.systems import SystemKind, SystemOutcome
 from app.models.result import (
@@ -30,6 +31,7 @@ from app.parsing.ast import Equation
 from app.parsing.build import symbol
 from app.verification.algebra import REQUIRED_POINTS, describe, points, try_evaluate
 from app.verification.numeric import Evaluation, Point, agrees, decimal, rational
+from app.verification.periodic import reduce_to_polynomial, undefined_at, verify_periodic
 from app.verification.reports import failure, inconclusive, passed, report, show
 from app.verification.symbolic import reduces_to_zero
 
@@ -81,6 +83,8 @@ def verify_equation(outcome: EquationOutcome) -> VerificationReport:
             return _verify_none(outcome)
         case SolutionKind.ALL_REALS:
             return _verify_all_reals(outcome)
+        case SolutionKind.PERIODIC:
+            return verify_periodic(outcome)
 
 
 def _verify_finite(outcome: EquationOutcome) -> VerificationReport:
@@ -244,26 +248,68 @@ def _verify_none(outcome: EquationOutcome) -> VerificationReport:
                 ],
             )
 
-    return report(
-        VerificationStatus.UNVERIFIED,
-        [
-            inconclusive(
-                CheckKind.COMPLETENESS,
-                "Nenhuma solução real foi encontrada, mas não foi provado que não existe.",
+    reduction = reduce_to_polynomial(outcome.left - outcome.right, outcome.variable)
+    if reduction is not None and not reduction.identity:
+        # cos(x) = 2: with u = cos(x), the only root is u = 2, which no angle reaches.
+        roots, families = reduction.families(outcome.variable)
+        if reduction.counted() != len(roots):
+            return failure(
+                CheckKind.COMPLETENESS, "O teorema de Sturm contou outras raízes de P(u)."
             )
-        ],
-        ReasonCode.COMPLETENESS_NOT_PROVED,
-    )
+        defined = [f for f in families if not undefined_at(outcome, f.offset)]
+        if defined:
+            return failure(
+                CheckKind.COMPLETENESS,
+                f"{reduction.describe()}, a equação tem soluções, como "
+                f"{name} = {plain(defined[0].offset)}.",
+            )
+        shown = ", ".join(f"u = {plain(r)}" for r in roots) or "nenhuma raiz real"
+        return report(
+            VerificationStatus.VERIFIED_SYMBOLIC,
+            [
+                passed(
+                    CheckKind.COMPLETENESS,
+                    f"{reduction.describe()}, a equação vira o polinômio "
+                    f"{plain(reduction.polynomial.as_expr())} = 0 ({shown}), e nenhuma raiz "
+                    f"dá um ângulo onde a equação é definida"
+                    + (" (seno e cosseno só valem de −1 a 1)." if roots else "."),
+                )
+            ],
+        )
+
+    checks = [
+        inconclusive(
+            CheckKind.COMPLETENESS,
+            "Nenhuma solução real foi encontrada, mas não foi provado que não existe.",
+        )
+    ]
+    if outcome.rejected_families:
+        k = sp.Symbol("n" if name == "k" else "k", integer=True)
+        discarded = " ou ".join(
+            f"{name} = {describe_family(f, k)}" for f in outcome.rejected_families
+        )
+        checks.insert(
+            0,
+            passed(
+                CheckKind.DOMAIN,
+                f"Descartado por estar fora do domínio da equação original: {discarded}.",
+            ),
+        )
+    return report(VerificationStatus.UNVERIFIED, checks, ReasonCode.COMPLETENESS_NOT_PROVED)
 
 
 def _verify_all_reals(outcome: EquationOutcome) -> VerificationReport:
     name = outcome.variable.name
     difference = sp.expand(outcome.left - outcome.right)
+    reduction = None
     if outcome.shape is Shape.RATIONAL:
         numerator, _ = sp.fraction(sp.together(outcome.left - outcome.right))
         identity = sp.expand(numerator) == 0
     else:
         identity = difference == 0
+        if not identity:  # sin(x)^2 + cos(x)^2 = 1: zero as a polynomial in u = cos(x)
+            reduction = reduce_to_polynomial(outcome.left - outcome.right, outcome.variable)
+            identity = reduction is not None and reduction.identity
 
     checked = 0
     for point in points(outcome.parsed.canonical, [name]):
@@ -296,12 +342,10 @@ def _verify_all_reals(outcome: EquationOutcome) -> VerificationReport:
             ],
             ReasonCode.NUMERIC_EVIDENCE_ONLY,
         )
-    checks = [
-        passed(
-            CheckKind.SYMBOLIC, "Os dois lados são idênticos: a diferença entre eles se reduz a 0."
-        ),
-        numeric,
-    ]
+    proof = "Os dois lados são idênticos: a diferença entre eles se reduz a 0."
+    if reduction is not None:
+        proof = f"{reduction.describe()}, a diferença entre os lados é o polinômio nulo."
+    checks = [passed(CheckKind.SYMBOLIC, proof), numeric]
     if outcome.excluded:
         excluded = ", ".join(plain(e) for e in outcome.excluded)
         checks.append(

@@ -836,3 +836,81 @@ describe("Calculator: probability", () => {
     expect(within(result).getByText("C(4, 2)/C(52, 2)")).toBeInTheDocument();
   });
 });
+
+describe("Calculator: trigonometry", () => {
+  it("lists the periodic solutions inside the interval", async () => {
+    answer(fixtures.trigPeriodic);
+    await calculateText("sin(x) = 1/2");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const latex = latexOf(result).join(" ");
+    expect(latex).toContain("\\frac{\\pi}{6} + 2k\\pi");
+    expect(latex).toContain("k \\in \\mathbb{Z}");
+    expect(latexOf(result)).toContain("x = \\frac{\\pi}{6},\\ \\frac{5 \\pi}{6}");
+    expect(within(result).getByText(/pode ser qualquer número inteiro/)).toBeInTheDocument();
+  });
+
+  it("sends the interval of the solutions and says when the list is cut", async () => {
+    answer(fixtures.trigPeriodicInterval);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Resolver equação");
+    await user.type(screen.getByLabelText("Soluções de"), "0");
+    await user.type(screen.getByLabelText("até"), "1000");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "sin(x) = 0{Enter}");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({
+      input: "sin(x) = 0",
+      intent: "solve_equation",
+      options: { lower: "0", upper: "1000" },
+    });
+    expect(within(result).getByText(/319 no total; aparecem as 100 primeiras/)).toBeInTheDocument();
+  });
+
+  it("names the families discarded outside the domain", async () => {
+    answer(fixtures.trigOutsideDomain);
+    await calculateText("cos(x)tan(x) = 1");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText(/fora do domínio da equação:/)).toBeInTheDocument();
+    expect(latexOf(result)).toContain("x = \\frac{\\pi}{2} + 2k\\pi");
+  });
+
+  it("offers the calculations with their input", async () => {
+    answer(fixtures.trigReduce);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Trigonometria");
+    expect(screen.getByLabelText("Cálculo")).toHaveValue("convert");
+    await user.selectOptions(screen.getByLabelText("Cálculo"), "Redução ao 1º quadrante");
+    expect(screen.getByText("sin(150°)")).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText("Expressão ou equação"), "cos(750°){Enter}");
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body.options).toEqual({ calculation: "reduce" });
+    expect(within(result).getByText(/2 volta\(s\) completa\(s\) descontada\(s\)/)).toBeInTheDocument();
+    expect(within(result).getByRole("table", { name: "Valores no ângulo" })).toBeInTheDocument();
+  });
+
+  it("shows a counterexample of a false identity", async () => {
+    answer(fixtures.trigIdentityFalse);
+    await calculateText("tan(x) = sin(x) é uma identidade?");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText(/Não é identidade: em/)).toBeInTheDocument();
+    expect(latexOf(result)).toContain("x = \\frac{\\pi}{6}");
+  });
+
+  it("shows both triangles of the ambiguous case", async () => {
+    answer(fixtures.trigTriangleAmbiguous);
+    await calculateText("a = 5; b = 7; A = 30°", "Trigonometria");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByText("Triângulo 1")).toBeInTheDocument();
+    expect(within(result).getByText("Triângulo 2")).toBeInTheDocument();
+    expect(within(result).getByText(/lei dos senos \(caso ambíguo\)/)).toBeInTheDocument();
+  });
+});

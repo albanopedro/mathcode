@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-08, Fase 10: probabilidade concluída (aguardando revisão).
+> Última atualização: 2026-10-09, Fase 10: trigonometria concluída (aguardando revisão); a Fase 10 termina com ela.
 
 ## O que é
 
@@ -55,7 +55,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 7: Gráficos | concluída e commitada (`978dab5`) |
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
-| 10: Matemática avançada | estatística, matrizes, vetores e geometria concluídos e commitados; **probabilidade concluída, aguardando revisão e commit**; resta trigonometria (já escolhida) |
+| 10: Matemática avançada | estatística, matrizes, vetores, geometria e probabilidade concluídos e commitados (`f5418fc`); **trigonometria concluída, aguardando revisão e commit** (último domínio) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -289,6 +289,33 @@ Backend, continuação:
     regiões de Venn + regras não usadas pelo motor, recorrência da binomial;
   - frases antes da estatística ("média da binomial…"); problemas em palavras
     ("tirar 6 num dado") não têm regra e vão para a IA.
+- **Trigonometria** ([ADR 0016](docs/decisions/0016-trigonometria.md)):
+  - `sec`, `csc`, `cot` (aliases `cossec`, `cotg`...) em todo lugar: builder,
+    avaliador (polos), continuidade, derivador próprio;
+  - equações periódicas: `general()` → `periodic.families_of` (ImageSet →
+    `Family(offset ∈ [0, T), T)`), junção (`2kπ ∪ π+2kπ = kπ`), descarte fora
+    do domínio (`cos·tan = 1`), isoladas junto; `SolutionKind.PERIODIC`;
+    `SolveEquationParams(lower, upper)` (os dois ou nenhum); lista padrão
+    [0, 2π), digitado = fechado, até 100 (`SOLUTIONS_TRUNCATED`); finita +
+    intervalo → `INTERVAL_IGNORED`; gráficos passam a faixa visível;
+  - verificação (`verification/periodic.py`): substituição com k inteiro
+    simbólico **reescrevendo tan/cot/sec/csc em sin/cos e dividindo a família
+    para avançar múltiplos de 2π** (o SymPy erra `tan(2kπ + 2π/3)`); recontagem
+    da lista; completude por redução a polinômio em u = sin/cos/tan (Sturm; grau
+    1 com qualquer coeficiente); senão varredura (720 pontos + bisseção) →
+    `partial`; a redução também prova `cos(x) = 2` sem solução e
+    `sin² + cos² = 1` identidade;
+  - intent `trigonometry`, `TrigonometryParams(expression, calculation)`:
+    `convert` (com ° → rad; sem ° → graus), `reduce` (1ª determinação, voltas,
+    quadrante, referência, sin/cos/tan com sinal; `sin(150°) = sin(30°) = 1/2`),
+    `identity` (simplify ≤ 2 s; senão contraexemplo em ângulos notáveis;
+    verificação por exponenciais/Euler), `triangle` (LLL, LAL, LLA ambíguo,
+    ALA; ângulo sem ° = rad com aviso; `C = 60` recusado com dica; verificação
+    no plano cartesiano + soma = π por cos(S) = −1 e sin(S) = 0 + lei dos
+    cossenos; contagem do ambíguo por equação do 2º grau);
+  - frontend: campos "Soluções de / até" em Resolver equação; Cálculo da
+    trigonometria; `TrigonometryView`; triângulos e periódicas sempre em
+    KaTeX (linhas curtas; manchete do triângulo só com formas exatas curtas).
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -400,6 +427,11 @@ Backend, continuação:
   ou `)`: é fatorial ("quanto é 5!").
 - `latexOf` (testes do Calculator) devolve uma lista: para procurar um trecho
   de LaTeX, use `latexOf(result).join(" ")`.
+- **Bug do SymPy:** `tan(2kπ + 2π/3)` com `k` inteiro dá `√3/3` (certo: −√3).
+  Seno e cosseno de `t + 2kπ` estão certos. Nunca confie em reduções de tan com
+  `k` simbólico; reescreva em sin/cos (`verification/periodic._substitutes`).
+- O SymPy não simplifica `acos(4/5) + acos(3/5) − π/2`; para somas de ângulos,
+  prove por cos(S) e sin(S) (`verification/trigonometry._sum_is_pi`).
 - KaTeX em linha com raiz, numa linha que quebra, passa da altura da linha: num
   `<p>` com `overflow-x-auto` aparece uma barra vertical. Use
   `overflow-y-hidden py-1` (feito na fórmula da probabilidade).
@@ -494,13 +526,19 @@ cd frontend && npm test && npm run build
      cálculo "independentes";
   4. fração + porcentagem; `30%` aceito só na entrada da operação;
   5. operação "Probabilidade" + campo Cálculo.
-  - Aguardando a revisão e o "pode seguir" para a trigonometria.
-- **Trigonometria (6º domínio, a fazer).** Conteúdos já escolhidos (todos):
-  valores e conversões (sec, csc, cot, graus ↔ radianos, redução ao 1º
-  quadrante), equações trigonométricas (soluções gerais e num intervalo),
-  identidades (conferir e simplificar, com contraexemplo) e resolução de
-  triângulos (leis dos senos e dos cossenos). Falta decidir o formato com o
-  usuário.
+  - Revisada e commitada pelo usuário (`f5418fc`).
+- **Trigonometria (6º e último domínio, concluído, ADR 0016).** Decisões do
+  usuário (2026-10-08):
+  1. conteúdos (todos): valores e conversões (sec, csc, cot, graus ↔
+     radianos, redução ao 1º quadrante), equações (solução geral e num
+     intervalo), identidades (prova ou contraexemplo), triângulos (leis dos
+     senos e dos cossenos);
+  2. operação "Trigonometria" + Cálculo; equações onde já estavam (Resolver
+     equação e Automático);
+  3. solução geral + as soluções de [0, 2π); campos De/Até mudam o intervalo;
+  4. `a = 5; b = 7; C = 60°` → triângulo completo (graus; dois no ambíguo);
+  5. identidade: prova ou contraexemplo.
+  - Aguardando a revisão. Próxima: Fase 11 (UX e histórico).
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -510,8 +548,8 @@ cd frontend && npm test && npm run build
   assets do Swagger localmente (hoje vêm do jsDelivr); ESLint no frontend;
   limite de tamanho do corpo HTTP antes da leitura; carregar o KaTeX sob
   demanda (o JS tem 490 kB); exibir decimais com vírgula; seletor de operação
-  na interface (feito na Fase 5); sistemas não lineares; equações
-  trigonométricas; divisão com várias variáveis; provedor Ollama (quando
+  na interface (feito na Fase 5); sistemas não lineares; divisão com várias
+  variáveis; provedor Ollama (quando
   instalado); regras locais para "o dobro de" e "a metade de"; comparação de
   métodos para integrais com limites irracionais e trigonométricas;
   continuidade lateral em pontos de borda; texto simples de ln; estatística:
@@ -522,8 +560,10 @@ cd frontend && npm test && npm run build
   trapézio, polígonos regulares, setor, pirâmide/prisma, distância ponto-reta,
   pontos com nome; probabilidade: fatorial com variáveis, fatorial duplo,
   permutação circular, outras distribuições, tabela/gráfico da binomial, mais
-  de dois eventos, probabilidades irracionais; resumir o texto de ajuda da
-  calculadora (Fase 11).
+  de dois eventos, probabilidades irracionais; trigonometria: inequações,
+  completude de sin(x) = cos(x), graus/minutos/segundos, área pelos senos,
+  intervalo para soluções finitas; resumir o texto de ajuda da calculadora
+  (Fase 11).
 
 ## Histórico
 
@@ -572,3 +612,7 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Fase 10.6 (trigonometria):** sec/csc/cot; equações periódicas com solução
+  geral, intervalo e completude por redução a polinômio; intent
+  `trigonometry` (conversão, redução, identidade, triângulo); bug do SymPy
+  em tan contornado; 1 563 testes no backend e 274 no frontend.
