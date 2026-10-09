@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-09, Fase 11.3 (tema escuro e acessibilidade) concluída, aguardando revisão.
+> Última atualização: 2026-10-09, Fase 11.4 (editor visual MathLive) concluída; a Fase 11 termina com ela.
 
 ## O que é
 
@@ -56,7 +56,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
 | 10: Matemática avançada | concluída e commitada (último domínio, trigonometria: `4ce1830`) |
-| 11: UX e histórico | por etapas; 11.1 (`893f165`) e 11.2 (`17d2705`) commitadas; **11.3 (tema + acessibilidade) concluída, aguardando revisão**; falta 11.4 MathLive |
+| 11: UX e histórico | 11.1 (`893f165`), 11.2 (`17d2705`) e 11.3 (`ccd2225`) commitadas; **11.4 (MathLive) concluída, aguardando revisão e commit** |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -338,6 +338,14 @@ Backend, continuação:
     "Pular para o resultado" → `#result-area` (`tabIndex -1`); Esc limpa;
     anúncio curto em `role="status"` (o resultado não é mais `aria-live`);
     `prefers-reduced-motion`.
+- **Editor visual** ([ADR 0020](docs/decisions/0020-editor-visual.md)):
+  `mathlive` 0.111.1 fixo, `import()` sob demanda (pedaço de 801 kB);
+  `fontsDirectory = null` (fontes KaTeX da página) e `soundsDirectory = null`:
+  nenhuma requisição externa; `math-field` estilizado no `index.css` (regra da
+  página vence `:host`; estilo inline não pegou); `latexToInput` próprio
+  (frac, sqrt, sqrt[n], ^{}, °, abs, `\sin x`, `\log_{b}`) → "Será
+  calculado"; teclado `mathVirtualKeyboardPolicy = "auto"`; nos testes o
+  MathLive é um `vi.mock` com um custom element falso.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -568,7 +576,10 @@ cd frontend && npm test && npm run build
   por etapa**; histórico: últimos 50, só neste navegador; ajuda recolhível.
   - 11.1 e 11.2 commitadas; 11.3 (tema Sistema/Claro/Escuro no topo +
     contraste, foco, teclado, leitores de tela, movimento reduzido) concluída,
-    aguardando revisão. Falta 11.4 MathLive.
+    aguardando revisão.
+  - 11.4 (editor visual: botão lembrado, teclado em toque, "Será calculado")
+    concluída, aguardando revisão. **Fase 11 completa.** Próxima: Fase 12
+    (assistente: pedidos compostos → ExecutionPlan com passos verificados).
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -642,6 +653,8 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Fase 11.4 (editor visual):** MathLive sob demanda, sem requisições
+  externas, conversor LaTeX próprio; 326 testes no frontend.
 - **Fase 11.3 (tema e acessibilidade):** paleta espelhada, contraste calculado
   nos dois temas, foco, teclado, anúncios, movimento reduzido; 303 testes no
   frontend.

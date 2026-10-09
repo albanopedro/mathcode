@@ -83,6 +83,15 @@
   --color-violet-950: oklch(96.9% 0.016 293.756);
 }
 
+/* The visual editor (MathLive, ADR 0020) sits in our own box: no background or
+   border of its own, and the text color of the theme. Page rules beat :host. */
+math-field {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  --caret-color: currentColor;
+}
+
 /* A visible focus ring on everything that can be focused with the keyboard. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--color-sky-600);

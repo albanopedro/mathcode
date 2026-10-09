@@ -21,7 +21,7 @@ Regras gerais:
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
 | 10 | Matemática avançada | concluída |
-| 11 | UX e histórico | em andamento: 11.1–11.3 feitas (11.3 aguardando revisão); falta MathLive |
+| 11 | UX e histórico | concluída: 11.1–11.4 (11.4 aguardando revisão) |
 | 12 | Assistente matemático | — |
 
 ## Fase 0 — Auditoria e arquitetura
@@ -407,7 +407,16 @@ todos os itens, um por etapa.**
   temas (nenhuma falha; bordas dos campos corrigidas para 3:1); link de pular,
   Esc, anúncio curto; gráfico no tema.
 - **Testes:** 303 no frontend (eram 293).
-- **Próxima etapa:** MathLive.
+
+### 11.4 — Editor visual MathLive (feita)
+
+- **Decidido** ([ADR 0020](decisions/0020-editor-visual.md)): botão "Editor
+  visual" (lembrado), teclado matemático em telas de toque, conversão mostrada
+  em "Será calculado".
+- **Entregue:** MathLive sob demanda (pedaço próprio), sem requisições externas;
+  conversor LaTeX → sintaxe próprio e testado; Enter calcula.
+- **Testes:** 326 no frontend (eram 303).
+- **Próxima fase:** 12 (assistente matemático).
 
 ## Fase 12 — Assistente matemático
 
@@ -443,6 +452,7 @@ determinística.
   como sin(x) = cos(x); graus, minutos e segundos; área do triângulo pelos
   senos; filtrar por intervalo as equações com soluções finitas.
 - Histórico: exportar/importar, busca, favoritos.
+- Editor visual: matrizes, volta texto → editor mais fiel, teclado com sen/tg.
 - Acessibilidade: axe-core no CI, alto contraste, tamanho de fonte.
 - Aproximação com mais de 15 algarismos (a API devolveria mais dígitos).
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer

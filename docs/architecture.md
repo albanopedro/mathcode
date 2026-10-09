@@ -284,6 +284,7 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | histórico e copiar (Fase 11, ADR 0017) | `utils/history.ts` + `hooks/useHistory.ts`: os últimos 50 cálculos no `localStorage` (`mathcode.history.v1`), sem nunca lançar erro; `components/HistoryPanel.tsx` (refazer, apagar, limpar com confirmação); `components/CopyButtons.tsx` (texto e LaTeX); `components/HelpText.tsx` (linha curta + "Ver exemplos") |
 | exato ↔ aproximado (Fase 11, ADR 0018) | `utils/approximation.ts` (`formatApprox`: algarismos significativos e vírgula, número a número) + `hooks/useDisplay.ts` (`mathcode.display.v1`); botões "Exato / Aproximado" e "Algarismos" (2–15) no `ResultView`, só quando há `approx` |
 | tema e acessibilidade (Fase 11, ADR 0019) | paleta espelhada em `:root.dark` (`index.css`), `utils/theme.ts` + `hooks/useTheme.ts` (`mathcode.theme.v1`, segue o sistema), script no `index.html` contra a piscada, `ThemeSelector` no topo; foco visível global, link "Pular para o resultado", Esc limpa o campo, anúncio curto em `role="status"`, movimento reduzido; gráfico com cores do tema |
+| editor visual (Fase 11, ADR 0020) | `components/MathEditor.tsx` (MathLive 0.111.1 via `import()`, fontes KaTeX da página, sem sons, teclado só em toque); `utils/latexToInput.ts` (LaTeX → sintaxe da calculadora, mostrado em "Será calculado"); `utils/editor.ts` (`mathcode.editor.v1`) |
 | `components/InterpretationNote.tsx` | como a frase foi lida: pelas regras locais (discreto) ou pela IA (destacado, com o modelo e "Confira se é o que você pediu"); textos montados em `utils/interpretation.ts` |
 | `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
 | `components/GraphView.tsx` | carrega o Plotly **sob demanda** (`import()`), desenha linhas (cortes como `null`, `connectgaps: false`) e pontos; sem envio à nuvem; `utils/graph.ts` valida os `details` e monta traços e layout |
@@ -392,6 +393,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0020](decisions/0020-editor-visual.md) | Editor visual MathLive (Fase 11, etapa 4): sob demanda, sem nada de fora, conversor LaTeX próprio |
 | [0019](decisions/0019-tema-e-acessibilidade.md) | Tema escuro (paleta espelhada) e acessibilidade (contraste calculado, foco, teclado, leitores de tela, movimento reduzido) |
 | [0018](decisions/0018-exato-aproximado.md) | Exato ↔ aproximado (Fase 11, etapa 2): botão na manchete, 2–15 algarismos, vírgula decimal |
 | [0017](decisions/0017-ux-historico.md) | UX (Fase 11, etapa 1): histórico local de 50 cálculos, copiar texto/LaTeX, ajuda recolhível |

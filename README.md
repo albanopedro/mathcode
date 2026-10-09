@@ -5,8 +5,8 @@ cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
 informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
 pedido: nunca é ela que calcula.
 
-> **Estado: Fase 10 (matemática avançada) concluída: estatística, matrizes,
-> vetores, geometria, probabilidade e trigonometria.**
+> **Estado: Fase 11 (UX) concluída: histórico, copiar, exato ↔ aproximado,
+> tema escuro, acessibilidade e editor visual. Próxima: Fase 12.**
 > Pelo navegador ou pela API, o Mathcode já: calcula; simplifica, fatora e expande; resolve equações
 > (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
 > deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;

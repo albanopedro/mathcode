@@ -3,11 +3,14 @@ import { type FormEvent, useState } from "react";
 import { type CalculatorState, useCalculator } from "../hooks/useCalculator";
 import { useHistory } from "../hooks/useHistory";
 import type { MathResult } from "../types/math";
+import { loadEditor, saveEditor } from "../utils/editor";
 import type { HistoryEntry } from "../utils/history";
+import { latexToInput } from "../utils/latexToInput";
 import { buildOptions, EMPTY_FIELDS, type FieldValues, OPERATIONS } from "../utils/operations";
 import { ErrorView } from "./ErrorView";
 import { HelpText } from "./HelpText";
 import { HistoryPanel } from "./HistoryPanel";
+import { MathEditor } from "./MathEditor";
 import { OperationFields } from "./OperationFields";
 import { ResultView } from "./ResultView";
 
@@ -16,6 +19,9 @@ export function Calculator() {
   const [operationIndex, setOperationIndex] = useState(0);
   const [fields, setFields] = useState<FieldValues>(EMPTY_FIELDS);
   const [allowAi, setAllowAi] = useState(false);
+  // The visual editor (MathLive) writes the text below; the text is what is sent.
+  const [visual, setVisual] = useState(() => loadEditor());
+  const [editorKey, setEditorKey] = useState(0); // a new editor starts from the text
   const operation = OPERATIONS[operationIndex] ?? OPERATIONS[0]!;
   const { state, submit } = useCalculator();
   const history = useHistory();
@@ -46,6 +52,7 @@ export function Calculator() {
       OPERATIONS.findIndex((option) => option.intent === entry.intent),
     );
     setInput(entry.input);
+    setEditorKey((key) => key + 1);
     setOperationIndex(index);
     setFields(entry.fields);
     setAllowAi(entry.allowAi);
@@ -73,10 +80,37 @@ export function Calculator() {
           </select>
         </div>
         <OperationFields operation={operation} values={fields} onChange={setFields} />
-        <label htmlFor="expression" className="text-sm font-medium text-slate-700">
-          Expressão ou equação
-        </label>
+        <div className="flex items-center justify-between gap-2">
+          <label htmlFor={visual ? undefined : "expression"} className="text-sm font-medium text-slate-700">
+            Expressão ou equação
+          </label>
+          <button
+            type="button"
+            aria-pressed={visual}
+            onClick={() => {
+              saveEditor(!visual);
+              setVisual(!visual);
+            }}
+            className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+          >
+            Editor visual
+          </button>
+        </div>
         <div className="flex flex-col gap-2 sm:flex-row">
+          {visual ? (
+            <div className="min-w-0 flex-1">
+              <MathEditor
+                key={editorKey}
+                initial={input}
+                onLatex={(latex) => setInput(latexToInput(latex))}
+                onSubmit={() => {
+                  if (input.trim() !== "" && !loading) {
+                    void run(input, operationIndex, fields, allowAi);
+                  }
+                }}
+              />
+            </div>
+          ) : (
           <input
             id="expression"
             type="text"
@@ -95,6 +129,7 @@ export function Calculator() {
             aria-describedby="expression-help"
             className="min-w-0 flex-1 rounded-lg border border-slate-500 bg-white px-4 py-3 font-mono text-lg shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
           />
+          )}
           <button
             type="submit"
             disabled={!canSubmit}
@@ -103,6 +138,14 @@ export function Calculator() {
             {loading ? "Calculando…" : "Calcular"}
           </button>
         </div>
+        {visual && (
+          <p className="text-sm text-slate-600">
+            Será calculado:{" "}
+            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-800">
+              {input || "…"}
+            </code>
+          </p>
+        )}
         <HelpText id="expression-help" />
         {operation.intent === null && (
           <div className="flex items-start gap-2 text-sm">
