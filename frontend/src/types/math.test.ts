@@ -23,6 +23,22 @@ describe("isMathResult", () => {
     ["a failure with a value", { ...fixtures.parseError, result: valid.result }],
     ["a non-numeric position", { ...fixtures.parseError, error: { code: "X", message: "y", position: "3" } }],
     ["a missing interpretation", { ...valid, interpretation: undefined }],
+    ["a missing plan", { ...valid, plan: undefined }],
+    [
+      "a step whose result is not a result",
+      { ...fixtures.assistantList, plan: [{ ...fixtures.assistantList.plan[0], result: {} }] },
+    ],
+    [
+      "a step with a plan of its own",
+      {
+        ...fixtures.assistantList,
+        plan: [{ ...fixtures.assistantList.plan[0], result: fixtures.assistantList }],
+      },
+    ],
+    [
+      "a step of an unknown intent",
+      { ...fixtures.assistantList, plan: [{ ...fixtures.assistantList.plan[0], intent: "magic" }] },
+    ],
     [
       "the old report format (checks as text)",
       { ...valid, verification: { status: "verified_symbolic", method: "x", checks: ["ok"], message: "m" } },

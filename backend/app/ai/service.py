@@ -7,8 +7,11 @@ timeout is for calculations. At most ``CONCURRENCY`` calls run at once.
 import asyncio
 
 from app.ai.base import AIError, AIProvider, IntentCandidate
+from app.assistant import run_plan
 from app.core.errors import ErrorCode
 from app.core.workers import WorkerPool
+from app.interpreter.planner import ExecutionPlan, PlanStep
+from app.models.intents import IntentName
 from app.models.result import Interpretation, MathResult, ResultError
 
 CONCURRENCY = 2
@@ -55,7 +58,25 @@ class AIService:
             provider=self.provider.name,
             model=self.provider.model,
         )
-        if candidate.intent is None or candidate.clarification:
+        if candidate.steps and not candidate.clarification:
+            # A compound request (ADR 0021): the AI only listed the steps.
+            plan = ExecutionPlan(
+                tuple(
+                    PlanStep(step.title, step.intent, step.expression, dict(step.options))
+                    for step in candidate.steps
+                ),
+                candidate.expression,
+                "ai",
+            )
+            interpretation = interpretation.model_copy(
+                update={"intent": IntentName.ASSISTANT, "options": {}}
+            )
+            return await run_plan(text, plan, pool, interpretation)
+        if (
+            candidate.intent is None
+            or candidate.intent is IntentName.ASSISTANT
+            or candidate.clarification
+        ):
             return _failure(
                 text,
                 ErrorCode.AMBIGUOUS_INPUT,

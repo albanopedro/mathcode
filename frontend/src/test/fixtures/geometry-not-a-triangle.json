@@ -13,5 +13,6 @@
     "message": "Esses lados não formam um triângulo: cada lado precisa ser menor que a soma dos outros dois.",
     "position": null
   },
-  "interpretation": null
+  "interpretation": null,
+  "plan": []
 }

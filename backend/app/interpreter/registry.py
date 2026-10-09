@@ -17,6 +17,7 @@ from app.formatting.results import (
     present_derivative,
     present_division,
     present_equation,
+    present_extrema,
     present_factor,
     present_geometry,
     present_graph,
@@ -34,6 +35,7 @@ from app.math_engine.algebra import divide, expand, factor, simplify
 from app.math_engine.arithmetic import evaluate
 from app.math_engine.calculus import derivative, integral, limit
 from app.math_engine.equations import solve_equation
+from app.math_engine.extrema import extrema
 from app.math_engine.geometry import geometry
 from app.math_engine.graphing import graph
 from app.math_engine.matrices import matrices
@@ -46,6 +48,7 @@ from app.models.intents import (
     ArithmeticParams,
     DerivativeParams,
     ExpandParams,
+    ExtremaParams,
     FactorParams,
     GeometryParams,
     GraphParams,
@@ -67,6 +70,7 @@ from app.verification.algebra import verify_division, verify_factor, verify_rewr
 from app.verification.arithmetic import verify_arithmetic
 from app.verification.calculus import verify_derivative, verify_integral, verify_limit
 from app.verification.equations import verify_equation, verify_system
+from app.verification.extrema import verify_extrema
 from app.verification.geometry import verify_geometry
 from app.verification.graphing import verify_graph
 from app.verification.matrices import verify_matrices
@@ -164,5 +168,6 @@ REGISTRY: dict[IntentName, IntentSpec[Any, Any]] = {
             verify_trigonometry,
             present_trigonometry,
         ),
+        IntentSpec(IntentName.EXTREMA, ExtremaParams, extrema, verify_extrema, present_extrema),
     )
 }

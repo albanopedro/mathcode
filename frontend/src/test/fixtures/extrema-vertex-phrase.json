@@ -1,0 +1,85 @@
+{
+  "success": true,
+  "intent": "extrema",
+  "input": "vértice de x^2 - 4x + 3",
+  "normalized_input": "x^2 - 4*x + 3",
+  "result": {
+    "plain": "V = (2, -1), mínimo",
+    "latex": "V = \\left(2,\\ -1\\right)\\ \\text{(mínimo)}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "derivative": {
+      "plain": "2*x - 4",
+      "latex": "2 x - 4"
+    },
+    "points": [
+      {
+        "x": "2",
+        "x_latex": "2",
+        "x_approx": null,
+        "y": "-1",
+        "y_latex": "-1",
+        "y_approx": null,
+        "kind": "min"
+      }
+    ],
+    "vertex": true
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Um segundo derivador (regras de derivação, sem o SymPy) obtém a mesma derivada f'(x) = 2*x - 4."
+      },
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Em f'(x) = 0: Substituindo a solução na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Em f'(x) = 0: Pelo teorema de Sturm, o polinômio 2*x - 4 tem exatamente 1 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "x = 2 é mínimo local: comparando f no ponto com f em x = 1 e x = 3 (sem outro ponto crítico no meio), pelo avaliador independente."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O valor de f no ponto crítico foi recalculado pelo avaliador independente na expressão original, e coincide em 30 algarismos."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Pela fórmula do vértice, x = −b/(2a) = 2, o mesmo ponto; a = 1 > 0, então a parábola tem a concavidade para cima e o vértice é mínimo local."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "substitution",
+      "completeness",
+      "numeric"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "extrema",
+    "expression": "x^2 - 4x + 3",
+    "options": {},
+    "provider": null,
+    "model": null
+  },
+  "plan": []
+}

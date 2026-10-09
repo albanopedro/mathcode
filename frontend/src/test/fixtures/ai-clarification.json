@@ -20,5 +20,6 @@
     "options": {},
     "provider": "mock",
     "model": "mock"
-  }
+  },
+  "plan": []
 }

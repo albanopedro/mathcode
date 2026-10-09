@@ -13,5 +13,6 @@
     "message": "A matriz é singular (determinante 0), então não tem inversa.",
     "position": null
   },
-  "interpretation": null
+  "interpretation": null,
+  "plan": []
 }

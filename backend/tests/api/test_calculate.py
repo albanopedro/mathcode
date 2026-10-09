@@ -41,6 +41,7 @@ def test_json_shape(api: TestClient) -> None:
         "warnings",
         "error",
         "interpretation",
+        "plan",
     }
     assert data["interpretation"] is None  # plain math, not a phrase
     assert data["result"] == {"plain": "3/10", "latex": r"\frac{3}{10}", "approx": "0.3"}
@@ -380,3 +381,51 @@ def test_an_equation_needs_both_ends_of_the_interval(api: TestClient) -> None:
     )
     assert status == 200
     assert "início e o fim" in data["error"]["message"]
+
+
+# -- the assistant (Phase 12, ADR 0021) ------------------------------------------------------
+
+
+def test_a_compound_request_runs_its_steps_in_the_pool(api: TestClient) -> None:
+    status, data = post(api, {"input": "raízes, vértice e gráfico de x^2 - 4x + 3"})
+
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.success and result.intent == "assistant"
+    assert [step.title for step in result.plan] == ["Raízes", "Vértice", "Gráfico"]
+    assert all(step.result.success for step in result.plan)
+    assert result.plan[1].result.result is not None
+    assert result.plan[1].result.result.plain == "V = (2, -1), mínimo"
+    assert result.verification is not None
+    assert result.verification.status == "verified_numeric"  # the graph's roots
+    assert result.interpretation is not None and result.interpretation.method == "rules"
+
+
+def test_the_assistant_operation_explains_what_it_understands(api: TestClient) -> None:
+    status, data = post(api, {"input": "2 + 2", "intent": "assistant"})
+
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert not result.success
+    assert result.error is not None and "estude a função" in result.error.message
+
+
+def test_the_assistant_takes_no_options(api: TestClient) -> None:
+    body = {"input": "estude a função x^2", "intent": "assistant", "options": {"variable": "x"}}
+    result = MathResult.model_validate(post(api, body)[1])
+    assert result.error is not None and result.error.code == "INVALID_INPUT_FOR_INTENT"
+
+
+def test_a_plan_that_is_not_about_a_function_is_explained(api: TestClient) -> None:
+    result = MathResult.model_validate(post(api, {"input": "raízes e derivada de x + y"})[1])
+    assert result.error is not None and result.error.code == "AMBIGUOUS_INPUT"
+
+
+def test_extrema_through_the_api(api: TestClient) -> None:
+    status, data = post(api, {"input": "máximos e mínimos de x^3 - 3x"})
+
+    assert status == 200
+    result = MathResult.model_validate(data)
+    assert result.intent == "extrema" and result.verification is not None
+    assert result.verification.status == "verified_symbolic"
+    assert [p["kind"] for p in result.details["points"]] == ["max", "min"]

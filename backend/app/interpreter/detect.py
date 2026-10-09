@@ -13,6 +13,7 @@ from app.models.intents import (
     ArithmeticParams,
     DerivativeParams,
     ExpandParams,
+    ExtremaParams,
     FactorParams,
     GeometryParams,
     GraphParams,
@@ -62,6 +63,7 @@ _TEXT_FIELD: dict[IntentName, tuple[type[BaseModel], str]] = {
     IntentName.GEOMETRY: (GeometryParams, "measures"),
     IntentName.PROBABILITY: (ProbabilityParams, "data"),
     IntentName.TRIGONOMETRY: (TrigonometryParams, "expression"),
+    IntentName.EXTREMA: (ExtremaParams, "expression"),
 }
 
 # User-facing explanation of an invalid option.
@@ -122,6 +124,13 @@ def interpret(
             raise MathError(
                 ErrorCode.UNSUPPORTED_INTENT, f"Operação desconhecida: '{intent}'."
             ) from None
+
+    if name is IntentName.ASSISTANT:
+        # Plans are made before interpretation (app.calculator, app.api): a step is never one.
+        raise MathError(
+            ErrorCode.UNSUPPORTED_INTENT,
+            "O assistente monta um plano de vários cálculos; ele não é um passo.",
+        )
 
     unknown = sorted(set(options) - INTENT_OPTIONS.get(name, frozenset()))
     if unknown:

@@ -10,6 +10,9 @@
  * In Phase 9, both were re-captured by replaying those same answers (no new
  * AI call): only the verification changed, and ai-equation keeps the real
  * provider and model in its interpretation.
+ *
+ * In Phase 12 every response gained "plan" (empty outside the assistant): it was
+ * added to the older files as [], exactly what the API now returns for them.
  */
 import type { MathResult } from "../../types/math";
 import aiClarification from "./ai-clarification.json";
@@ -18,6 +21,9 @@ import aiUnavailable from "./ai-unavailable.json";
 import allReals from "./all-reals.json";
 import allRealsExcept from "./all-reals-except.json";
 import arithmetic from "./arithmetic.json";
+import assistantHelp from "./assistant-help.json";
+import assistantList from "./assistant-list.json";
+import assistantStudy from "./assistant-study.json";
 import countingArithmetic from "./counting-arithmetic.json";
 import geometryCircle from "./geometry-circle.json";
 import geometryClassify from "./geometry-classify.json";
@@ -48,6 +54,8 @@ import divisionByZero from "./division-by-zero.json";
 import doubleRoot from "./double-root.json";
 import equation from "./equation.json";
 import expand from "./expand.json";
+import extremaCubic from "./extrema-cubic.json";
+import extremaVertexPhrase from "./extrema-vertex-phrase.json";
 import factor from "./factor.json";
 import factorUnchanged from "./factor-unchanged.json";
 import noSolution from "./no-solution.json";
@@ -87,6 +95,11 @@ import vectorZeroUnit from "./vector-zero-unit.json";
 import warnings from "./warnings.json";
 
 const raw = {
+  assistantHelp,
+  assistantList,
+  assistantStudy,
+  extremaCubic,
+  extremaVertexPhrase,
   trigConvert,
   trigIdentityFalse,
   trigOutsideDomain,

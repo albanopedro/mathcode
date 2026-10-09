@@ -87,7 +87,7 @@ _KEYWORD = (
     r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor|inversa|transposta|traco|posto"
     r"|norma|modulo|comprimento|vetor|versor|produto|angulo"
     r"|perimetro|volume|distancia|ponto|reta|equacao|hipotenusa|cateto|classificacao"
-    r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo"
+    r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo|extremo"
     r"|fatorial|permutac(?:ao|oes)|arranjos?|combinac(?:ao|oes)|anagramas|binomial"
     r"|distribuicao|angulos|triangulo|reducao|identidade|quadrante)"
 )
@@ -568,12 +568,26 @@ def _triangle(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     return _trigonometry("triangle", text, rule)
 
 
-def _future(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
-    raise MathError(
-        ErrorCode.UNSUPPORTED_FEATURE,
-        "Pontos como vértice e máximo de uma função ainda não são suportados; eles estão "
-        "previstos para as próximas etapas.",
-    )
+# "f(x) = x² − 4" and "y = x² − 4" name the function; the name is not part of it.
+_FUNCTION_NAME = re.compile(r"\s*(?:[fgh]\s*\(\s*[a-z]\s*\)|y)\s*=\s*")
+
+
+def function_text(text: str) -> tuple[str, int]:
+    """The function without "f(x) =" or "y =" in front, and how many characters were cut."""
+    named = _FUNCTION_NAME.match(_fold(text))
+    if named is None or "=" in text[named.end() :]:
+        return text, 0
+    return text[named.end() :], named.end()
+
+
+def _extrema(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    expr = _grab(found, request, "expr") or ""
+    text, cut = function_text(expr)
+    options: Options = {}
+    if found.group("var"):
+        options["variable"] = found.group("var")
+    offset = found.start("expr") + cut + (len(expr) - len(expr.lstrip()))
+    return LanguageMatch(IntentName.EXTREMA, text, options, offset=offset, rule=rule)
 
 
 # -- rules, in order ------------------------------------------------------------------------------
@@ -749,9 +763,17 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
         _geometry_without_figure,
     ),
     (
-        "future",
-        re.compile(r"(?:vertice|maximo|minimo)\b.*"),
-        _future,
+        "extrema",
+        re.compile(
+            r"(?:(?:os\s+)?pontos?\s+(?:de\s+)?)?"
+            r"(?:vertice|extremos?|criticos?|maximos?\s+e\s+(?:os?\s+)?minimos?"
+            r"|minimos?\s+e\s+(?:os?\s+)?maximos?"
+            r"|maximos?|minimos?)"
+            r"(?:\s+(?:locais|local|relativos?))?"
+            r"(?:\s+(?:de|da|do))?(?:\s+(?:funcao|parabola|polinomio|curva))?"
+            rf"\s+(?P<expr>.+?){_VAR}"
+        ),
+        _extrema,
     ),
     (
         "derivative",

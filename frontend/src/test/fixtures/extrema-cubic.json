@@ -1,0 +1,87 @@
+{
+  "success": true,
+  "intent": "extrema",
+  "input": "x^3 - 3x",
+  "normalized_input": "x^3 - 3*x",
+  "result": {
+    "plain": "máximo local em x = -1: f = 2; mínimo local em x = 1: f = -2",
+    "latex": "\\begin{aligned} \\text{máximo local} &\\ \\left(-1,\\ 2\\right) \\\\ \\text{mínimo local} &\\ \\left(1,\\ -2\\right) \\end{aligned}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "variable": "x",
+    "derivative": {
+      "plain": "3*x^2 - 3",
+      "latex": "3 x^{2} - 3"
+    },
+    "points": [
+      {
+        "x": "-1",
+        "x_latex": "-1",
+        "x_approx": null,
+        "y": "2",
+        "y_latex": "2",
+        "y_approx": null,
+        "kind": "max"
+      },
+      {
+        "x": "1",
+        "x_latex": "1",
+        "x_approx": null,
+        "y": "-2",
+        "y_latex": "-2",
+        "y_approx": null,
+        "kind": "min"
+      }
+    ],
+    "vertex": false
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Um segundo derivador (regras de derivação, sem o SymPy) obtém a mesma derivada f'(x) = 3*x^2 - 3."
+      },
+      {
+        "kind": "substitution",
+        "outcome": "passed",
+        "message": "Em f'(x) = 0: Substituindo cada uma das 2 soluções na equação original, os dois lados ficam iguais (de forma exata e pelo avaliador independente)."
+      },
+      {
+        "kind": "completeness",
+        "outcome": "passed",
+        "message": "Em f'(x) = 0: Pelo teorema de Sturm, o polinômio 3*x^2 - 3 tem exatamente 2 raiz(es) real(is) distinta(s), e todas foram consideradas."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "x = -1 é máximo local: comparando f no ponto com f em x = -2 e x = 0 (sem outro ponto crítico no meio), pelo avaliador independente."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "x = 1 é mínimo local: comparando f no ponto com f em x = 0 e x = 2 (sem outro ponto crítico no meio), pelo avaliador independente."
+      },
+      {
+        "kind": "numeric",
+        "outcome": "passed",
+        "message": "O valor de f em cada um dos 2 pontos críticos foi recalculado pelo avaliador independente na expressão original, e coincide em 30 algarismos."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "substitution",
+      "completeness",
+      "numeric"
+    ]
+  },
+  "warnings": [],
+  "error": null,
+  "interpretation": null,
+  "plan": []
+}

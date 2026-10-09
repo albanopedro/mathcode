@@ -6,7 +6,13 @@ import type { MathResult } from "../types/math";
 import { loadEditor, saveEditor } from "../utils/editor";
 import type { HistoryEntry } from "../utils/history";
 import { latexToInput } from "../utils/latexToInput";
-import { buildOptions, EMPTY_FIELDS, type FieldValues, OPERATIONS } from "../utils/operations";
+import {
+  buildOptions,
+  EMPTY_FIELDS,
+  type FieldValues,
+  OPERATIONS,
+  takesAi,
+} from "../utils/operations";
 import { ErrorView } from "./ErrorView";
 import { HelpText } from "./HelpText";
 import { HistoryPanel } from "./HistoryPanel";
@@ -30,8 +36,8 @@ export function Calculator() {
 
   async function run(text: string, index: number, values: FieldValues, ai: boolean) {
     const chosen = OPERATIONS[index] ?? OPERATIONS[0]!;
-    // The AI only reads phrases whose operation is detected (Automático).
-    const allow = chosen.intent === null && ai;
+    // The AI only reads phrases in Automático and Assistente.
+    const allow = takesAi(chosen.intent) && ai;
     const result = await submit(text, chosen.intent, buildOptions(chosen, values), allow);
     if (result) {
       history.add({ input: text, intent: chosen.intent, fields: values, allowAi: allow }, result);
@@ -147,7 +153,7 @@ export function Calculator() {
           </p>
         )}
         <HelpText id="expression-help" />
-        {operation.intent === null && (
+        {takesAi(operation.intent) && (
           <div className="flex items-start gap-2 text-sm">
             <input
               id="allow-ai"

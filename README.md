@@ -5,8 +5,9 @@ cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
 informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
 pedido: nunca é ela que calcula.
 
-> **Estado: Fase 11 (UX) concluída: histórico, copiar, exato ↔ aproximado,
-> tema escuro, acessibilidade e editor visual. Próxima: Fase 12.**
+> **Estado: Fase 12 concluída, a última do plano: o assistente resolve pedidos
+> compostos ("raízes, vértice e gráfico de f", "estude a função f") passo a
+> passo, cada passo verificado; máximos, mínimos e vértice.**
 > Pelo navegador ou pela API, o Mathcode já: calcula; simplifica, fatora e expande; resolve equações
 > (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
 > deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;
@@ -84,6 +85,8 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Calcular | `C(4, 2)/C(52, 2)` ou `5!` |
 | Resolver equação (soluções de `0` até `4pi`) | `sin(x) = 1/2` |
 | Trigonometria (cálculo: Resolver triângulo) | `a = 5; b = 7; A = 30°` |
+| Máximos e mínimos | `x³ - 3x` ou `x² - 4x + 3` (vértice) |
+| Automático (assistente) | `raízes, vértice e gráfico de x² - 4x + 3` ou `estude a função x³ - 3x` |
 | Automático (frase) | `qual a derivada de x^3 - 2x?`, `15% de 780`, `integral de x^2 de 0 a 1`, `qual a média de 10, 20 e 30?`, `determinante de [[1, 2], [3, 4]]`, `ângulo entre os vetores [1, 0] e [1, 1]`, `qual a área de um círculo de raio 5?`, `quantos anagramas tem a palavra BANANA?`, `reduza 150° ao primeiro quadrante`, `tan(x) = sin(x) é uma identidade?` |
 
 Em desenvolvimento, o Vite encaminha `/api` para o backend na porta 8100, então

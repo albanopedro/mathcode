@@ -21,8 +21,8 @@ Regras gerais:
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
 | 10 | Matemática avançada | concluída |
-| 11 | UX e histórico | concluída: 11.1–11.4 (11.4 aguardando revisão) |
-| 12 | Assistente matemático | — |
+| 11 | UX e histórico | concluída |
+| 12 | Assistente matemático | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -416,13 +416,31 @@ todos os itens, um por etapa.**
 - **Entregue:** MathLive sob demanda (pedaço próprio), sem requisições externas;
   conversor LaTeX → sintaxe próprio e testado; Enter calcula.
 - **Testes:** 326 no frontend (eram 303).
-- **Próxima fase:** 12 (assistente matemático).
 
-## Fase 12 — Assistente matemático
+## Fase 12 — Assistente matemático (feita)
 
 Pedidos compostos ("raízes, vértice e gráfico de f(x)") viram um
 `ExecutionPlan` com vários passos. Cada passo é executado e verificado de forma
 determinística.
+
+- **Decidido** ([ADR 0021](decisions/0021-assistente-e-extremos.md)):
+  - a lista com "e", mais o estudo da função;
+  - regras locais, com a IA opcional;
+  - um cartão com os passos;
+  - o Automático detecta, e a operação "Assistente" força;
+  - vértice e extremos entram como um cálculo novo, e o domínio vira sugestão.
+- **Entregue:**
+  - **intent `extrema`:** pontos críticos pelo motor de equações (Sturm),
+    classificados pelo teste da derivada primeira, e o vértice da parábola. A
+    verificação usa um segundo derivador, a equação f' = 0, os valores pelo
+    avaliador independente, a comparação com os vizinhos e a fórmula −b/(2a);
+  - **planejador por regras:** até 6 passos, com o estudo = raízes, f(0),
+    derivada, extremos e gráfico;
+  - **execução:** os passos rodam em paralelo no pool, e a verificação do
+    conjunto é a do passo mais fraco;
+  - **IA:** pode devolver `steps`;
+  - **frontend:** cartão com passos numerados e operações novas.
+- **Testes:** 1 643 no backend (eram 1 563) e 344 no frontend (eram 326).
 
 ## Sugestões registradas (fora do escopo atual)
 
@@ -455,5 +473,8 @@ determinística.
 - Editor visual: matrizes, volta texto → editor mais fiel, teclado com sen/tg.
 - Acessibilidade: axe-core no CI, alto contraste, tamanho de fonte.
 - Aproximação com mais de 15 algarismos (a API devolveria mais dígitos).
+- Assistente: domínio de uma função; passos encadeados ("derive e ache onde a
+  derivada zera"); extremos de funções periódicas e com módulo; máximo e mínimo
+  absolutos num intervalo; inflexão e concavidade; assíntotas no estudo.
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

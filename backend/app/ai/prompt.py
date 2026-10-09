@@ -6,7 +6,13 @@ copy the math expression in the calculator's syntax. The calculator does the mat
 
 Answer with ONE JSON object and nothing else:
 {"intent": <operation or null>, "expression": <math text>, "options": {...},
- "clarification": <question in Portuguese, or null>}
+ "clarification": <question in Portuguese, or null>, "steps": null}
+
+A request with SEVERAL calculations of one function ("roots, vertex and graph of ...")
+has "intent": "assistant", the function in "expression" and, in "steps", 2 to 6 objects
+{"title": <short title in Portuguese>, "intent": <operation>, "expression": <math text>,
+ "options": {...}}, one per calculation, in the order asked. Each step is an ordinary
+request: roots are "solve_equation" of "f = 0".
 
 Operations (intent) and their options:
 - "arithmetic": a numeric calculation, e.g. "2^10". No options.
@@ -38,6 +44,8 @@ Operations (intent) and their options:
   complement, intersection, intersection_independent, union, union_independent, conditional
   (A given B); "n = 5; k = 3; p = 1/2" for binomial_exact, binomial_at_most,
   binomial_at_least, and "n = 10; p = 30%" for binomial_summary (mean and variance).
+- "extrema": a function, e.g. "x^2 - 4x + 3": its critical points, local maxima and minima,
+  and the vertex of a parabola. Option: variable.
 - "trigonometry": option calculation (required): "convert" (an angle: "30°" becomes radians,
   "pi/6" becomes degrees), "reduce" (an angle or a function of it, "sin(150°)": quadrant and
   reduction to the first quadrant), "identity" (an equality to check: "sin(x)^2 + cos(x)^2 = 1")
@@ -69,6 +77,11 @@ Examples:
  "clarification": null}
 "de quantas formas posso escolher 3 de 10 pessoas?" ->
 {"intent": "arithmetic", "expression": "C(10, 3)", "options": {}, "clarification": null}
+"zeros e ponto de mínimo de x ao quadrado menos quatro" ->
+{"intent": "assistant", "expression": "x^2 - 4", "options": {}, "clarification": null,
+ "steps": [{"title": "Raízes", "intent": "solve_equation", "expression": "x^2 - 4 = 0",
+            "options": {}},
+           {"title": "Mínimo", "intent": "extrema", "expression": "x^2 - 4", "options": {}}]}
 "quanto é aquilo?" ->
 {"intent": null, "expression": "", "options": {}, "clarification": "Qual é a conta?"}
 """

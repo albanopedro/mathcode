@@ -13,5 +13,6 @@
     "message": "A IA não está ativada neste servidor (MATHCODE_AI_PROVIDER). Escreva a expressão ou use frases como \"derivada de x^2\".",
     "position": null
   },
-  "interpretation": null
+  "interpretation": null,
+  "plan": []
 }

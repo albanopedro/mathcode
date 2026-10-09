@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-09, Fase 11.4 (editor visual MathLive) concluída; a Fase 11 termina com ela.
+> Última atualização: 2026-10-09, Fase 12 (assistente e extremos) concluída: a última fase do prompt mestre.
 
 ## O que é
 
@@ -56,7 +56,8 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
 | 10: Matemática avançada | concluída e commitada (último domínio, trigonometria: `4ce1830`) |
-| 11: UX e histórico | 11.1 (`893f165`), 11.2 (`17d2705`) e 11.3 (`ccd2225`) commitadas; **11.4 (MathLive) concluída, aguardando revisão e commit** |
+| 11: UX e histórico | concluída e commitada (11.1 `893f165`, 11.2 `17d2705`, 11.3 `ccd2225`, 11.4 `9487586`) |
+| 12: Assistente matemático | **concluída, aguardando revisão e commit** (ADR 0021) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -66,7 +67,9 @@ um repositório embutido (gitlink). A correção sugerida é
 ## Arquitetura em uma tela
 
 ```
-[API] allow_ai + needs_ai → ai/service.py (OpenCode, fora do pool) → IntentCandidate
+[API] pedido composto → interpreter/planner.py → ExecutionPlan → assistant.run_plan (passos em
+      paralelo no pool) → MathResult com `plan` (Fase 12; sem SymPy no processo da API)
+[API] allow_ai + needs_ai → ai/service.py (OpenCode, fora do pool) → IntentCandidate (ou `steps`)
 texto → interpreter/language.py (frases em PT → intent + texto matemático)
       → parsing/ (normalize → tokenizer → parser Pratt → AST → build SymPy)
       → interpreter/ (detect: ";" → solve_system; "=" → solve_equation; com variável → simplify;
@@ -346,6 +349,33 @@ Backend, continuação:
   (frac, sqrt, sqrt[n], ^{}, °, abs, `\sin x`, `\log_{b}`) → "Será
   calculado"; teclado `mathVirtualKeyboardPolicy = "auto"`; nos testes o
   MathLive é um `vi.mock` com um custom element falso.
+- **Assistente e extremos** ([ADR 0021](docs/decisions/0021-assistente-e-extremos.md)):
+  - intent `extrema`, `ExtremaParams(expression, variable?)`: f' pelo SymPy →
+    texto por `formatting.parser_text` (escreve **ln**; o `plain` escreve
+    `log`, que na entrada é base 10) → `solve_equation` (Sturm) → teste da
+    derivada primeira (vizinhos = outros críticos + polos de f'; ponto de teste
+    se aproxima perto da borda do domínio); reta → `equation None`; periódico,
+    módulo, várias variáveis, constante → erro explicado; f não racional →
+    aviso `NOT_DIFFERENTIABLE_POINTS`; parábola → vértice;
+  - verificação: 2º derivador × equação resolvida, `verify_equation` de
+    f' = 0 (prefixo "Em f'(x) = 0:"), f(x₀) pelo avaliador, comparação com os
+    pontos de teste, −b/(2a);
+  - `interpreter/planner.py` (sem SymPy/mpmath): lista com "e" (raízes,
+    vértice, extremos, derivada, 2ª derivada, integral, gráfico, fatoração,
+    f(0)) ou estudo ("estude/analise/estudo da função": raízes, f(0), derivada,
+    extremos, gráfico); repetidos viram um; **um passo só → None** (regras
+    comuns); até 6; `f(x) =`/`y =` saem (`language.function_text`);
+  - `app/assistant.py`: `run_plan` (API, `asyncio.gather` no pool) e
+    `compose`/`summarize` (status do passo mais fraco; `not_applicable` só
+    sozinho; checagens com "Título: " na frente); `calculator.calculate` faz o
+    mesmo em processo, em sequência; `interpret()` recusa `assistant`;
+  - API: plano sem `intent` ou com `assistant`, sem `options`; Assistente sem
+    plano → IA (se permitida) ou explicação; IA pode devolver `steps`
+    (`StepCandidate`, até 6, nunca `assistant`);
+  - `MathResult.plan: list[PlanStepResult]` (vazio fora do assistente); um
+    plano todo falho é erro com os passos; frontend: `ResultBody` (corpo
+    separado do `ResultView`), `PlanSteps`, `ErrorView` com passos; operações
+    "Assistente" e "Máximos e mínimos"; "Permitir IA" via `takesAi`.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -358,7 +388,8 @@ Backend, continuação:
     `showSendToCloud: false` (vinha ligado por padrão e enviaria o gráfico
     à nuvem).
 - **Passos de resolução:** a lista `steps` fica vazia até existirem regras
-  reais. O SymPy não gera passos.
+  reais. O SymPy não gera passos. (O `plan` da Fase 12 é outra coisa: os
+  cálculos de um pedido composto.)
 - **Respostas HTTP** (architecture §5):
   - erro de matemática (inclusive `TIMEOUT`) é `200` com `success: false`;
   - `422` é requisição malformada, no formato `detail` do FastAPI;
@@ -446,7 +477,13 @@ Backend, continuação:
 - `sp.simplify` em raízes `CRootOf` pode levar minutos (polinômio mínimo). Use
   divisibilidade (`equations._substitutes_exactly`).
 - O texto simples (`formatting/expressions.plain`) escreve ln como `log`, que
-  na entrada é base 10. Pendência registrada, fora do escopo da Fase 9.
+  na entrada é base 10. Pendência registrada. Para reler uma expressão pelo
+  parser, use `formatting.parser_text` (Fase 12), que escreve `ln`.
+- `MathResult.plan` é recursivo (`PlanStepResult.result: MathResult`): o
+  `model_rebuild()` fica no fim de `models/result.py`. As fixtures antigas do
+  frontend receberam `"plan": []`.
+- Nos testes do Calculator, `getAllByRole("listitem")` pega também os itens
+  das checagens: ache os passos pelo nome (`{ name: "1. Raízes" }`).
 - No `user-event` (Vitest), `[` abre um nome de tecla: para digitar um colchete,
   use `[[` (o helper `calculateText` já escapa).
 - Em seletores CSS, `\d...` vira escape hexadecimal: para comparar LaTeX, leia
@@ -578,8 +615,12 @@ cd frontend && npm test && npm run build
     contraste, foco, teclado, leitores de tela, movimento reduzido) concluída,
     aguardando revisão.
   - 11.4 (editor visual: botão lembrado, teclado em toque, "Será calculado")
-    concluída, aguardando revisão. **Fase 11 completa.** Próxima: Fase 12
-    (assistente: pedidos compostos → ExecutionPlan com passos verificados).
+    commitada (`9487586`). **Fase 11 completa.**
+- **Fase 12 (assistente).** Decisões do usuário (2026-10-09): lista com "e" +
+  estudo da função; regras locais + IA opcional; um cartão com os passos;
+  Automático detecta + operação "Assistente"; vértice e extremos como cálculo
+  novo verificado; domínio vira sugestão. Concluída, aguardando revisão. **Era a
+  última fase do prompt mestre.**
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -604,7 +645,9 @@ cd frontend && npm test && npm run build
   de dois eventos, probabilidades irracionais; trigonometria: inequações,
   completude de sin(x) = cos(x), graus/minutos/segundos, área pelos senos,
   intervalo para soluções finitas; resumir o texto de ajuda da calculadora
-  (Fase 11).
+  (Fase 11); assistente: domínio, passos encadeados, extremos periódicos/com
+  módulo, máximo/mínimo absolutos num intervalo, inflexão e concavidade,
+  assíntotas.
 
 ## Histórico
 
@@ -653,6 +696,11 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Fase 12 (assistente e extremos):** intent `extrema` (Sturm + teste da
+  derivada primeira + vértice, verificado por 2º derivador, avaliador e
+  −b/(2a)); planejador por regras (lista e estudo), passos em paralelo no
+  pool, verificação do passo mais fraco; IA pode listar passos; cartão com
+  passos no frontend; 1 643 testes no backend e 344 no frontend.
 - **Fase 11.4 (editor visual):** MathLive sob demanda, sem requisições
   externas, conversor LaTeX próprio; 326 testes no frontend.
 - **Fase 11.3 (tema e acessibilidade):** paleta espelhada, contraste calculado

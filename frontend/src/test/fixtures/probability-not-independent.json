@@ -13,5 +13,6 @@
     "message": "A e B não são independentes: P(A ∩ B) = 1/5, mas P(A) · P(B) = 1/6.",
     "position": null
   },
-  "interpretation": null
+  "interpretation": null,
+  "plan": []
 }

@@ -13,5 +13,6 @@
     "message": "Divisão por zero.",
     "position": 6
   },
-  "interpretation": null
+  "interpretation": null,
+  "plan": []
 }

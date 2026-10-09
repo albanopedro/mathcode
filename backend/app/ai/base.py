@@ -7,16 +7,34 @@ the safe parser, the options through the intent's schema. Whatever number the
 model may "know" is ignored: the Math Engine calculates.
 """
 
-from typing import Protocol
+from typing import Protocol, Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.core.limits import MAX_INPUT_LENGTH
+from app.interpreter.planner import MAX_STEPS
 from app.models.intents import IntentName, OptionValue
 
 
 class AIError(Exception):
     """The provider could not interpret the request (not a math error)."""
+
+
+class StepCandidate(BaseModel):
+    """One step of a compound request (Phase 12, ADR 0021): a request of its own."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    title: str = Field(min_length=1, max_length=60)
+    intent: IntentName
+    expression: str = Field(max_length=4 * MAX_INPUT_LENGTH)
+    options: dict[str, OptionValue] = Field(default_factory=dict, max_length=8)
+
+    @model_validator(mode="after")
+    def _not_nested(self) -> Self:
+        if self.intent is IntentName.ASSISTANT:
+            raise ValueError("a step cannot be a plan")
+        return self
 
 
 class IntentCandidate(BaseModel):
@@ -28,6 +46,9 @@ class IntentCandidate(BaseModel):
     options: dict[str, OptionValue] = Field(default_factory=dict, max_length=8)
     # A question for the user when the request is ambiguous or not math.
     clarification: str | None = Field(default=None, max_length=300)
+    # A compound request: intent "assistant", the function in ``expression``, and
+    # the calculations here; each one is calculated and verified like a request.
+    steps: list[StepCandidate] | None = Field(default=None, min_length=1, max_length=MAX_STEPS)
 
 
 class AIProvider(Protocol):

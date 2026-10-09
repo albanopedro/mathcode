@@ -20,7 +20,10 @@ export type IntentName =
   | "vector"
   | "geometry"
   | "probability"
-  | "trigonometry";
+  | "trigonometry"
+  | "extrema"
+  /** A compound request: a plan of steps, each one of the intents above (ADR 0021). */
+  | "assistant";
 
 export type VerificationStatus =
   | "verified_symbolic"
@@ -117,6 +120,18 @@ export interface MathResult {
   error: ResultError | null;
   /** Null for plain math; set when the input was a phrase. */
   interpretation: Interpretation | null;
+  /** The steps of a compound request (Phase 12), each with its own full result. */
+  plan: PlanStepResult[];
+}
+
+export interface PlanStepResult {
+  /** "Raízes", "Derivada"... */
+  title: string;
+  intent: IntentName;
+  /** The text calculated in this step. */
+  input: string;
+  options: Record<string, string | number>;
+  result: MathResult;
 }
 
 const INTENTS: readonly string[] = [
@@ -137,6 +152,8 @@ const INTENTS: readonly string[] = [
   "geometry",
   "probability",
   "trigonometry",
+  "extrema",
+  "assistant",
 ];
 const STATUSES: readonly string[] = [
   "verified_symbolic",
@@ -212,15 +229,28 @@ const isError = (value: unknown): value is ResultError =>
 
 const isIntent = (value: unknown) => isString(value) && INTENTS.includes(value);
 
+const isOptions = (value: unknown) =>
+  isObject(value) &&
+  Object.values(value).every((option) => isString(option) || typeof option === "number");
+
 const isInterpretation = (value: unknown): value is Interpretation =>
   isObject(value) &&
   (value.method === "rules" || value.method === "ai") &&
   (value.intent === null || isIntent(value.intent)) &&
   isString(value.expression) &&
-  isObject(value.options) &&
-  Object.values(value.options).every((option) => isString(option) || typeof option === "number") &&
+  isOptions(value.options) &&
   isNullableString(value.provider) &&
   isNullableString(value.model);
+
+// A step's result is a whole MathResult; steps never have plans of their own.
+const isPlanStep = (value: unknown): value is PlanStepResult =>
+  isObject(value) &&
+  isString(value.title) &&
+  isIntent(value.intent) &&
+  isString(value.input) &&
+  isOptions(value.options) &&
+  isMathResult(value.result) &&
+  value.result.plan.length === 0;
 
 /** Runtime check of an API response: the frontend never trusts the shape blindly. */
 export function isMathResult(value: unknown): value is MathResult {
@@ -238,11 +268,12 @@ export function isMathResult(value: unknown): value is MathResult {
     (value.verification === null || isVerification(value.verification)) &&
     isArrayOf(value.warnings, isMessage) &&
     (value.error === null || isError(value.error)) &&
-    (value.interpretation === null || isInterpretation(value.interpretation));
+    (value.interpretation === null || isInterpretation(value.interpretation)) &&
+    isArrayOf(value.plan, isPlanStep);
   if (!shapeOk) {
     return false;
   }
-  // Same consistency rule as the backend model.
+  // Same consistency rule as the backend model (a failed plan keeps its steps).
   return value.success
     ? value.result !== null && value.verification !== null && value.error === null
     : value.result === null && value.error !== null;

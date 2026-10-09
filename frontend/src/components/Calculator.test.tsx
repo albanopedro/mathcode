@@ -1072,3 +1072,76 @@ describe("Calculator: keyboard and screen readers", () => {
     expect(statuses.some((text) => text?.startsWith("Erro:"))).toBe(true);
   });
 });
+
+describe("Calculator: assistant and extrema (Phase 12)", () => {
+  it("shows each step of a plan with its own result and verification", async () => {
+    answer(fixtures.assistantList);
+    await calculateText("raízes, vértice e gráfico de x^2 - 4x + 3");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByLabelText("Interpretação da frase")).toHaveTextContent(
+      "Frase interpretada pelas regras locais como Assistente: x^2 - 4x + 3.",
+    );
+    expect(
+      within(result).getByText("3 de 3 passos calculados, para f = x^2 - 4x + 3."),
+    ).toBeInTheDocument();
+    const list = within(result).getByRole("list", { name: "Passos" });
+    const steps = ["1. Raízes", "2. Vértice", "3. Gráfico"].map((name) =>
+      within(list).getByRole("listitem", { name }),
+    );
+    expect(latexOf(steps[1]!).join(" ")).toContain("V = \\left(2,\\ -1\\right)");
+    expect(within(steps[0]!).getByText("Resultado verificado simbolicamente.")).toBeInTheDocument();
+    // The whole plan is summed up too: the weakest step decides.
+    expect(
+      within(result).getByText("Passos verificados; conferido numericamente em: Gráfico."),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the other steps when one fails", async () => {
+    answer(fixtures.assistantStudy);
+    await calculateText("estude a função 1/x");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const step = within(result).getByRole("listitem", { name: "2. Valor em x = 0" });
+    expect(step).toHaveTextContent("Não foi possível calcular: Divisão por zero.");
+    expect(
+      within(result).getByRole("listitem", { name: "4. Máximos e mínimos" }),
+    ).toHaveTextContent("A derivada não se anula");
+  });
+
+  it("offers the Assistente operation, with the AI box", async () => {
+    answer(fixtures.assistantHelp);
+    const user = await calculateText("2 + 2", "Assistente");
+
+    expect(screen.getByRole("checkbox", { name: "Permitir IA" })).toBeInTheDocument();
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({ input: "2 + 2", intent: "assistant" });
+    expect(await screen.findByRole("alert")).toHaveTextContent(/estude a função x\^3 - 3x/);
+    await user.clear(screen.getByLabelText("Expressão ou equação"));
+  });
+
+  it("shows maxima and minima with the derivative", async () => {
+    answer(fixtures.extremaCubic);
+    await calculateText("x^3 - 3x", "Máximos e mínimos");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    const latex = latexOf(result).join(" ");
+    expect(latex).toContain("\\text{máximo local}");
+    expect(latex).toContain("\\text{mínimo local}");
+    expect(latex).toContain("f'(x) = 3 x^{2} - 3");
+    expect(within(result).getByText(/classificado pelo sinal da derivada/)).toBeInTheDocument();
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({ input: "x^3 - 3x", intent: "extrema" });
+  });
+
+  it("names the vertex of a parabola", async () => {
+    answer(fixtures.extremaVertexPhrase);
+    await calculateText("vértice de x^2 - 4x + 3");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByLabelText("Interpretação da frase")).toHaveTextContent(
+      "como Máximos e mínimos: x^2 - 4x + 3",
+    );
+    expect(within(result).getByText(/único ponto crítico da parábola/)).toBeInTheDocument();
+  });
+});

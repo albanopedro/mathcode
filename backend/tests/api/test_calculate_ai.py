@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.ai.base import AIError, IntentCandidate
+from app.ai.base import AIError, IntentCandidate, StepCandidate
 from app.ai.mock import MockProvider
 from app.ai.service import AIService
 from app.models.result import MathResult
@@ -183,3 +183,63 @@ def test_allow_ai_must_be_a_boolean(api: TestClient) -> None:
     response = api.post("/api/calculate", json={"input": PHRASE, "allow_ai": "sim"})
 
     assert response.status_code == 422
+
+
+def test_the_ai_can_list_the_steps_of_a_compound_request(api: TestClient, use_ai: UseAI) -> None:
+    phrase = "zeros e ponto de mínimo de x ao quadrado menos quatro"
+    use_ai(
+        {
+            phrase: IntentCandidate(
+                intent="assistant",
+                expression="x^2 - 4",
+                steps=[
+                    StepCandidate(
+                        title="Raízes", intent="solve_equation", expression="x^2 - 4 = 0"
+                    ),
+                    StepCandidate(title="Mínimo", intent="extrema", expression="x^2 - 4"),
+                ],
+            )
+        }
+    )
+
+    result = post(api, {"input": phrase, "allow_ai": True})
+
+    assert result.success and result.intent == "assistant"
+    assert [step.title for step in result.plan] == ["Raízes", "Mínimo"]
+    assert result.plan[1].result.result is not None
+    assert result.plan[1].result.result.plain == "V = (0, -4), mínimo"
+    assert result.interpretation is not None
+    assert result.interpretation.method == "ai" and result.interpretation.intent == "assistant"
+
+
+def test_a_step_from_the_ai_is_validated_like_any_request(api: TestClient, use_ai: UseAI) -> None:
+    phrase = "raízes e derivada de algo estranho"
+    use_ai(
+        {
+            phrase: IntentCandidate(
+                intent="assistant",
+                expression="x^2",
+                steps=[
+                    StepCandidate(title="Derivada", intent="derivative", expression="x^2"),
+                    StepCandidate(
+                        title="Ruim", intent="derivative", expression="x^2", options={"order": 99}
+                    ),
+                ],
+            )
+        }
+    )
+
+    result = post(api, {"input": phrase, "allow_ai": True})
+
+    assert result.success  # the good step
+    assert result.plan[1].result.error is not None
+    assert result.plan[1].result.error.code == "INVALID_INPUT_FOR_INTENT"
+
+
+def test_the_assistant_operation_asks_the_ai_when_allowed(api: TestClient, use_ai: UseAI) -> None:
+    mock = use_ai({PHRASE: IntentCandidate(intent="arithmetic", expression="2 * 7")})
+
+    result = post(api, {"input": PHRASE, "intent": "assistant", "allow_ai": True})
+
+    assert mock is not None and mock.calls == [PHRASE]
+    assert result.success and result.intent == "arithmetic"

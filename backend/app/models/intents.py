@@ -36,6 +36,9 @@ class IntentName(StrEnum):
     GEOMETRY = "geometry"
     PROBABILITY = "probability"
     TRIGONOMETRY = "trigonometry"
+    EXTREMA = "extrema"
+    # A compound request: a plan of steps, each one of the intents above (ADR 0021).
+    ASSISTANT = "assistant"
 
 
 class _Params(BaseModel):
@@ -244,6 +247,13 @@ class TrigonometryParams(_Params):
     calculation: TrigonometryCalculation
 
 
+class ExtremaParams(_Params):
+    """Critical points of f, each one a local maximum, minimum or neither (ADR 0021)."""
+
+    expression: str
+    variable: str | None = Field(default=None, pattern=_VARIABLE)
+
+
 type IntentParams = (
     ArithmeticParams
     | SimplifyParams
@@ -262,6 +272,7 @@ type IntentParams = (
     | GeometryParams
     | ProbabilityParams
     | TrigonometryParams
+    | ExtremaParams
 )
 
 # Options a request may carry for each intent, besides the input text.
@@ -277,6 +288,7 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.GEOMETRY: frozenset({"figure", "calculation"}),
     IntentName.PROBABILITY: frozenset({"calculation"}),
     IntentName.TRIGONOMETRY: frozenset({"calculation"}),
+    IntentName.EXTREMA: frozenset({"variable"}),
 }
 
 # An option value: a short text (variable, bound, point, side) or a small number

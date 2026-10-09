@@ -50,6 +50,12 @@ export interface Operation {
 /** The operation selector, in display order. */
 export const OPERATIONS: readonly Operation[] = [
   { intent: null, label: "Automático", placeholder: "Ex.: 2x + 5 = 17", fields: [] },
+  {
+    intent: "assistant",
+    label: "Assistente",
+    placeholder: "Ex.: raízes, vértice e gráfico de x² - 4x + 3",
+    fields: [],
+  },
   { intent: "arithmetic", label: "Calcular", placeholder: "Ex.: 0.1 + 0.2", fields: [] },
   { intent: "simplify", label: "Simplificar", placeholder: "Ex.: x² + 2x + x²", fields: [] },
   { intent: "factor", label: "Fatorar", placeholder: "Ex.: x² - 4 ou 360", fields: [] },
@@ -89,6 +95,12 @@ export const OPERATIONS: readonly Operation[] = [
     label: "Limite",
     placeholder: "Ex.: sen(x)/x",
     fields: ["variable", "point", "side"],
+  },
+  {
+    intent: "extrema",
+    label: "Máximos e mínimos",
+    placeholder: "Ex.: x³ - 3x ou x² - 4x + 3 (vértice)",
+    fields: ["variable"],
   },
   {
     intent: "graph",
@@ -153,7 +165,13 @@ export const INTENT_LABELS: Record<IntentName, string> = {
   geometry: "Geometria",
   probability: "Probabilidade",
   trigonometry: "Trigonometria",
+  extrema: "Máximos e mínimos",
+  assistant: "Assistente",
 };
+
+/** The operations whose phrases the AI may read (Automático and Assistente, ADR 0009/0021). */
+export const takesAi = (intent: IntentName | null): boolean =>
+  intent === null || intent === "assistant";
 
 /** What the extra inputs hold; empty texts mean "not given". */
 export interface FieldValues {

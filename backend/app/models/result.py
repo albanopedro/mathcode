@@ -144,6 +144,9 @@ class MathResult(BaseModel):
     error: ResultError | None = None
     # Set when the request was a phrase (Phase 8); None for plain math.
     interpretation: Interpretation | None = None
+    # A compound request (Phase 12, ADR 0021): each step calculated and verified
+    # on its own. The verification above sums them up; a failed step keeps its error.
+    plan: list[PlanStepResult] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _consistent(self) -> Self:
@@ -155,3 +158,16 @@ class MathResult(BaseModel):
         elif self.error is None or self.result is not None:
             raise ValueError("a failed result needs an error and no value")
         return self
+
+
+class PlanStepResult(BaseModel):
+    """One step of an assistant plan: what was asked, and its own full result."""
+
+    title: str  # "Raízes", "Derivada"...
+    intent: IntentName
+    input: str  # the text calculated in this step
+    options: dict[str, str | int] = Field(default_factory=dict)
+    result: MathResult
+
+
+MathResult.model_rebuild()

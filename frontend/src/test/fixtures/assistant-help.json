@@ -1,0 +1,18 @@
+{
+  "success": false,
+  "intent": "assistant",
+  "input": "2 + 2",
+  "normalized_input": null,
+  "result": null,
+  "steps": [],
+  "details": {},
+  "verification": null,
+  "warnings": [],
+  "error": {
+    "code": "INVALID_INPUT_FOR_INTENT",
+    "message": "O assistente entende pedidos com vários cálculos de uma função, como \"raízes, vértice e gráfico de x^2 - 4x + 3\", e o estudo completo, como \"estude a função x^3 - 3x\".",
+    "position": null
+  },
+  "interpretation": null,
+  "plan": []
+}

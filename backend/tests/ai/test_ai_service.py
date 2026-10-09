@@ -11,7 +11,7 @@ from pydantic import ValidationError
 
 from app.ai import build_provider, needs_ai
 from app.ai import service as service_module
-from app.ai.base import AIError, IntentCandidate
+from app.ai.base import AIError, IntentCandidate, StepCandidate
 from app.ai.mock import MockProvider
 from app.ai.opencode import OpencodeProvider
 from app.ai.service import CONCURRENCY, AIService
@@ -155,3 +155,14 @@ def test_the_server_process_never_imports_sympy() -> None:
     )
 
     assert done.stdout.strip() == "[]"
+
+
+def test_a_step_cannot_be_another_plan() -> None:
+    with pytest.raises(ValidationError):
+        StepCandidate(title="Plano", intent="assistant", expression="x")
+
+
+def test_at_most_six_steps_from_the_ai() -> None:
+    step = {"title": "Derivada", "intent": "derivative", "expression": "x^2"}
+    with pytest.raises(ValidationError):
+        IntentCandidate(intent="assistant", expression="x^2", steps=[step] * 7)

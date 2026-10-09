@@ -19,9 +19,23 @@ class _InputSyntaxPrinter(StrPrinter):
         return "e"
 
 
+class _ParserTextPrinter(_InputSyntaxPrinter):
+    """Text the safe parser reads back as the same expression: there, log is base 10."""
+
+    def _print_log(self, expr: sp.log) -> str:
+        if len(expr.args) != 1:
+            raise ValueError("a logarithm with a base has no input syntax")
+        return f"ln({self._print(expr.args[0])})"
+
+
 def plain(expr: sp.Expr) -> str:
     # Same power syntax the user types: x^2, not x**2.
     return _InputSyntaxPrinter().doprint(expr).replace("**", "^")
+
+
+def parser_text(expr: sp.Expr) -> str:
+    """``expr`` as input text that parses back to it (natural log as ln, ADR 0021)."""
+    return _ParserTextPrinter().doprint(expr).replace("**", "^")
 
 
 def latex(expr: sp.Expr) -> str:

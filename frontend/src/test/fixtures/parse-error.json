@@ -13,5 +13,6 @@
     "message": "A expressão está incompleta.",
     "position": 3
   },
-  "interpretation": null
+  "interpretation": null,
+  "plan": []
 }

@@ -1,5 +1,6 @@
 import type { MathResult, ResultError } from "../types/math";
 import { InterpretationNote } from "./InterpretationNote";
+import { PlanSteps } from "./PlanSteps";
 import { Verification } from "./Verification";
 
 interface ErrorViewProps {
@@ -18,6 +19,7 @@ export function ErrorView({ result, error }: ErrorViewProps) {
       {error.position !== null && <InputMarker input={result.input} position={error.position} />}
       {result.interpretation && <InterpretationNote interpretation={result.interpretation} />}
       {result.verification && <Verification report={result.verification} />}
+      {result.plan.length > 0 && <PlanSteps steps={result.plan} />}
     </div>
   );
 }

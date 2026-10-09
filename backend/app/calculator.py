@@ -12,10 +12,13 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from app.assistant import ASSISTANT_HELP, compose
 from app.core.errors import ErrorCode, MathError
+from app.core.limits import MAX_INPUT_LENGTH
 from app.core.notices import unique
 from app.interpreter.detect import Options, interpret
 from app.interpreter.language import match_language
+from app.interpreter.planner import plan_request
 from app.interpreter.registry import REGISTRY, IntentSpec
 from app.models.intents import IntentName
 from app.models.result import (
@@ -55,6 +58,10 @@ def calculate(
 ) -> MathResult:
     """``verify_until``: a ``time.monotonic()`` instant by which verification must end."""
     context = _Context(text)
+    if intent in (None, IntentName.ASSISTANT) and not options:
+        compound = _compound(text, intent, verify_until)
+        if compound is not None:
+            return compound
     try:
         math_text, math_intent, math_options = text, intent, options
         language = match_language(text) if intent is None else None
@@ -105,6 +112,41 @@ def calculate(
     except Exception:
         logger.exception("unexpected failure while calculating %r", text)
         return _failure(context, MathError(ErrorCode.INTERNAL_ERROR, "Erro interno ao calcular."))
+
+
+def _compound(text: str, intent: str | None, verify_until: float | None) -> MathResult | None:
+    """A compound request, one step after the other (Phase 12, ADR 0021).
+
+    The API runs the steps of a plan in parallel in the pool (``app.assistant.run_plan``);
+    this is the same plan in-process, so the pipeline answers it on its own too.
+    """
+    asked = intent == IntentName.ASSISTANT
+    try:
+        plan = plan_request(text) if len(text) <= MAX_INPUT_LENGTH else None
+    except MathError as error:
+        return _assistant_failure(text, error)
+    if plan is None:
+        if asked:
+            message = MathError(ErrorCode.INVALID_INPUT_FOR_INTENT, ASSISTANT_HELP)
+            return _assistant_failure(text, message)
+        return None
+    results = [
+        calculate(step.input, step.intent, step.options or None, verify_until)
+        for step in plan.steps
+    ]
+    interpretation = Interpretation(
+        method="rules", intent=IntentName.ASSISTANT, expression=plan.function
+    )
+    return compose(text, plan, results, interpretation)
+
+
+def _assistant_failure(text: str, error: MathError) -> MathResult:
+    return MathResult(
+        success=False,
+        intent=IntentName.ASSISTANT,
+        input=text,
+        error=ResultError(code=error.code, message=error.message),
+    )
 
 
 def _verify(spec: IntentSpec[Any, Any], outcome: Any, until: float | None) -> VerificationReport:

@@ -108,16 +108,25 @@ def test_the_math_text_is_cut_from_what_was_typed() -> None:
 
 
 @pytest.mark.parametrize(
-    "text",
+    ("text", "expr", "options"),
     [
-        "qual o máximo de x^2 - 4x?",
-        "qual o vértice dessa função?",
+        ("qual o máximo de x^2 - 4x?", "x^2 - 4x", {}),
+        ("vértice de x^2 - 4x + 3", "x^2 - 4x + 3", {}),
+        ("qual o vértice da parábola y = x² - 4x + 3?", "x² - 4x + 3", {}),
+        ("máximos e mínimos de x^3 - 3x", "x^3 - 3x", {}),
+        ("os extremos de f(x) = x^3 - 3x", "x^3 - 3x", {}),
+        ("pontos críticos de x^4 - 2x^2", "x^4 - 2x^2", {}),
+        ("mínimo local de x^2 + 1/x", "x^2 + 1/x", {}),
+        ("o máximo e o mínimo de x^3 - 3x", "x^3 - 3x", {}),
+        ("pontos de máximo e mínimo de t^3 - 3t em relação a t", "t^3 - 3t", {"variable": "t"}),
     ],
 )
-def test_future_features_are_explained(text: str) -> None:
-    with pytest.raises(MathError) as exc:
-        match_language(text)
-    assert exc.value.code is ErrorCode.UNSUPPORTED_FEATURE
+def test_extrema_phrases(text: str, expr: str, options: dict[str, str]) -> None:
+    found = match(text)
+    assert found.intent is I.EXTREMA
+    assert found.text == expr
+    assert found.options == options
+    assert found.offset is not None and text[found.offset :].startswith(expr)
 
 
 # -- through the whole pipeline -----------------------------------------------------------------
@@ -199,10 +208,11 @@ def test_statistics_summary_phrase() -> None:
     assert found is not None and found.intent is I.STATISTICS and found.options == {}
 
 
-def test_maximum_of_a_function_is_still_future() -> None:
-    with pytest.raises(MathError) as exc:
-        match_language("máximo de x^2 - 4x")
-    assert exc.value.code is ErrorCode.UNSUPPORTED_FEATURE
+def test_maximum_of_numbers_is_statistics_and_of_a_function_is_extrema() -> None:
+    numbers = match("máximo de 3, 5, 7")
+    function = match("máximo de x^2 - 4x")
+    assert numbers.intent is I.STATISTICS and numbers.options == {"measure": "max"}
+    assert function.intent is I.EXTREMA and function.text == "x^2 - 4x"
 
 
 def test_statistics_without_numbers_explains_the_format() -> None:

@@ -81,6 +81,11 @@ CASES: dict[IntentName, tuple[str, dict[str, str | int] | None, Tamper]] = {
         {"calculation": "union"},
         lambda o: replace(o, result=o.result + sp.Rational(1, 100)),
     ),
+    IntentName.EXTREMA: (
+        "x^3 - 3x",
+        None,
+        lambda o: replace(o, points=(replace(o.points[0], y=o.points[0].y + 1), *o.points[1:])),
+    ),
     IntentName.GRAPH: (
         "x^2 - 4x + 3",
         None,

@@ -33,8 +33,9 @@ Entrada (texto; LaTeX/MathJSON do MathLive na Fase 11)
   ▼  parsing/parser        tokenizer + Pratt → AST própria (sem eval)
   ▼  interpreter/          frases em PT (language.py) → detecta o intent +
   │                        extrai parâmetros; IA opcional antes, na API (ai/)
-  ▼  planner/              ExecutionPlan: lista de passos tipados (Fase 12;
-  │                        até lá, cada pedido é um passo só e não há planner)
+  ▼  interpreter/planner   pedido composto → ExecutionPlan, uma lista de pedidos
+  │                        comuns (Fase 12, ADR 0021); na API, os passos vão em
+  │                        paralelo para o pool e assistant.py junta os resultados
   ▼  math_engine/<domínio> executor do intent (SymPy), num worker isolado com
   │                        timeout (core/workers.py)
   ▼  verification/         estratégia do intent → VerificationReport
@@ -285,6 +286,7 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | exato ↔ aproximado (Fase 11, ADR 0018) | `utils/approximation.ts` (`formatApprox`: algarismos significativos e vírgula, número a número) + `hooks/useDisplay.ts` (`mathcode.display.v1`); botões "Exato / Aproximado" e "Algarismos" (2–15) no `ResultView`, só quando há `approx` |
 | tema e acessibilidade (Fase 11, ADR 0019) | paleta espelhada em `:root.dark` (`index.css`), `utils/theme.ts` + `hooks/useTheme.ts` (`mathcode.theme.v1`, segue o sistema), script no `index.html` contra a piscada, `ThemeSelector` no topo; foco visível global, link "Pular para o resultado", Esc limpa o campo, anúncio curto em `role="status"`, movimento reduzido; gráfico com cores do tema |
 | editor visual (Fase 11, ADR 0020) | `components/MathEditor.tsx` (MathLive 0.111.1 via `import()`, fontes KaTeX da página, sem sons, teclado só em toque); `utils/latexToInput.ts` (LaTeX → sintaxe da calculadora, mostrado em "Será calculado"); `utils/editor.ts` (`mathcode.editor.v1`) |
+| assistente e extremos (Fase 12, ADR 0021) | `MathResult.plan` (`PlanStepResult` validado como um `MathResult` sem plano); `components/PlanSteps.tsx` (passos numerados, cada um com um `ResultBody` ou o motivo da falha); `components/ResultBody.tsx` (o corpo de um resultado, separado do `ResultView`); operações "Assistente" e "Máximos e mínimos"; `utils/extrema.ts`; "Permitir IA" também no Assistente (`takesAi`) |
 | `components/InterpretationNote.tsx` | como a frase foi lida: pelas regras locais (discreto) ou pela IA (destacado, com o modelo e "Confira se é o que você pediu"); textos montados em `utils/interpretation.ts` |
 | `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
 | `components/GraphView.tsx` | carrega o Plotly **sob demanda** (`import()`), desenha linhas (cortes como `null`, `connectgaps: false`) e pontos; sem envio à nuvem; `utils/graph.ts` valida os `details` e monta traços e layout |
@@ -323,9 +325,9 @@ Mathcode/
 │   │   ├── core/               config, erros, avisos, limites, workers (pool)
 │   │   ├── models/             schemas Pydantic (MathResult...)
 │   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build
-│   │   ├── interpreter/        registry + detecção + frases em PT (language.py)
-│   │   ├── planner/            ExecutionPlan (Fase 12)
-│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics, matrices, vectors, geometry, probability, trigonometry, periodic
+│   │   ├── interpreter/        registry + detecção + frases em PT (language.py) + planner.py
+│   │   ├── assistant.py        executa o ExecutionPlan e junta os passos (Fase 12)
+│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics, matrices, vectors, geometry, probability, trigonometry, periodic, extrema
 │   │   ├── verification/       estratégias por intent + avaliador independente, frações exatas,
 │   │   │                       derivador próprio, continuidade, Newton–Leibniz, prazos
 │   │   ├── formatting/         plain/LaTeX/aproximação
@@ -393,6 +395,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0021](decisions/0021-assistente-e-extremos.md) | Assistente (Fase 12): pedidos compostos viram um plano de pedidos comuns, em paralelo, com verificação do passo mais fraco; intent `extrema` (pontos críticos pelo motor de equações, teste da derivada primeira, vértice) |
 | [0020](decisions/0020-editor-visual.md) | Editor visual MathLive (Fase 11, etapa 4): sob demanda, sem nada de fora, conversor LaTeX próprio |
 | [0019](decisions/0019-tema-e-acessibilidade.md) | Tema escuro (paleta espelhada) e acessibilidade (contraste calculado, foco, teclado, leitores de tela, movimento reduzido) |
 | [0018](decisions/0018-exato-aproximado.md) | Exato ↔ aproximado (Fase 11, etapa 2): botão na manchete, 2–15 algarismos, vírgula decimal |

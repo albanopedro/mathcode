@@ -13,5 +13,6 @@
     "message": "O vetor nulo não tem vetor unitário (a norma é 0).",
     "position": null
   },
-  "interpretation": null
+  "interpretation": null,
+  "plan": []
 }

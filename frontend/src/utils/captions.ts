@@ -52,6 +52,17 @@ export function captions(result: MathResult): string[] {
       }
       break;
     }
+    case "extrema": {
+      const points = Array.isArray(details.points) ? details.points : [];
+      if (points.length === 0) {
+        lines.push("A derivada não se anula: a função não tem máximo nem mínimo local.");
+      } else if (details.vertex === true) {
+        lines.push("O vértice é o único ponto crítico da parábola.");
+      } else {
+        lines.push("Cada ponto crítico foi classificado pelo sinal da derivada antes e depois dele.");
+      }
+      break;
+    }
     case "factor":
       if (details.changed === false) {
         lines.push("Não há fatoração sobre os racionais além desta forma.");

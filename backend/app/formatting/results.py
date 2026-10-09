@@ -7,7 +7,7 @@ from typing import Any
 
 import sympy as sp
 
-from app.formatting.expressions import approx, latex, plain
+from app.formatting.expressions import approx, latex, parser_text, plain
 from app.math_engine.algebra import DivisionOutcome, PrimeFactorization, RewriteOutcome
 from app.math_engine.arithmetic import ArithmeticOutcome
 from app.math_engine.calculus import (
@@ -18,6 +18,7 @@ from app.math_engine.calculus import (
     show_value,
 )
 from app.math_engine.equations import EquationOutcome, SolutionKind
+from app.math_engine.extrema import CriticalPoint, ExtremaOutcome
 from app.math_engine.geometry import Classification, GeometryOutcome, Line
 from app.math_engine.graphing import GraphOutcome
 from app.math_engine.matrices import MatrixOutcome, VectorValue
@@ -258,6 +259,93 @@ def present_division(outcome: DivisionOutcome) -> Presentation:
             "remainder": plain(r),
             "exact": r == 0,
         },
+    )
+
+
+# -- extrema (ADR 0021) ---------------------------------------------------------------------
+
+_POINT_KINDS = {
+    "max": "máximo local",
+    "min": "mínimo local",
+    "none": "sem extremo",
+    "unknown": "não classificado",
+}
+
+
+def _coordinate(value: sp.Expr) -> tuple[str, str]:
+    """(plain, latex) of a coordinate: exact, or approximate for roots with no radical form."""
+    if _is_exact_form(value):
+        return plain(value), latex(value)
+    shown = _short(value)
+    return f"≈ {shown}", rf"\approx {sp.N(value, 10)}"
+
+
+def _point_entry(point: CriticalPoint) -> dict[str, Any]:
+    x_plain, x_latex = _coordinate(point.x)
+    y_plain, y_latex = _coordinate(point.y)
+    return {
+        "x": x_plain,
+        "x_latex": x_latex,
+        "x_approx": approx(point.x),
+        "y": y_plain,
+        "y_latex": y_latex,
+        "y_approx": approx(point.y),
+        "kind": point.kind,
+    }
+
+
+def present_extrema(outcome: ExtremaOutcome) -> Presentation:
+    name = outcome.variable.name
+    entries = [_point_entry(p) for p in outcome.points]
+    details: dict[str, Any] = {
+        "variable": name,
+        # parser_text: ln, not log (which is base 10 in the input).
+        "derivative": {
+            "plain": parser_text(outcome.derivative),
+            "latex": latex(outcome.derivative),
+        },
+        "points": entries,
+        "vertex": outcome.quadratic,
+    }
+    approximations = [a for p in outcome.points for a in (approx(p.x), approx(p.y)) if a]
+    approx_text = (
+        "; ".join(f"({_short(p.x)}, {_short(p.y)})" for p in outcome.points)
+        if approximations
+        else None
+    )
+    if outcome.quadratic:
+        entry = entries[0]
+        kind = "mínimo" if outcome.points[0].kind == "min" else "máximo"
+        return Presentation(
+            ResultValue(
+                plain=f"V = ({entry['x']}, {entry['y']}), {kind}",
+                latex=rf"V = \left({entry['x_latex']},\ {entry['y_latex']}\right)"
+                rf"\ \text{{({kind})}}",
+                approx=approx_text,
+            ),
+            details,
+        )
+    if not entries:
+        return Presentation(
+            ResultValue(
+                plain="sem máximos nem mínimos locais",
+                latex=r"\text{sem máximos nem mínimos locais}",
+            ),
+            details,
+        )
+    plains, latexes = [], []
+    for entry in entries:
+        word = _POINT_KINDS[entry["kind"]]
+        plains.append(f"{word} em {name} = {entry['x']}: f = {entry['y']}")
+        latexes.append(rf"\text{{{word}}} &\ \left({entry['x_latex']},\ {entry['y_latex']}\right)")
+    joined = r" \\ ".join(latexes)
+    return Presentation(
+        ResultValue(
+            plain="; ".join(plains),
+            latex=rf"\begin{{aligned}} {joined} \end{{aligned}}",
+            approx=approx_text,
+        ),
+        details,
     )
 
 
