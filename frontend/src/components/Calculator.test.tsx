@@ -914,3 +914,101 @@ describe("Calculator: trigonometry", () => {
     expect(within(result).getByText(/lei dos senos \(caso ambíguo\)/)).toBeInTheDocument();
   });
 });
+
+describe("Calculator: history, copy and help", () => {
+  it("keeps each calculation and does it again from the history", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse(fixtures.equation))),
+    );
+    const user = await calculateText("2x + 5 = 17");
+    await screen.findByRole("region", { name: "Resultado" });
+
+    await user.click(screen.getByText("Histórico (1)"));
+    const list = screen.getByRole("list", { name: "Cálculos anteriores" });
+    expect(within(list).getByText("2x + 5 = 17")).toBeInTheDocument();
+    expect(within(list).getByText("= x = 6")).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("mathcode.history.v1")!)).toHaveLength(1);
+
+    await user.clear(screen.getByLabelText("Expressão ou equação"));
+    await user.click(within(list).getByRole("button", { name: "Refazer: 2x + 5 = 17" }));
+    expect(screen.getByLabelText("Expressão ou equação")).toHaveValue("2x + 5 = 17");
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  it("restores the operation and its fields", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse(fixtures.trigReduce))),
+    );
+    const user = await calculateText("cos(750°)", "Trigonometria");
+    await screen.findByRole("region", { name: "Resultado" });
+    await user.selectOptions(screen.getByLabelText("Operação"), "Automático");
+
+    await user.click(screen.getByText("Histórico (1)"));
+    await user.click(screen.getByRole("button", { name: "Refazer: cos(750°)" }));
+    expect(screen.getByLabelText("Operação")).toHaveDisplayValue("Trigonometria");
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[1]![1]!.body as string);
+    expect(body).toEqual({
+      input: "cos(750°)",
+      intent: "trigonometry",
+      options: { calculation: "convert" },
+    });
+  });
+
+  it("removes one entry, and clears all after confirming", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse(fixtures.arithmetic))),
+    );
+    const user = await calculateText("0.1 + 0.2");
+    await screen.findByRole("region", { name: "Resultado" });
+    await user.type(screen.getByLabelText("Expressão ou equação"), "1{Enter}");
+    await screen.findByText("Histórico (2)");
+
+    await user.click(screen.getByText("Histórico (2)"));
+    await user.click(screen.getByRole("button", { name: "Apagar do histórico: 0.1 + 0.21" }));
+    expect(screen.getByText("Histórico (1)")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Limpar histórico" }));
+    expect(screen.getByText("Histórico (1)")).toBeInTheDocument(); // not yet
+    await user.click(screen.getByRole("button", { name: "Confirmar: apagar tudo" }));
+    expect(screen.getByText("Histórico (0)")).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("mathcode.history.v1")!)).toEqual([]);
+  });
+
+  it("copies the result as text and as LaTeX", async () => {
+    answer(fixtures.trigPeriodic);
+    const writeText = vi.fn(() => Promise.resolve());
+    const user = await calculateText("sin(x) = 1/2");
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await screen.findByRole("region", { name: "Resultado" });
+
+    await user.click(screen.getByRole("button", { name: "Copiar texto" }));
+    expect(writeText).toHaveBeenLastCalledWith(fixtures.trigPeriodic.result!.plain);
+    expect(screen.getByText("Texto copiado.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Copiar LaTeX" }));
+    expect(writeText).toHaveBeenLastCalledWith(fixtures.trigPeriodic.result!.latex);
+  });
+
+  it("says when the browser blocks copying", async () => {
+    answer(fixtures.arithmetic);
+    const user = await calculateText("0.1 + 0.2");
+    const writeText = vi.fn(() => Promise.reject(new Error("blocked")));
+    Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+    await screen.findByRole("region", { name: "Resultado" });
+
+    await user.click(screen.getByRole("button", { name: "Copiar texto" }));
+    expect(await screen.findByText(/o navegador bloqueou/)).toBeInTheDocument();
+  });
+
+  it("keeps the help short, with examples on demand", async () => {
+    const user = userEvent.setup();
+    render(<Calculator />);
+    expect(screen.getByLabelText("Expressão ou equação")).toHaveAccessibleDescription(
+      /Use \^ para potência/,
+    );
+    await user.click(screen.getByText("Ver exemplos"));
+    expect(screen.getByText("Contagem")).toBeVisible();
+  });
+});

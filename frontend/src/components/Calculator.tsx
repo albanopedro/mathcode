@@ -1,9 +1,13 @@
 import { type FormEvent, useState } from "react";
 
 import { useCalculator } from "../hooks/useCalculator";
+import { useHistory } from "../hooks/useHistory";
 import type { MathResult } from "../types/math";
+import type { HistoryEntry } from "../utils/history";
 import { buildOptions, EMPTY_FIELDS, type FieldValues, OPERATIONS } from "../utils/operations";
 import { ErrorView } from "./ErrorView";
+import { HelpText } from "./HelpText";
+import { HistoryPanel } from "./HistoryPanel";
 import { OperationFields } from "./OperationFields";
 import { ResultView } from "./ResultView";
 
@@ -14,16 +18,38 @@ export function Calculator() {
   const [allowAi, setAllowAi] = useState(false);
   const operation = OPERATIONS[operationIndex] ?? OPERATIONS[0]!;
   const { state, submit } = useCalculator();
+  const history = useHistory();
   const loading = state.status === "loading";
   const canSubmit = input.trim() !== "" && !loading;
+
+  async function run(text: string, index: number, values: FieldValues, ai: boolean) {
+    const chosen = OPERATIONS[index] ?? OPERATIONS[0]!;
+    // The AI only reads phrases whose operation is detected (Automático).
+    const allow = chosen.intent === null && ai;
+    const result = await submit(text, chosen.intent, buildOptions(chosen, values), allow);
+    if (result) {
+      history.add({ input: text, intent: chosen.intent, fields: values, allowAi: allow }, result);
+    }
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (canSubmit) {
-      // The AI only reads phrases whose operation is detected (Automático).
-      const ai = operation.intent === null && allowAi;
-      void submit(input, operation.intent, buildOptions(operation, fields), ai);
+      void run(input, operationIndex, fields, allowAi);
     }
+  }
+
+  /** Fills the form with a past calculation and does it again. */
+  function redo(entry: HistoryEntry) {
+    const index = Math.max(
+      0,
+      OPERATIONS.findIndex((option) => option.intent === entry.intent),
+    );
+    setInput(entry.input);
+    setOperationIndex(index);
+    setFields(entry.fields);
+    setAllowAi(entry.allowAi);
+    void run(entry.input, index, entry.fields, entry.allowAi);
   }
 
   return (
@@ -71,14 +97,7 @@ export function Calculator() {
             {loading ? "Calculando…" : "Calcular"}
           </button>
         </div>
-        <p id="expression-help" className="text-sm text-slate-500">
-          Use ^ para potência, sqrt(x) ou √ para raiz e ° para graus. Separe argumentos
-          e as equações de um sistema com ;, como em log(8; 2) ou x + y = 3; x - y = 1.
-          Matrizes vão entre colchetes, uma linha por colchete: [[1, 2], [3, 4]]; vetores, num
-          colchete só: [1, 2, 3]; pontos, entre parênteses: (1, 2). Fatorial, combinação e
-          arranjo: 5!, C(10, 3) e A(6, 2). Frases simples também funcionam, como "derivada de
-          x^3", "média de 10, 20, 30", "área do círculo de raio 5" ou "anagramas de BANANA".
-        </p>
+        <HelpText id="expression-help" />
         {operation.intent === null && (
           <div className="flex items-start gap-2 text-sm">
             <input
@@ -116,6 +135,13 @@ export function Calculator() {
           </div>
         )}
       </div>
+
+      <HistoryPanel
+        entries={history.entries}
+        onRedo={redo}
+        onRemove={history.remove}
+        onClear={history.clear}
+      />
     </div>
   );
 }

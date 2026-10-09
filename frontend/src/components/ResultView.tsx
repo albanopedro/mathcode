@@ -9,6 +9,7 @@ import { INTENT_LABELS } from "../utils/operations";
 import { probabilityDetails, repeatedLetters } from "../utils/probability";
 import { listedLatex, periodicDetails, trigDetails } from "../utils/trigonometry";
 import { statisticsDetails } from "../utils/statistics";
+import { CopyButtons } from "./CopyButtons";
 import { GraphView } from "./GraphView";
 import { InterpretationNote } from "./InterpretationNote";
 import { MathFormula } from "./MathFormula";
@@ -73,6 +74,8 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
           <MathFormula latex={value.latex} display />
         </div>
       )}
+
+      <CopyButtons value={value} />
 
       {graph && <GraphView details={graph} />}
 

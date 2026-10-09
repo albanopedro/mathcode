@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-09, Fase 10: trigonometria concluída (aguardando revisão); a Fase 10 termina com ela.
+> Última atualização: 2026-10-09, Fase 11.1 (histórico, copiar, ajuda) concluída, aguardando revisão.
 
 ## O que é
 
@@ -55,7 +55,8 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 7: Gráficos | concluída e commitada (`978dab5`) |
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
-| 10: Matemática avançada | estatística, matrizes, vetores, geometria e probabilidade concluídos e commitados (`f5418fc`); **trigonometria concluída, aguardando revisão e commit** (último domínio) |
+| 10: Matemática avançada | concluída e commitada (último domínio, trigonometria: `4ce1830`) |
+| 11: UX e histórico | por etapas; **11.1 (histórico, copiar, ajuda) concluída, aguardando revisão**; faltam 11.2 exato ↔ aproximado, 11.3 dark mode + acessibilidade, 11.4 MathLive |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -316,6 +317,13 @@ Backend, continuação:
   - frontend: campos "Soluções de / até" em Resolver equação; Cálculo da
     trigonometria; `TrigonometryView`; triângulos e periódicas sempre em
     KaTeX (linhas curtas; manchete do triângulo só com formas exatas curtas).
+- **UX: histórico, copiar, ajuda** ([ADR 0017](docs/decisions/0017-ux-historico.md)):
+  - `utils/history.ts` (chave `mathcode.history.v1`, 50 itens, mais novo
+    primeiro, repetido sobe; ler/gravar nunca lançam; campos antigos recebem
+    `EMPTY_FIELDS`); `hooks/useHistory.ts`; `submit` do `useCalculator` devolve
+    o `MathResult`; `HistoryPanel` (refazer preenche operação/campos/texto e
+    recalcula; limpar pede confirmação na tela); `CopyButtons`; `HelpText`;
+  - `test/setup.ts` limpa o `localStorage` depois de cada teste.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -538,7 +546,11 @@ cd frontend && npm test && npm run build
   3. solução geral + as soluções de [0, 2π); campos De/Até mudam o intervalo;
   4. `a = 5; b = 7; C = 60°` → triângulo completo (graus; dois no ambíguo);
   5. identidade: prova ou contraexemplo.
-  - Aguardando a revisão. Próxima: Fase 11 (UX e histórico).
+  - Revisada e commitada pelo usuário (`4ce1830`).
+- **Fase 11 (UX).** Decisões do usuário (2026-10-09): todos os itens (histórico
+  + copiar, exato ↔ aproximado, dark mode + acessibilidade, MathLive), **um
+  por etapa**; histórico: últimos 50, só neste navegador; ajuda recolhível.
+  - 11.1 (histórico, copiar, ajuda) concluída; aguardando revisão.
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -612,6 +624,8 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Fase 11.1 (histórico, copiar, ajuda):** histórico local de 50 cálculos com
+  refazer, copiar texto/LaTeX, ajuda recolhível; 286 testes no frontend.
 - **Fase 10.6 (trigonometria):** sec/csc/cot; equações periódicas com solução
   geral, intervalo e completude por redução a polinômio; intent
   `trigonometry` (conversão, redução, identidade, triângulo); bug do SymPy

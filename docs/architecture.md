@@ -281,6 +281,7 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | `services/api.ts` | `calculate(input, intent?, options?, allowAi?)`: decide pelo **corpo**, não pelo status, porque 200, 500 e 503 trazem `MathResult`. Trata 502–504 sem corpo como API inacessível e 422 como pedido recusado |
 | `hooks/useCalculator.ts` | estados `idle`, `loading`, `done` e `failed` (este último sem `MathResult`, ou seja, erro de rede); cancela o pedido anterior |
 | `components/Calculator.tsx` | seletor de **operação** (`utils/operations.ts`: Automático ou um intent, com exemplo próprio), formulário (Enter envia; botão desativado com o campo vazio ou durante o cálculo), caixa **"Permitir IA"** (só no Automático, desmarcada, com o aviso de que a frase vai para um serviço externo) e região `aria-live` |
+| histórico e copiar (Fase 11, ADR 0017) | `utils/history.ts` + `hooks/useHistory.ts`: os últimos 50 cálculos no `localStorage` (`mathcode.history.v1`), sem nunca lançar erro; `components/HistoryPanel.tsx` (refazer, apagar, limpar com confirmação); `components/CopyButtons.tsx` (texto e LaTeX); `components/HelpText.tsx` (linha curta + "Ver exemplos") |
 | `components/InterpretationNote.tsx` | como a frase foi lida: pelas regras locais (discreto) ou pela IA (destacado, com o modelo e "Confira se é o que você pediu"); textos montados em `utils/interpretation.ts` |
 | `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
 | `components/GraphView.tsx` | carrega o Plotly **sob demanda** (`import()`), desenha linhas (cortes como `null`, `connectgaps: false`) e pontos; sem envio à nuvem; `utils/graph.ts` valida os `details` e monta traços e layout |
@@ -389,6 +390,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0017](decisions/0017-ux-historico.md) | UX (Fase 11, etapa 1): histórico local de 50 cálculos, copiar texto/LaTeX, ajuda recolhível |
 | [0016](decisions/0016-trigonometria.md) | Trigonometria (Fase 10, 6º domínio): sec/csc/cot, equações periódicas (famílias, intervalo, completude por redução a polinômio), conversão, redução ao 1º quadrante, identidades e triângulos |
 | [0015](decisions/0015-probabilidade.md) | Probabilidade e contagem (Fase 10, 5º domínio): `5!`, `C(n, k)` e `A(n, k)` na linguagem, eventos `P(A) = 1/2`, binomial, fração + porcentagem, verificação por definições, listagem, regiões de Venn e recorrência |
 | [0014](decisions/0014-geometria.md) | Geometria (Fase 10, 4º domínio): catálogo de figuras, medidas `r = 5`, pontos `(1, 2)`, verificação por vértices, integração e coordenadas |

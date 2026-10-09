@@ -23,7 +23,7 @@ export function useCalculator() {
       intent: IntentName | null = null,
       options: CalculationOptions | null = null,
       allowAi = false,
-    ) => {
+    ): Promise<MathResult | null> => {
       controller.current?.abort();
       const current = new AbortController();
       controller.current = current;
@@ -33,15 +33,17 @@ export function useCalculator() {
         const result = await calculate(input, intent, options, allowAi, current.signal);
         if (!current.signal.aborted) {
           setState({ status: "done", result });
+          return result;
         }
       } catch (error: unknown) {
         if (current.signal.aborted) {
-          return;
+          return null;
         }
         const message =
           error instanceof ApiError ? error.message : "Não foi possível conectar à API.";
         setState({ status: "failed", message });
       }
+      return null;
     },
     [],
   );
