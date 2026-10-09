@@ -21,7 +21,7 @@ Regras gerais:
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
 | 10 | Matemática avançada | concluída |
-| 11 | UX e histórico | em andamento: histórico, copiar e ajuda feitos (aguardando revisão); faltam exato ↔ aproximado, dark mode e acessibilidade, MathLive |
+| 11 | UX e histórico | em andamento: histórico/copiar/ajuda e exato ↔ aproximado feitos (o último aguardando revisão); faltam dark mode e acessibilidade, MathLive |
 | 12 | Assistente matemático | — |
 
 ## Fase 0 — Auditoria e arquitetura
@@ -391,7 +391,13 @@ todos os itens, um por etapa.**
   limpar com confirmação); botões de copiar com confirmação acessível; ajuda
   em uma linha + exemplos por assunto.
 - **Testes:** 1 563 no backend (sem mudança) e 286 no frontend (eram 274).
-- **Próximas etapas:** exato ↔ aproximado; dark mode e acessibilidade; MathLive.
+
+### 11.2 — Exato ↔ aproximado (feita)
+
+- **Decidido** ([ADR 0018](decisions/0018-exato-aproximado.md)): botão na
+  manchete, lembrado no navegador; 2 a 15 algarismos (padrão 6); vírgula.
+- **Testes:** 293 no frontend (eram 286); backend sem mudança.
+- **Próximas etapas:** dark mode e acessibilidade; MathLive.
 
 ## Fase 12 — Assistente matemático
 
@@ -427,5 +433,6 @@ determinística.
   como sin(x) = cos(x); graus, minutos e segundos; área do triângulo pelos
   senos; filtrar por intervalo as equações com soluções finitas.
 - Histórico: exportar/importar, busca, favoritos.
+- Aproximação com mais de 15 algarismos (a API devolveria mais dígitos).
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

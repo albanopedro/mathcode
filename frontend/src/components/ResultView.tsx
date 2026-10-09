@@ -1,4 +1,6 @@
+import { useDisplay } from "../hooks/useDisplay";
 import type { MathResult, ResultValue, VerificationReport } from "../types/math";
+import { formatApprox, MAX_DIGITS, MIN_DIGITS } from "../utils/approximation";
 import { captions } from "../utils/captions";
 import { LONG_RESULT_CHARS } from "../utils/display";
 import { geometryDetails, QUANTITY_LABELS } from "../utils/geometry";
@@ -25,6 +27,9 @@ interface ResultViewProps {
 
 export function ResultView({ result, value, verification }: ResultViewProps) {
   const lines = captions(result);
+  const { display, change } = useDisplay();
+  const approximation = value.approx === null ? null : formatApprox(value.approx, display.digits);
+  const showApprox = approximation !== null && display.mode === "approx";
   const graph = graphDetails(result);
   const statistics = statisticsDetails(result);
   const matrix = matrixDetails(result);
@@ -62,7 +67,11 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
         )}
       </div>
 
-      {asText ? (
+      {showApprox ? (
+        <p className="overflow-x-auto font-mono text-2xl break-all text-slate-900">
+          <span aria-label="aproximadamente">≈</span> {approximation}
+        </p>
+      ) : asText ? (
         <div className="flex flex-col gap-1">
           <p className="font-mono text-sm break-all text-slate-800">{value.plain}</p>
           <p className="text-xs text-slate-500">
@@ -75,15 +84,56 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
         </div>
       )}
 
+      {approximation !== null && (
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <div role="group" aria-label="Forma do resultado" className="flex rounded-lg border border-slate-300">
+            {(["exact", "approx"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={display.mode === mode}
+                onClick={() => change({ mode })}
+                className={`px-3 py-1 first:rounded-l-lg last:rounded-r-lg focus-visible:outline-2 focus-visible:outline-slate-500 ${
+                  display.mode === mode ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                {mode === "exact" ? "Exato" : "Aproximado"}
+              </button>
+            ))}
+          </div>
+          <label className="flex items-center gap-2 text-slate-600">
+            Algarismos
+            <select
+              value={display.digits}
+              onChange={(event) => change({ digits: Number(event.target.value) })}
+              className="rounded-lg border border-slate-300 bg-white px-2 py-1"
+            >
+              {Array.from({ length: MAX_DIGITS - MIN_DIGITS + 1 }, (_, i) => MIN_DIGITS + i).map(
+                (digits) => (
+                  <option key={digits} value={digits}>
+                    {digits}
+                  </option>
+                ),
+              )}
+            </select>
+          </label>
+        </div>
+      )}
+
       <CopyButtons value={value} />
 
       {graph && <GraphView details={graph} />}
 
-      {value.approx !== null && (
-        <p className="font-mono text-slate-700">
-          <span aria-label="aproximadamente">≈</span> {value.approx}
-        </p>
-      )}
+      {approximation !== null &&
+        (showApprox ? (
+          <p className="overflow-x-auto overflow-y-hidden py-1 text-sm text-slate-600">
+            Forma exata: <MathFormula latex={value.latex} />
+          </p>
+        ) : (
+          <p className="font-mono text-slate-700">
+            <span aria-label="aproximadamente">≈</span> {approximation}
+          </p>
+        ))}
       {lines.map((line) => (
         <p key={line} className="text-slate-700">
           {line}

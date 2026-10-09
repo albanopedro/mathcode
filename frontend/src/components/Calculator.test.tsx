@@ -59,7 +59,7 @@ describe("Calculator", () => {
 
     await user.type(screen.getByLabelText("Expressão ou equação"), "0.1 + 0.2{Enter}");
 
-    expect(await screen.findByText("0.3")).toBeInTheDocument();
+    expect(await screen.findByText("0,3")).toBeInTheDocument();
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -68,7 +68,7 @@ describe("Calculator", () => {
     await calculateText("0.1 + 0.2");
 
     const result = await screen.findByRole("region", { name: "Resultado" });
-    expect(within(result).getByText("0.3")).toBeInTheDocument();
+    expect(within(result).getByText("0,3")).toBeInTheDocument();
     // Only rationals: exact fractions are a second method (ADR 0010).
     expect(within(result).getByText("Resultado verificado simbolicamente.")).toBeInTheDocument();
   });
@@ -1010,5 +1010,38 @@ describe("Calculator: history, copy and help", () => {
     );
     await user.click(screen.getByText("Ver exemplos"));
     expect(screen.getByText("Contagem")).toBeVisible();
+  });
+});
+
+describe("Calculator: exact or approximate", () => {
+  it("switches the headline and remembers the choice", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse(fixtures.trigReduce))),
+    );
+    const user = await calculateText("cos(750°)", "Trigonometria");
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).getByRole("button", { name: "Exato" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await user.click(within(result).getByRole("button", { name: "Aproximado" }));
+    expect(within(result).getByText(/^0,866025$/)).toBeInTheDocument();
+    expect(within(result).getByText(/Forma exata/)).toBeInTheDocument();
+
+    await user.selectOptions(within(result).getByLabelText("Algarismos"), "3");
+    expect(within(result).getByText(/^0,866$/)).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem("mathcode.display.v1")!)).toEqual({
+      mode: "approx",
+      digits: 3,
+    });
+  });
+
+  it("has no switch when there is no decimal form", async () => {
+    answer(fixtures.equation);
+    await calculateText("2x + 5 = 17");
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(within(result).queryByRole("group", { name: "Forma do resultado" })).toBeNull();
   });
 });
