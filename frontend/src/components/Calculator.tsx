@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 
-import { useCalculator } from "../hooks/useCalculator";
+import { type CalculatorState, useCalculator } from "../hooks/useCalculator";
 import { useHistory } from "../hooks/useHistory";
 import type { MathResult } from "../types/math";
 import type { HistoryEntry } from "../utils/history";
@@ -63,7 +63,7 @@ export function Calculator() {
             id="operation"
             value={operationIndex}
             onChange={(event) => setOperationIndex(Number(event.target.value))}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+            className="rounded-lg border border-slate-500 bg-white px-3 py-1.5 text-sm shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
           >
             {OPERATIONS.map((option, index) => (
               <option key={option.label} value={index}>
@@ -82,12 +82,18 @@ export function Calculator() {
             type="text"
             value={input}
             onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && input !== "") {
+                event.preventDefault();
+                setInput("");
+              }
+            }}
             placeholder={operation.placeholder}
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
             aria-describedby="expression-help"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-4 py-3 font-mono text-lg shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
+            className="min-w-0 flex-1 rounded-lg border border-slate-500 bg-white px-4 py-3 font-mono text-lg shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none"
           />
           <button
             type="submit"
@@ -122,7 +128,11 @@ export function Calculator() {
         )}
       </form>
 
-      <div aria-live="polite" aria-busy={loading}>
+      {/* A short announcement for screen readers; the result itself is not read aloud whole. */}
+      <p role="status" className="sr-only">
+        {announcement(state)}
+      </p>
+      <div id="result-area" tabIndex={-1} aria-busy={loading} className="focus:outline-none">
         {loading && <p className="text-slate-500">Calculando…</p>}
         {state.status === "done" && <Outcome result={state.result} />}
         {state.status === "failed" && (
@@ -144,6 +154,25 @@ export function Calculator() {
       />
     </div>
   );
+}
+
+function announcement(state: CalculatorState): string {
+  switch (state.status) {
+    case "loading":
+      return "Calculando…";
+    case "failed":
+      return `Erro: ${state.message}`;
+    case "done": {
+      const result = state.result;
+      if (result.success && result.result) {
+        const verification = result.verification ? ` ${result.verification.message}` : "";
+        return `Resultado: ${result.result.plain}.${verification}`;
+      }
+      return `Erro: ${result.error?.message ?? "não foi possível calcular."}`;
+    }
+    default:
+      return "";
+  }
 }
 
 function Outcome({ result }: { result: MathResult }) {

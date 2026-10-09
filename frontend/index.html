@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Calculadora matemática com resultados verificados." />
     <title>Mathcode</title>
+    <script>
+      // The theme before the page draws (utils/theme.ts, ADR 0019): no white flash.
+      try {
+        var choice = localStorage.getItem("mathcode.theme.v1");
+        var dark =
+          choice === "dark" ||
+          (choice !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+        if (dark) document.documentElement.classList.add("dark");
+      } catch (error) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

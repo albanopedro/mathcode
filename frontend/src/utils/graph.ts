@@ -86,7 +86,14 @@ export function graphDetails(result: MathResult): GraphDetails | null {
 }
 
 /** Plotly traces: one line per function (gaps stay gaps), plus the points. */
-export function traces(details: GraphDetails): object[] {
+/** Colors drawn by Plotly itself, outside CSS: they follow the theme (ADR 0019). */
+function ink(dark: boolean) {
+  return dark
+    ? { text: "#e2e8f0", grid: "#334155", axis: "#94a3b8", point: "#f8fafc" }
+    : { text: "#0f172a", grid: "#e2e8f0", axis: "#475569", point: "#0f172a" };
+}
+
+export function traces(details: GraphDetails, dark = false): object[] {
   const lines = details.functions.map((f) => ({
     type: "scatter",
     mode: "lines",
@@ -113,22 +120,24 @@ export function traces(details: GraphDetails): object[] {
         return `${what}${of}: (${p.x}, ${p.y})`;
       }),
       hovertemplate: "%{text}<extra></extra>",
-      marker: { size: 9, color: "#0f172a" },
+      marker: { size: 9, color: ink(dark).point },
       showlegend: false,
     },
   ];
 }
 
-export function layout(details: GraphDetails): object {
+export function layout(details: GraphDetails, dark = false): object {
+  const colors = ink(dark);
+  const axis = { gridcolor: colors.grid, zerolinecolor: colors.axis, linecolor: colors.axis };
   return {
     margin: { l: 48, r: 12, t: 12, b: 36 },
-    xaxis: { range: details.x_range, zeroline: true, title: { text: details.variable } },
-    yaxis: { range: details.y_range, zeroline: true },
+    xaxis: { range: details.x_range, zeroline: true, title: { text: details.variable }, ...axis },
+    yaxis: { range: details.y_range, zeroline: true, ...axis },
     showlegend: details.functions.length > 1,
     // Left-aligned and small: a centered legend was cut on phone screens.
     legend: { orientation: "h", x: 0, xanchor: "left", y: -0.25, font: { size: 11 } },
     hovermode: "closest",
-    font: { family: "inherit" },
+    font: { family: "inherit", color: colors.text },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
   };

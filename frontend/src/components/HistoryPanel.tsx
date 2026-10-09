@@ -49,7 +49,7 @@ export function HistoryPanel({ entries, onRedo, onRemove, onClear }: HistoryPane
                     {entry.success ? "= " : "Erro: "}
                     {entry.summary}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-500">
                     {entry.intent ? INTENT_LABELS[entry.intent] : "Automático"} ·{" "}
                     {TIME.format(new Date(entry.at))}
                   </span>

@@ -106,7 +106,7 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
             <select
               value={display.digits}
               onChange={(event) => change({ digits: Number(event.target.value) })}
-              className="rounded-lg border border-slate-300 bg-white px-2 py-1"
+              className="rounded-lg border border-slate-500 bg-white px-2 py-1"
             >
               {Array.from({ length: MAX_DIGITS - MIN_DIGITS + 1 }, (_, i) => MIN_DIGITS + i).map(
                 (digits) => (

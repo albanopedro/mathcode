@@ -90,3 +90,13 @@ describe("graph range text", () => {
     expect(captions(fixtures.graphTan)[0]).toBe("x de -2pi a 2pi.");
   });
 });
+
+describe("graph colors follow the theme", () => {
+  it("uses light ink on the dark theme", () => {
+    const details = graphDetails(fixtures.graphParabola)!;
+    const light = layout(details) as { font: { color: string } };
+    const dark = layout(details, true) as { font: { color: string } };
+    expect(light.font.color).toBe("#0f172a");
+    expect(dark.font.color).toBe("#e2e8f0");
+  });
+});

@@ -19,7 +19,7 @@ interface OperationFieldsProps {
 }
 
 const INPUT_CLASS =
-  "rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-mono text-sm shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none";
+  "rounded-lg border border-slate-500 bg-white px-3 py-1.5 font-mono text-sm shadow-sm focus:border-slate-500 focus:ring-2 focus:ring-slate-200 focus:outline-none";
 const LABEL_CLASS = "flex flex-col gap-1 text-sm font-medium text-slate-700";
 
 /** The extra inputs of the chosen operation: only those it uses. */

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
+import { useIsDark } from "../hooks/useTheme";
 import { type GraphDetails, layout, traces } from "../utils/graph";
 
 /**
@@ -9,6 +10,7 @@ import { type GraphDetails, layout, traces } from "../utils/graph";
 export function GraphView({ details }: { details: GraphDetails }) {
   const element = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const dark = useIsDark();
 
   useEffect(() => {
     let cancelled = false;
@@ -22,7 +24,7 @@ export function GraphView({ details }: { details: GraphDetails }) {
         }
         drawn = element.current;
         purge = Plotly.purge;
-        await Plotly.newPlot(drawn, traces(details), layout(details), {
+        await Plotly.newPlot(drawn, traces(details, dark), layout(details, dark), {
           responsive: true,
           displaylogo: false,
           // "Share chart" uploads the graph to Plotly's cloud (Chart Studio), and it
@@ -46,7 +48,7 @@ export function GraphView({ details }: { details: GraphDetails }) {
         purge(drawn);
       }
     };
-  }, [details]);
+  }, [details, dark]);
 
   return (
     <figure className="flex flex-col gap-1">

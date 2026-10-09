@@ -1045,3 +1045,30 @@ describe("Calculator: exact or approximate", () => {
     expect(within(result).queryByRole("group", { name: "Forma do resultado" })).toBeNull();
   });
 });
+
+describe("Calculator: keyboard and screen readers", () => {
+  it("clears the input with Escape", async () => {
+    const user = userEvent.setup();
+    render(<Calculator />);
+    const field = screen.getByLabelText("Expressão ou equação");
+    await user.type(field, "2 + 2");
+    await user.keyboard("{Escape}");
+    expect(field).toHaveValue("");
+  });
+
+  it("announces the result briefly", async () => {
+    answer(fixtures.equation);
+    await calculateText("2x + 5 = 17");
+    await screen.findByRole("region", { name: "Resultado" });
+    const statuses = screen.getAllByRole("status").map((status) => status.textContent);
+    expect(statuses).toContain("Resultado: x = 6. Resultado verificado simbolicamente.");
+  });
+
+  it("announces errors briefly", async () => {
+    answer(fixtures.divisionByZero);
+    await calculateText("1/0");
+    await screen.findByRole("alert");
+    const statuses = screen.getAllByRole("status").map((status) => status.textContent);
+    expect(statuses.some((text) => text?.startsWith("Erro:"))).toBe(true);
+  });
+});

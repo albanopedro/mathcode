@@ -21,7 +21,7 @@ Regras gerais:
 | 8 | Linguagem natural / IA | concluída |
 | 9 | Verification Engine | concluída |
 | 10 | Matemática avançada | concluída |
-| 11 | UX e histórico | em andamento: histórico/copiar/ajuda e exato ↔ aproximado feitos (o último aguardando revisão); faltam dark mode e acessibilidade, MathLive |
+| 11 | UX e histórico | em andamento: 11.1–11.3 feitas (11.3 aguardando revisão); falta MathLive |
 | 12 | Assistente matemático | — |
 
 ## Fase 0 — Auditoria e arquitetura
@@ -397,7 +397,17 @@ todos os itens, um por etapa.**
 - **Decidido** ([ADR 0018](decisions/0018-exato-aproximado.md)): botão na
   manchete, lembrado no navegador; 2 a 15 algarismos (padrão 6); vírgula.
 - **Testes:** 293 no frontend (eram 286); backend sem mudança.
-- **Próximas etapas:** dark mode e acessibilidade; MathLive.
+
+### 11.3 — Tema escuro e acessibilidade (feita)
+
+- **Decidido** ([ADR 0019](decisions/0019-tema-e-acessibilidade.md)): Sistema /
+  Claro / Escuro no topo; contraste, foco, teclado, leitores de tela, movimento
+  reduzido.
+- **Entregue:** paleta espelhada, sem piscar; contraste calculado nos dois
+  temas (nenhuma falha; bordas dos campos corrigidas para 3:1); link de pular,
+  Esc, anúncio curto; gráfico no tema.
+- **Testes:** 303 no frontend (eram 293).
+- **Próxima etapa:** MathLive.
 
 ## Fase 12 — Assistente matemático
 
@@ -433,6 +443,7 @@ determinística.
   como sin(x) = cos(x); graus, minutos e segundos; área do triângulo pelos
   senos; filtrar por intervalo as equações com soluções finitas.
 - Histórico: exportar/importar, busca, favoritos.
+- Acessibilidade: axe-core no CI, alto contraste, tamanho de fonte.
 - Aproximação com mais de 15 algarismos (a API devolveria mais dígitos).
 - Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
   sentido.

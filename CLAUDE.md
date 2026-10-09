@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-09, Fase 11.2 (exato ↔ aproximado) concluída, aguardando revisão.
+> Última atualização: 2026-10-09, Fase 11.3 (tema escuro e acessibilidade) concluída, aguardando revisão.
 
 ## O que é
 
@@ -56,7 +56,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 8: Linguagem natural / IA | concluída (o usuário autorizou seguir; commit dele) |
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
 | 10: Matemática avançada | concluída e commitada (último domínio, trigonometria: `4ce1830`) |
-| 11: UX e histórico | por etapas; 11.1 commitada (`893f165`); **11.2 (exato ↔ aproximado) concluída, aguardando revisão**; faltam 11.3 dark mode + acessibilidade, 11.4 MathLive |
+| 11: UX e histórico | por etapas; 11.1 (`893f165`) e 11.2 (`17d2705`) commitadas; **11.3 (tema + acessibilidade) concluída, aguardando revisão**; falta 11.4 MathLive |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -329,6 +329,15 @@ Backend, continuação:
   2–15, vírgula, zeros finais fora, `·10ⁿ`); `useDisplay` (`mathcode.display.v1`,
   padrão exato/6); botões com `aria-pressed` só quando há `approx`; no modo
   aproximado a forma exata vai abaixo.
+- **Tema e acessibilidade** ([ADR 0019](docs/decisions/0019-tema-e-acessibilidade.md)):
+  - **paleta espelhada** em `:root.dark` (index.css; 50↔950 … 500→400;
+    white→slate-900): nada de `dark:` nos componentes. **Cor nova = gerar o
+    bloco de novo**; `useTheme`/`useIsDark`; script anti-piscada no
+    `index.html`; Plotly recebe `dark`;
+  - foco global (`:focus-visible`, sky-600); campos com borda slate-500 (3:1);
+    "Pular para o resultado" → `#result-area` (`tabIndex -1`); Esc limpa;
+    anúncio curto em `role="status"` (o resultado não é mais `aria-live`);
+    `prefers-reduced-motion`.
 - **Gráficos** ([ADR 0008](docs/decisions/0008-graficos.md)):
   - `x^2; 2x + 1` vira `ExpressionList`; listas e `y = f(x)` são detectadas
     como `graph`;
@@ -445,6 +454,8 @@ Backend, continuação:
   `k` simbólico; reescreva em sin/cos (`verification/periodic._substitutes`).
 - O SymPy não simplifica `acos(4/5) + acos(3/5) − π/2`; para somas de ângulos,
   prove por cos(S) e sin(S) (`verification/trigonometry._sum_is_pi`).
+- Para conferir contraste, as cores computadas vêm em `oklch`: converta por um
+  canvas 1×1 (`fillStyle` + `getImageData`) antes da fórmula WCAG.
 - KaTeX em linha com raiz, numa linha que quebra, passa da altura da linha: num
   `<p>` com `overflow-x-auto` aparece uma barra vertical. Use
   `overflow-y-hidden py-1` (feito na fórmula da probabilidade).
@@ -555,8 +566,9 @@ cd frontend && npm test && npm run build
 - **Fase 11 (UX).** Decisões do usuário (2026-10-09): todos os itens (histórico
   + copiar, exato ↔ aproximado, dark mode + acessibilidade, MathLive), **um
   por etapa**; histórico: últimos 50, só neste navegador; ajuda recolhível.
-  - 11.1 commitada; 11.2 (exato ↔ aproximado: botão na manchete, 2–15
-    algarismos, vírgula) concluída, aguardando revisão.
+  - 11.1 e 11.2 commitadas; 11.3 (tema Sistema/Claro/Escuro no topo +
+    contraste, foco, teclado, leitores de tela, movimento reduzido) concluída,
+    aguardando revisão. Falta 11.4 MathLive.
 - Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
   chamadas reais com frases fictícias; Ollama adiado.
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
@@ -630,6 +642,9 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Fase 11.3 (tema e acessibilidade):** paleta espelhada, contraste calculado
+  nos dois temas, foco, teclado, anúncios, movimento reduzido; 303 testes no
+  frontend.
 - **Fase 11.2 (exato ↔ aproximado):** botão na manchete, algarismos 2–15,
   vírgula decimal; 293 testes no frontend.
 - **Fase 11.1 (histórico, copiar, ajuda):** histórico local de 50 cálculos com
