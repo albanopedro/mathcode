@@ -277,7 +277,7 @@ def test_several_roots_are_one_per_line_in_latex() -> None:
             "1/x",
             "integral",
             None,
-            "log(abs(x)) + C",
+            "ln(abs(x)) + C",
             r"\log{\left(\left|{x}\right| \right)} + C",
             VerificationStatus.VERIFIED_SYMBOLIC,
         ),

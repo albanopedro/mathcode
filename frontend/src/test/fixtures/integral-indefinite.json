@@ -4,7 +4,7 @@
   "input": "1/x",
   "normalized_input": "1/x",
   "result": {
-    "plain": "log(abs(x)) + C",
+    "plain": "ln(abs(x)) + C",
     "latex": "\\log{\\left(\\left|{x}\\right| \\right)} + C",
     "approx": null
   },

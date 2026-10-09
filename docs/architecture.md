@@ -215,7 +215,10 @@ Até lá, a interface não mostra uma seção de passos.
 ## 5. API HTTP
 
 Todas as rotas ficam sob `/api`. A documentação interativa fica em `/api/docs`
-(desligada em produção).
+(desligada em produção), com o Swagger UI servido de `/api/static/swagger`:
+os arquivos são copiados do npm (`swagger-ui-dist`) pelo
+`frontend/scripts/copy-swagger.mjs` e ficam fora do Git
+([ADR 0022](decisions/0022-pendencias-e-inicializador.md)).
 
 | Rota | Função |
 |---|---|
@@ -287,6 +290,7 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | tema e acessibilidade (Fase 11, ADR 0019) | paleta espelhada em `:root.dark` (`index.css`), `utils/theme.ts` + `hooks/useTheme.ts` (`mathcode.theme.v1`, segue o sistema), script no `index.html` contra a piscada, `ThemeSelector` no topo; foco visível global, link "Pular para o resultado", Esc limpa o campo, anúncio curto em `role="status"`, movimento reduzido; gráfico com cores do tema |
 | editor visual (Fase 11, ADR 0020) | `components/MathEditor.tsx` (MathLive 0.111.1 via `import()`, fontes KaTeX da página, sem sons, teclado só em toque); `utils/latexToInput.ts` (LaTeX → sintaxe da calculadora, mostrado em "Será calculado"); `utils/editor.ts` (`mathcode.editor.v1`) |
 | assistente e extremos (Fase 12, ADR 0021) | `MathResult.plan` (`PlanStepResult` validado como um `MathResult` sem plano); `components/PlanSteps.tsx` (passos numerados, cada um com um `ResultBody` ou o motivo da falha); `components/ResultBody.tsx` (o corpo de um resultado, separado do `ResultView`); operações "Assistente" e "Máximos e mínimos"; `utils/extrema.ts`; "Permitir IA" também no Assistente (`takesAi`) |
+| KaTeX sob demanda (ADR 0022) | `utils/katex.ts` (`loadKatex`, `katexIfLoaded`): `MathFormula` desenha quando o pedaço do KaTeX chega (vazio e `aria-busy` até lá); CSS e fontes continuam no pacote; nos testes, `test/setup.ts` carrega antes |
 | `components/InterpretationNote.tsx` | como a frase foi lida: pelas regras locais (discreto) ou pela IA (destacado, com o modelo e "Confira se é o que você pediu"); textos montados em `utils/interpretation.ts` |
 | `utils/captions.ts` | frases explicativas montadas **só** a partir de `details`: sem solução, todo real exceto, raiz dupla, infinitas soluções, divisão exata, fatoração inalterada, ordem da derivada, intervalo da integral, divergência, ponto e lado do limite, limite inexistente |
 | `components/GraphView.tsx` | carrega o Plotly **sob demanda** (`import()`), desenha linhas (cortes como `null`, `connectgaps: false`) e pontos; sem envio à nuvem; `utils/graph.ts` valida os `details` e monta traços e layout |
@@ -395,6 +399,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0006](decisions/0006-escopo-da-algebra.md) | Escopo da álgebra (Fase 5): seletor, divisão, sistemas lineares, Sturm |
 | [0008](decisions/0008-graficos.md) | Gráficos (Fase 7): Plotly sob demanda, amostragem pelo avaliador, cortes, raízes |
 | [0007](decisions/0007-calculo.md) | Cálculo (Fase 6): campos, ln\|u\|, limites no domínio real, `mpmath.quad` |
+| [0022](decisions/0022-pendencias-e-inicializador.md) | Pendências: ln no texto simples, KaTeX sob demanda, Swagger UI local; inicializador `Mathcode.command` |
 | [0021](decisions/0021-assistente-e-extremos.md) | Assistente (Fase 12): pedidos compostos viram um plano de pedidos comuns, em paralelo, com verificação do passo mais fraco; intent `extrema` (pontos críticos pelo motor de equações, teste da derivada primeira, vértice) |
 | [0020](decisions/0020-editor-visual.md) | Editor visual MathLive (Fase 11, etapa 4): sob demanda, sem nada de fora, conversor LaTeX próprio |
 | [0019](decisions/0019-tema-e-acessibilidade.md) | Tema escuro (paleta espelhada) e acessibilidade (contraste calculado, foco, teclado, leitores de tela, movimento reduzido) |

@@ -22,3 +22,6 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+# Swagger UI copiado do npm (frontend/scripts/copy-swagger.mjs)
+backend/app/static/swagger/

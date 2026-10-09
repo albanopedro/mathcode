@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-09, Fase 12 (assistente e extremos) concluída: a última fase do prompt mestre.
+> Última atualização: 2026-10-09, pendências técnicas + inicializador (ADR 0022), depois da Fase 12 (a última do prompt mestre).
 
 ## O que é
 
@@ -57,7 +57,8 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 9: Verification Engine | concluída (o usuário autorizou seguir; commit dele) |
 | 10: Matemática avançada | concluída e commitada (último domínio, trigonometria: `4ce1830`) |
 | 11: UX e histórico | concluída e commitada (11.1 `893f165`, 11.2 `17d2705`, 11.3 `ccd2225`, 11.4 `9487586`) |
-| 12: Assistente matemático | **concluída, aguardando revisão e commit** (ADR 0021) |
+| 12: Assistente matemático | concluída e commitada (`3cfd6f5`, ADR 0021) |
+| Pós-12: pendências + inicializador | **concluída, aguardando revisão e commit** (ADR 0022) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -453,9 +454,20 @@ Backend, continuação:
   um teste garante isso (o `not_applicable` sem mensagem já quebrou o pipeline).
 - Nos testes de componentes, o Plotly é simulado com `vi.mock`, porque o jsdom
   não desenha.
-- O build do frontend avisa que há pedaços acima de 500 KB: o do Plotly
-  (intencional, sob demanda) e o principal (506 KB). A correção pendente é
-  carregar o KaTeX sob demanda.
+- O build do frontend avisa que há pedaços acima de 500 KB: só os do Plotly
+  e do MathLive, os dois sob demanda (intencional). O principal tem 289 kB
+  desde que o KaTeX passou a ser carregado sob demanda (`utils/katex.ts`; nos
+  testes, `test/setup.ts` faz `await loadKatex()`).
+- `/api/docs` usa o Swagger UI de `backend/app/static/swagger/`, copiado do
+  npm (`swagger-ui-dist`, fixo) pelo `postinstall` do frontend; a pasta fica
+  fora do Git. O `@scarf/scarf` (telemetria do pacote) fica desligado
+  (`scarfSettings` no `package.json`, e o npm 11 bloqueia o script).
+- **Inicializador:** `Mathcode.command`, na raiz (zsh): `.venv` + `pip install
+  -e backend[dev]` (marcador `backend/.venv/.mathcode-installed`), `npm ci`
+  quando o lock muda, sobe uvicorn e Vite (Vite via `exec`, para o PID ser o
+  dele), espera o `/api/health`, abre o navegador e mata os dois ao sair
+  (EXIT/INT/TERM/HUP). `MATHCODE_NO_BROWSER=1` para testar. Se já estiver
+  rodando, só abre o navegador.
 - Em React com Fast Refresh, arquivos de componente só exportam componentes.
   Constantes vão para `utils/`.
 - No Testing Library, `toHaveTextContent` remove espaços das pontas. Para
@@ -476,9 +488,9 @@ Backend, continuação:
   interrompido, o que os testes usam para simular lentidão.
 - `sp.simplify` em raízes `CRootOf` pode levar minutos (polinômio mínimo). Use
   divisibilidade (`equations._substitutes_exactly`).
-- O texto simples (`formatting/expressions.plain`) escreve ln como `log`, que
-  na entrada é base 10. Pendência registrada. Para reler uma expressão pelo
-  parser, use `formatting.parser_text` (Fase 12), que escreve `ln`.
+- O texto simples (`formatting/expressions.plain`) escreve o logaritmo natural
+  como `ln` (ADR 0022), porque na entrada `log` é base 10. `parser_text` é o
+  mesmo texto, com um nome que diz por que é usado.
 - `MathResult.plan` é recursivo (`PlanStepResult.result: MathResult`): o
   `model_rebuild()` fica no fim de `models/result.py`. As fixtures antigas do
   frontend receberam `"plan": []`.
@@ -506,6 +518,9 @@ Backend, continuação:
   `overflow-y-hidden py-1` (feito na fórmula da probabilidade).
 
 ## Como rodar
+
+Para o usuário: dois cliques em `Mathcode.command` (sobe tudo e abre o
+navegador). Para checar:
 
 ```bash
 cd backend && .venv/bin/pytest && .venv/bin/ruff check . && .venv/bin/ruff format --check .
@@ -626,15 +641,13 @@ cd frontend && npm test && npm run build
 - Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
   `--dir`). O DevAI foi feito na v1.18 e pode ter quebrado.
 - Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
-  resolução por regras; `docker-compose` quando houver Docker; servir os
-  assets do Swagger localmente (hoje vêm do jsDelivr); ESLint no frontend;
-  limite de tamanho do corpo HTTP antes da leitura; carregar o KaTeX sob
-  demanda (o JS tem 490 kB); seletor de operação
+  resolução por regras; `docker-compose` quando houver Docker; ESLint no
+  frontend; limite de tamanho do corpo HTTP antes da leitura; seletor de operação
   na interface (feito na Fase 5); sistemas não lineares; divisão com várias
   variáveis; provedor Ollama (quando
   instalado); regras locais para "o dobro de" e "a metade de"; comparação de
   métodos para integrais com limites irracionais e trigonométricas;
-  continuidade lateral em pontos de borda; texto simples de ln; estatística:
+  continuidade lateral em pontos de borda; estatística:
   quartis/IQR, média ponderada, tabela de frequências, dados irracionais,
   rótulo "Dados" no campo de entrada; matrizes: autovalores (complexos),
   matrizes com letras, editor em grade; vetores: projeção, produto misto,
@@ -696,6 +709,9 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Pós-12 (ADR 0022):** `ln` no texto simples; KaTeX sob demanda (548 →
+  289 kB); Swagger UI local copiado do npm; inicializador `Mathcode.command`;
+  1 645 testes no backend e 344 no frontend.
 - **Fase 12 (assistente e extremos):** intent `extrema` (Sturm + teste da
   derivada primeira + vértice, verificado por 2º derivador, avaliador e
   −b/(2a)); planejador por regras (lista e estudo), passos em paralelo no

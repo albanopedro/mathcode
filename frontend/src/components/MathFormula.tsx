@@ -1,5 +1,6 @@
-import katex from "katex";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+import { katexIfLoaded, loadKatex } from "../utils/katex";
 
 interface MathFormulaProps {
   latex: string;
@@ -9,20 +10,39 @@ interface MathFormulaProps {
 
 /**
  * Renders LaTeX with KaTeX into its own element (no innerHTML from React).
- * KaTeX also emits MathML, which is what screen readers read.
+ * KaTeX also emits MathML, which is what screen readers read. KaTeX itself is
+ * loaded on demand (utils/katex.ts); until then the element is empty and busy.
  */
 export function MathFormula({ latex, display = false, className }: MathFormulaProps) {
   const ref = useRef<HTMLSpanElement>(null);
+  const [katex, setKatex] = useState(katexIfLoaded);
 
   useEffect(() => {
-    if (ref.current) {
+    if (katex) {
+      return;
+    }
+    let cancelled = false;
+    void loadKatex().then((module) => {
+      if (!cancelled) {
+        setKatex(() => module);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [katex]);
+
+  useEffect(() => {
+    if (katex && ref.current) {
       katex.render(latex, ref.current, {
         displayMode: display,
         throwOnError: false,
         output: "htmlAndMathml",
       });
     }
-  }, [latex, display]);
+  }, [katex, latex, display]);
 
-  return <span ref={ref} className={className} data-latex={latex} />;
+  return (
+    <span ref={ref} className={className} data-latex={latex} aria-busy={katex ? undefined : true} />
+  );
 }

@@ -22,7 +22,8 @@ Regras gerais:
 | 9 | Verification Engine | concluída |
 | 10 | Matemática avançada | concluída |
 | 11 | UX e histórico | concluída |
-| 12 | Assistente matemático | concluída (aguardando revisão) |
+| 12 | Assistente matemático | concluída |
+| — | Pendências técnicas e inicializador | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -442,6 +443,20 @@ determinística.
   - **frontend:** cartão com passos numerados e operações novas.
 - **Testes:** 1 643 no backend (eram 1 563) e 344 no frontend (eram 326).
 
+## Depois da Fase 12 — Pendências técnicas e inicializador (feita)
+
+- **Decidido** ([ADR 0022](decisions/0022-pendencias-e-inicializador.md)):
+  - as pendências técnicas registradas;
+  - o Swagger copiado do npm no install;
+  - um inicializador para o macOS, a pedido do usuário.
+- **Entregue:**
+  - `ln` no texto simples;
+  - KaTeX sob demanda, com o pacote principal caindo de 548 kB para 289 kB;
+  - `/api/docs` sem CDN e sem o validador online;
+  - `Mathcode.command`: prepara na primeira vez, sobe tudo, abre o navegador e
+    para tudo ao fechar.
+- **Testes:** 1 645 no backend e 344 no frontend.
+
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
@@ -453,7 +468,6 @@ determinística.
 - Comparação de métodos para integrais com limites irracionais (0 a π) e
   funções trigonométricas; continuidade lateral em pontos de borda (`sqrt(x)`
   em 0⁺).
-- Corrigir o texto simples do logaritmo natural (`log` → `ln`).
 - Estatística: quartis e IQR (com convenção explicada), média ponderada,
   tabela de frequências, dados irracionais, rótulo "Dados" no campo de entrada.
 - Matrizes: autovalores e autovetores (tratar complexos), matrizes com letras,
@@ -476,5 +490,3 @@ determinística.
 - Assistente: domínio de uma função; passos encadeados ("derive e ache onde a
   derivada zera"); extremos de funções periódicas e com módulo; máximo e mínimo
   absolutos num intervalo; inflexão e concavidade; assíntotas no estudo.
-- Atalho para iniciar o projeto no macOS (como o `DevAI.command`), se fizer
-  sentido.

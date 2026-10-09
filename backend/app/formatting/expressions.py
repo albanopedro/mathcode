@@ -7,10 +7,17 @@ APPROX_DIGITS = 15
 
 
 class _InputSyntaxPrinter(StrPrinter):
-    """Prints with the names the user types: abs(x) and e, not Abs(x) and E.
+    """Prints with the names the user types: abs(x), e and ln(x), not Abs(x), E and log(x).
 
-    "E" must not be printed for Euler's number: in the input it is a variable.
+    "E" must not be printed for Euler's number: in the input it is a variable. The
+    natural log is "ln": in the input, "log" is base 10 (ADR 0005), so the text can be
+    copied back into the calculator and means the same.
     """
+
+    def _print_log(self, expr: sp.log) -> str:
+        if len(expr.args) != 1:
+            raise ValueError("a logarithm with a base has no input syntax")
+        return f"ln({self._print(expr.args[0])})"
 
     def _print_Abs(self, expr: sp.Abs) -> str:
         return f"abs({self._print(expr.args[0])})"
@@ -19,23 +26,17 @@ class _InputSyntaxPrinter(StrPrinter):
         return "e"
 
 
-class _ParserTextPrinter(_InputSyntaxPrinter):
-    """Text the safe parser reads back as the same expression: there, log is base 10."""
-
-    def _print_log(self, expr: sp.log) -> str:
-        if len(expr.args) != 1:
-            raise ValueError("a logarithm with a base has no input syntax")
-        return f"ln({self._print(expr.args[0])})"
-
-
 def plain(expr: sp.Expr) -> str:
     # Same power syntax the user types: x^2, not x**2.
     return _InputSyntaxPrinter().doprint(expr).replace("**", "^")
 
 
 def parser_text(expr: sp.Expr) -> str:
-    """``expr`` as input text that parses back to it (natural log as ln, ADR 0021)."""
-    return _ParserTextPrinter().doprint(expr).replace("**", "^")
+    """``expr`` as input text that the safe parser reads back as the same expression.
+
+    The same text as ``plain``; the name says why it is used (ADR 0021).
+    """
+    return plain(expr)
 
 
 def latex(expr: sp.Expr) -> str:

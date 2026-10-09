@@ -43,6 +43,16 @@ pedido: nunca é ela que calcula.
 
 ## Como rodar
 
+### Jeito fácil (macOS)
+
+Dê dois cliques em **`Mathcode.command`**, na pasta do projeto, ou rode
+`./Mathcode.command` no terminal.
+- **Primeira vez:** ele prepara o backend e o frontend.
+- **Depois:** sobe tudo e abre o navegador em <http://localhost:5180>.
+- **Para parar:** aperte Ctrl+C ou feche a janela.
+
+Para rodar cada parte à mão:
+
 ### Backend (porta 8100)
 
 ```bash
@@ -53,7 +63,9 @@ python3 -m venv .venv
 ```
 
 - Health check: <http://127.0.0.1:8100/api/health>
-- Documentação interativa: <http://127.0.0.1:8100/api/docs> (fora de produção)
+- Documentação interativa: <http://127.0.0.1:8100/api/docs> (fora de produção).
+  Os arquivos do Swagger UI são copiados do npm para o backend pelo
+  `npm install` do frontend (ou `npm run swagger`): nada vem de CDN.
 
 ### Frontend (porta 5180)
 
