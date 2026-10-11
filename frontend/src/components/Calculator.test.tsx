@@ -1145,3 +1145,83 @@ describe("Calculator: assistant and extrema (Phase 12)", () => {
     expect(within(result).getByText(/único ponto crítico da parábola/)).toBeInTheDocument();
   });
 });
+
+describe("Calculator: live result (ADR 0023)", () => {
+  const WAIT = { timeout: 3000 };
+
+  it("calculates by itself when the typing pauses, without the AI or the history", async () => {
+    answer(fixtures.equation);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.click(screen.getByRole("checkbox", { name: "Permitir IA" }));
+
+    await user.type(screen.getByLabelText("Expressão ou equação"), "2x + 5 = 17");
+
+    const result = await screen.findByRole("region", { name: "Resultado" }, WAIT);
+    expect(result.querySelector("annotation")).toHaveTextContent("x = 6");
+    expect(fetch).toHaveBeenCalledTimes(1); // one call for the whole word, not one per key
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({ input: "2x + 5 = 17" }); // no allow_ai
+    expect(screen.getByText("Histórico (0)")).toBeInTheDocument();
+  });
+
+  it("only Calcular keeps the calculation in the history, and does not repeat the request", async () => {
+    // A new Response each time: a body can be read only once.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => Promise.resolve(jsonResponse(fixtures.equation))),
+    );
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.type(screen.getByLabelText("Expressão ou equação"), "2x + 5 = 17");
+    await screen.findByRole("region", { name: "Resultado" }, WAIT);
+
+    await user.click(screen.getByRole("button", { name: "Calcular" }));
+
+    await screen.findByText("Histórico (1)");
+    expect(fetch).toHaveBeenCalledTimes(2); // the live one and the button's
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(fetch).toHaveBeenCalledTimes(2); // live does not run again for the same input
+  });
+
+  it("is a remembered switch: off, it waits for Calcular", async () => {
+    answer(fixtures.equation);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    const toggle = screen.getByRole("button", { name: "Ao vivo" });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(toggle);
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+    expect(localStorage.getItem("mathcode.live.v1")).toBe("off");
+    await user.type(screen.getByLabelText("Expressão ou equação"), "2x + 5 = 17");
+    await new Promise((resolve) => setTimeout(resolve, 900));
+
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("says an unfinished input is not a calculation yet, without an alert", async () => {
+    answer(fixtures.parseError);
+    const user = userEvent.setup();
+    render(<Calculator />);
+
+    await user.type(screen.getByLabelText("Expressão ou equação"), "2 +");
+
+    expect(await screen.findByText(/Ainda não dá para calcular:/, undefined, WAIT)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
+  it("clears the result when the input is cleared", async () => {
+    answer(fixtures.equation);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    const input = screen.getByLabelText("Expressão ou equação");
+    await user.type(input, "2x + 5 = 17");
+    await screen.findByRole("region", { name: "Resultado" }, WAIT);
+
+    await user.clear(input);
+
+    expect(screen.queryByRole("region", { name: "Resultado" })).not.toBeInTheDocument();
+  });
+});

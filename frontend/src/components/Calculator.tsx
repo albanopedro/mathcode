@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { type CalculatorState, useCalculator } from "../hooks/useCalculator";
 import { useHistory } from "../hooks/useHistory";
@@ -6,6 +6,7 @@ import type { MathResult } from "../types/math";
 import { loadEditor, saveEditor } from "../utils/editor";
 import type { HistoryEntry } from "../utils/history";
 import { latexToInput } from "../utils/latexToInput";
+import { LIVE_DELAY_MS, loadLive, saveLive } from "../utils/live";
 import {
   buildOptions,
   EMPTY_FIELDS,
@@ -28,8 +29,11 @@ export function Calculator() {
   // The visual editor (MathLive) writes the text below; the text is what is sent.
   const [visual, setVisual] = useState(() => loadEditor());
   const [editorKey, setEditorKey] = useState(0); // a new editor starts from the text
+  // Live: the result follows the typing after a pause (ADR 0023). Never with the AI.
+  const [live, setLive] = useState(() => loadLive());
+  const lastRequest = useRef("");
   const operation = OPERATIONS[operationIndex] ?? OPERATIONS[0]!;
-  const { state, submit } = useCalculator();
+  const { state, submit, busy, reset } = useCalculator();
   const history = useHistory();
   const loading = state.status === "loading";
   const canSubmit = input.trim() !== "" && !loading;
@@ -38,11 +42,35 @@ export function Calculator() {
     const chosen = OPERATIONS[index] ?? OPERATIONS[0]!;
     // The AI only reads phrases in Automático and Assistente.
     const allow = takesAi(chosen.intent) && ai;
+    lastRequest.current = requestKey(text, index, values);
     const result = await submit(text, chosen.intent, buildOptions(chosen, values), allow);
     if (result) {
       history.add({ input: text, intent: chosen.intent, fields: values, allowAi: allow }, result);
     }
   }
+
+  // Live calculation: after the typing pauses, calculate what is there. It is not
+  // kept in the history (only Calcular and Enter are) and never sends the AI.
+  useEffect(() => {
+    if (!live) {
+      return;
+    }
+    if (input.trim() === "") {
+      lastRequest.current = "";
+      reset();
+      return;
+    }
+    const key = requestKey(input, operationIndex, fields);
+    if (key === lastRequest.current) {
+      return; // already calculated (a button, Enter or the history did it)
+    }
+    const timer = window.setTimeout(() => {
+      lastRequest.current = key;
+      const chosen = OPERATIONS[operationIndex] ?? OPERATIONS[0]!;
+      void submit(input, chosen.intent, buildOptions(chosen, fields), false, true);
+    }, LIVE_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [live, input, operationIndex, fields, submit, reset]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,17 +118,30 @@ export function Calculator() {
           <label htmlFor={visual ? undefined : "expression"} className="text-sm font-medium text-slate-700">
             Expressão ou equação
           </label>
-          <button
-            type="button"
-            aria-pressed={visual}
-            onClick={() => {
-              saveEditor(!visual);
-              setVisual(!visual);
-            }}
-            className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
-          >
-            Editor visual
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              aria-pressed={live}
+              onClick={() => {
+                saveLive(!live);
+                setLive(!live);
+              }}
+              className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+            >
+              Ao vivo
+            </button>
+            <button
+              type="button"
+              aria-pressed={visual}
+              onClick={() => {
+                saveEditor(!visual);
+                setVisual(!visual);
+              }}
+              className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+            >
+              Editor visual
+            </button>
+          </div>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           {visual ? (
@@ -171,6 +212,7 @@ export function Calculator() {
                 Se as regras locais não entenderem a frase, ela é enviada a um modelo de IA
                 gratuito, num serviço externo. A IA só traduz a frase; a conta e a verificação
                 são feitas pelo Mathcode.
+                {live && " No modo ao vivo a IA não é usada: aperte Calcular para ela entrar."}
               </p>
             </div>
           </div>
@@ -183,7 +225,16 @@ export function Calculator() {
       </p>
       <div id="result-area" tabIndex={-1} aria-busy={loading} className="focus:outline-none">
         {loading && <p className="text-slate-500">Calculando…</p>}
-        {state.status === "done" && <Outcome result={state.result} />}
+        {state.status === "done" &&
+          (state.live && !state.result.success ? (
+            <LiveHint result={state.result} />
+          ) : (
+            <div
+              className={`transition-opacity duration-200 motion-reduce:transition-none ${busy ? "opacity-60" : ""}`}
+            >
+              <Outcome result={state.result} />
+            </div>
+          ))}
         {state.status === "failed" && (
           <div
             role="alert"
@@ -205,6 +256,20 @@ export function Calculator() {
   );
 }
 
+/** What a live calculation says when the input is not (yet) a calculation: a hint, not an alert. */
+function LiveHint({ result }: { result: MathResult }) {
+  return (
+    <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+      Ainda não dá para calcular: {result.error?.message}
+    </p>
+  );
+}
+
+/** Same calculation, same key: used so that live mode does not repeat what was just done. */
+function requestKey(text: string, index: number, values: FieldValues): string {
+  return JSON.stringify([text, index, values]);
+}
+
 function announcement(state: CalculatorState): string {
   switch (state.status) {
     case "loading":
@@ -213,6 +278,9 @@ function announcement(state: CalculatorState): string {
       return `Erro: ${state.message}`;
     case "done": {
       const result = state.result;
+      if (state.live && !result.success) {
+        return ""; // a hint while typing is not an error to announce
+      }
       if (result.success && result.result) {
         const verification = result.verification ? ` ${result.verification.message}` : "";
         return `Resultado: ${result.result.plain}.${verification}`;

@@ -7,12 +7,15 @@ import type { CalculationOptions } from "../utils/operations";
 export type CalculatorState =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "done"; result: MathResult }
+  /** `live`: calculated while typing, so an error is only a hint (ADR 0023). */
+  | { status: "done"; result: MathResult; live: boolean }
   /** No MathResult at all: the API could not be reached or answered nonsense. */
   | { status: "failed"; message: string };
 
 export function useCalculator() {
   const [state, setState] = useState<CalculatorState>({ status: "idle" });
+  /** A live calculation is running: the last result stays, dimmed, until it arrives. */
+  const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
 
   useEffect(() => () => controller.current?.abort(), []);
@@ -23,16 +26,21 @@ export function useCalculator() {
       intent: IntentName | null = null,
       options: CalculationOptions | null = null,
       allowAi = false,
+      live = false,
     ): Promise<MathResult | null> => {
       controller.current?.abort();
       const current = new AbortController();
       controller.current = current;
-      setState({ status: "loading" });
+      setBusy(live);
+      if (!live) {
+        setState({ status: "loading" });
+      }
 
       try {
         const result = await calculate(input, intent, options, allowAi, current.signal);
         if (!current.signal.aborted) {
-          setState({ status: "done", result });
+          setBusy(false);
+          setState({ status: "done", result, live });
           return result;
         }
       } catch (error: unknown) {
@@ -41,6 +49,7 @@ export function useCalculator() {
         }
         const message =
           error instanceof ApiError ? error.message : "Não foi possível conectar à API.";
+        setBusy(false);
         setState({ status: "failed", message });
       }
       return null;
@@ -48,5 +57,12 @@ export function useCalculator() {
     [],
   );
 
-  return { state, submit };
+  /** Back to the empty screen (the input was cleared); drops a calculation in flight. */
+  const reset = useCallback(() => {
+    controller.current?.abort();
+    setBusy(false);
+    setState({ status: "idle" });
+  }, []);
+
+  return { state, submit, busy, reset };
 }

@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-09, pendências técnicas + inicializador (ADR 0022), depois da Fase 12 (a última do prompt mestre).
+> Última atualização: 2026-10-11, resultado ao vivo (ADR 0023), depois da Fase 12 (a última do prompt mestre).
 
 ## O que é
 
@@ -58,7 +58,8 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 10: Matemática avançada | concluída e commitada (último domínio, trigonometria: `4ce1830`) |
 | 11: UX e histórico | concluída e commitada (11.1 `893f165`, 11.2 `17d2705`, 11.3 `ccd2225`, 11.4 `9487586`) |
 | 12: Assistente matemático | concluída e commitada (`3cfd6f5`, ADR 0021) |
-| Pós-12: pendências + inicializador | **concluída, aguardando revisão e commit** (ADR 0022) |
+| Pós-12: pendências + inicializador | concluída (ADR 0022; commit do usuário, se já fez) |
+| Pós-12: resultado ao vivo | **concluída, aguardando revisão e commit** (ADR 0023) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -709,6 +710,14 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Resultado ao vivo (ADR 0023):** `Calculator` calcula 600 ms depois da
+  pausa (`utils/live.ts`, `mathcode.live.v1`, padrão ligado); nunca envia
+  `allow_ai`; não grava no histórico; `lastRequest` (ref com a chave
+  texto+operação+campos) evita repetir; `useCalculator.submit(..., live)`: sem
+  `loading`, com `busy` (resultado esmaecido) e `done.live`; erro ao vivo é
+  `LiveHint` (sem alerta e sem anúncio); texto vazio → `reset()`. Nos testes de
+  fetch que repetem, use `vi.fn(() => Promise.resolve(jsonResponse(...)))`.
+  Interface: o painel do histórico é um `<details>`, ache por `getByText`.
 - **Pós-12 (ADR 0022):** `ln` no texto simples; KaTeX sob demanda (548 →
   289 kB); Swagger UI local copiado do npm; inicializador `Mathcode.command`;
   1 645 testes no backend e 344 no frontend.

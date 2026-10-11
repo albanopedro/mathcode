@@ -23,7 +23,8 @@ Regras gerais:
 | 10 | Matemática avançada | concluída |
 | 11 | UX e histórico | concluída |
 | 12 | Assistente matemático | concluída |
-| — | Pendências técnicas e inicializador | concluída (aguardando revisão) |
+| — | Pendências técnicas e inicializador | concluída |
+| — | Resultado ao vivo | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -457,6 +458,17 @@ determinística.
     para tudo ao fechar.
 - **Testes:** 1 645 no backend e 344 no frontend.
 
+## Depois da Fase 12 — Resultado ao vivo (feita)
+
+- **Decidido** ([ADR 0023](decisions/0023-resultado-ao-vivo.md)): entre as
+  ideias de interface dinâmica, o usuário escolheu só o resultado ao vivo.
+- **Entregue:**
+  - cálculo na pausa da digitação, com interruptor lembrado;
+  - sem IA e fora do histórico;
+  - entrada incompleta vira dica, não alerta;
+  - o resultado anterior fica esmaecido enquanto o novo chega.
+- **Testes:** 351 no frontend (eram 344); backend sem mudança (1 645).
+
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
@@ -487,6 +499,8 @@ determinística.
 - Editor visual: matrizes, volta texto → editor mais fiel, teclado com sen/tg.
 - Acessibilidade: axe-core no CI, alto contraste, tamanho de fonte.
 - Aproximação com mais de 15 algarismos (a API devolveria mais dígitos).
+- Interface: exemplos clicáveis por assunto; duas colunas no computador;
+  animações dos passos do assistente; pré-visualização do gráfico ao digitar.
 - Assistente: domínio de uma função; passos encadeados ("derive e ache onde a
   derivada zera"); extremos de funções periódicas e com módulo; máximo e mínimo
   absolutos num intervalo; inflexão e concavidade; assíntotas no estudo.
