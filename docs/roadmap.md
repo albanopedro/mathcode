@@ -24,7 +24,8 @@ Regras gerais:
 | 11 | UX e histórico | concluída |
 | 12 | Assistente matemático | concluída |
 | — | Pendências técnicas e inicializador | concluída |
-| — | Resultado ao vivo | concluída (aguardando revisão) |
+| — | Resultado ao vivo | concluída |
+| — | Exemplos clicáveis | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -469,6 +470,14 @@ determinística.
   - o resultado anterior fica esmaecido enquanto o novo chega.
 - **Testes:** 351 no frontend (eram 344); backend sem mudança (1 645).
 
+## Depois da Fase 12 — Exemplos clicáveis (feita)
+
+- **Decidido** ([ADR 0024](decisions/0024-exemplos-clicaveis.md)): cartões de
+  exemplo por assunto no lugar do "Ver exemplos".
+- **Entregue:** 13 cartões; um clique preenche, calcula e recolhe a lista; um
+  teste no backend calcula cada exemplo com o motor real.
+- **Testes:** 1 659 no backend (eram 1 645) e 352 no frontend (eram 351).
+
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
@@ -499,7 +508,7 @@ determinística.
 - Editor visual: matrizes, volta texto → editor mais fiel, teclado com sen/tg.
 - Acessibilidade: axe-core no CI, alto contraste, tamanho de fonte.
 - Aproximação com mais de 15 algarismos (a API devolveria mais dígitos).
-- Interface: exemplos clicáveis por assunto; duas colunas no computador;
+- Interface: exemplos por operação escolhida; duas colunas no computador;
   animações dos passos do assistente; pré-visualização do gráfico ao digitar.
 - Assistente: domínio de uma função; passos encadeados ("derive e ache onde a
   derivada zera"); extremos de funções periódicas e com módulo; máximo e mínimo

@@ -79,6 +79,16 @@ export function Calculator() {
     }
   }
 
+  /** An example: Automático, no extra fields and no AI, calculated at once. */
+  function pick(text: string) {
+    setInput(text);
+    setEditorKey((key) => key + 1);
+    setOperationIndex(0);
+    setFields(EMPTY_FIELDS);
+    setAllowAi(false);
+    void run(text, 0, EMPTY_FIELDS, false);
+  }
+
   /** Fills the form with a past calculation and does it again. */
   function redo(entry: HistoryEntry) {
     const index = Math.max(
@@ -193,7 +203,7 @@ export function Calculator() {
             </code>
           </p>
         )}
-        <HelpText id="expression-help" />
+        <HelpText id="expression-help" onPick={pick} />
         {takesAi(operation.intent) && (
           <div className="flex items-start gap-2 text-sm">
             <input

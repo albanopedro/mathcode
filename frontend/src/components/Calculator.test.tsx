@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fixtures, jsonResponse } from "../test/fixtures";
 import type { MathResult } from "../types/math";
 import { LONG_RESULT_CHARS } from "../utils/display";
+import { EXAMPLES } from "../utils/examples";
 import { Calculator } from "./Calculator";
 
 // The graph component is tested in GraphView.test.tsx; here Plotly stays out.
@@ -1002,14 +1003,32 @@ describe("Calculator: history, copy and help", () => {
     expect(await screen.findByText(/o navegador bloqueou/)).toBeInTheDocument();
   });
 
-  it("keeps the help short, with examples on demand", async () => {
-    const user = userEvent.setup();
+  it("keeps the help short, with clickable examples", async () => {
     render(<Calculator />);
     expect(screen.getByLabelText("Expressão ou equação")).toHaveAccessibleDescription(
       /Use \^ para potência/,
     );
-    await user.click(screen.getByText("Ver exemplos"));
-    expect(screen.getByText("Contagem")).toBeVisible();
+    const examples = screen.getByRole("list", { name: "Exemplos" });
+    expect(within(examples).getAllByRole("listitem")).toHaveLength(EXAMPLES.length);
+    expect(within(examples).getByText("Contagem")).toBeVisible();
+  });
+
+  it("calculates an example when it is clicked, in Automático, and keeps it in the history", async () => {
+    answer(fixtures.derivative);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    await user.selectOptions(screen.getByLabelText("Operação"), "Integrar");
+
+    await user.click(screen.getByRole("button", { name: /derivada de x\^3/ }));
+
+    await screen.findByRole("region", { name: "Resultado" });
+    expect(screen.getByLabelText("Expressão ou equação")).toHaveValue("derivada de x^3");
+    expect(screen.getByLabelText("Operação")).toHaveValue("0");
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body).toEqual({ input: "derivada de x^3" });
+    expect(screen.getByText("Histórico (1)")).toBeInTheDocument();
+    // The examples fold away, so the result is not pushed down the page.
+    expect(screen.getByText("Exemplos (clique para calcular)").closest("details")).not.toHaveAttribute("open");
   });
 });
 
