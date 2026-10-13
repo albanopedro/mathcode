@@ -25,7 +25,8 @@ Regras gerais:
 | 12 | Assistente matemático | concluída |
 | — | Pendências técnicas e inicializador | concluída |
 | — | Resultado ao vivo | concluída |
-| — | Exemplos clicáveis | concluída (aguardando revisão) |
+| — | Exemplos clicáveis | concluída |
+| — | Interface moderna | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -478,6 +479,22 @@ determinística.
   teste no backend calcula cada exemplo com o motor real.
 - **Testes:** 1 659 no backend (eram 1 645) e 352 no frontend (eram 351).
 
+## Depois da Fase 12 — Interface moderna (feita)
+
+- **Decidido** ([ADR 0025](decisions/0025-interface-moderna.md)): estilo limpo
+  com índigo de destaque, animações discretas e fonte Inter servida pelo app.
+- **Entregue:**
+  - marca no cabeçalho;
+  - operações em pílulas, mais a lista "Mais operações…";
+  - campo no estilo de barra de busca;
+  - interruptores com luz;
+  - cartões e botões com o mesmo desenho;
+  - resultado em destaque e passos numerados;
+  - entrada animada e esqueleto de carregamento.
+- **Conferido no navegador:** contraste sem falhas nos dois temas, celular sem
+  rolagem lateral, nada externo.
+- **Testes:** 354 no frontend (eram 352); backend sem mudança (1 659).
+
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
@@ -509,7 +526,7 @@ determinística.
 - Acessibilidade: axe-core no CI, alto contraste, tamanho de fonte.
 - Aproximação com mais de 15 algarismos (a API devolveria mais dígitos).
 - Interface: exemplos por operação escolhida; duas colunas no computador;
-  animações dos passos do assistente; pré-visualização do gráfico ao digitar.
+  pré-visualização do gráfico ao digitar.
 - Assistente: domínio de uma função; passos encadeados ("derive e ache onde a
   derivada zera"); extremos de funções periódicas e com módulo; máximo e mínimo
   absolutos num intervalo; inflexão e concavidade; assíntotas no estudo.

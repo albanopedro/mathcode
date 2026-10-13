@@ -16,14 +16,14 @@ export function ResultView({ result, value, verification }: ResultViewProps) {
   return (
     <section
       aria-labelledby="result-title"
-      className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="card flex flex-col gap-4 p-5 sm:p-6"
     >
       <div className="flex items-center justify-between gap-3">
-        <h2 id="result-title" className="text-sm font-medium text-slate-500">
+        <h2 id="result-title" className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
           Resultado
         </h2>
         {result.intent && (
-          <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
             {INTENT_LABELS[result.intent]}
           </span>
         )}

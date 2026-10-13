@@ -11,17 +11,17 @@ const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
 export function ThemeSelector() {
   const { choice, choose } = useTheme();
   return (
-    <div role="group" aria-label="Tema" className="flex rounded-lg border border-slate-300 text-xs">
+    <div role="group" aria-label="Tema" className="flex rounded-full border border-slate-200 bg-white p-0.5 text-xs shadow-sm">
       {OPTIONS.map((option) => (
         <button
           key={option.value}
           type="button"
           aria-pressed={choice === option.value}
           onClick={() => choose(option.value)}
-          className={`px-2.5 py-1 first:rounded-l-lg last:rounded-r-lg ${
+          className={`rounded-full px-2.5 py-1 font-medium transition ${
             choice === option.value
               ? "bg-slate-900 text-white"
-              : "text-slate-700 hover:bg-slate-100"
+              : "text-slate-600 hover:bg-slate-100"
           }`}
         >
           {option.label}

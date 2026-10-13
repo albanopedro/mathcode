@@ -87,7 +87,7 @@ export function MathEditor({ initial, onLatex, onSubmit }: MathEditorProps) {
     <div className="flex flex-col gap-2">
       <div
         ref={host}
-        className="min-h-14 rounded-lg border border-slate-500 bg-white px-3 py-2 text-slate-900 shadow-sm"
+        className="min-h-14 rounded-2xl border border-slate-500 bg-white px-3 py-2 text-slate-900 shadow-sm transition focus-within:border-indigo-600 focus-within:ring-4 focus-within:ring-indigo-100"
       >
         {status === "loading" && <p className="text-sm text-slate-500">Carregando o editor…</p>}
         {status === "failed" && (
@@ -100,7 +100,7 @@ export function MathEditor({ initial, onLatex, onSubmit }: MathEditorProps) {
         <button
           type="button"
           onClick={toggleKeyboard}
-          className="self-start rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50"
+          className="btn-secondary self-start"
         >
           Teclado matemático
         </button>

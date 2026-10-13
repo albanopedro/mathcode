@@ -2,7 +2,7 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-11, exemplos clicáveis (ADR 0024), depois da Fase 12 (a última do prompt mestre).
+> Última atualização: 2026-10-13, interface moderna (ADR 0025), depois da Fase 12 (a última do prompt mestre).
 
 ## O que é
 
@@ -58,9 +58,10 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | 10: Matemática avançada | concluída e commitada (último domínio, trigonometria: `4ce1830`) |
 | 11: UX e histórico | concluída e commitada (11.1 `893f165`, 11.2 `17d2705`, 11.3 `ccd2225`, 11.4 `9487586`) |
 | 12: Assistente matemático | concluída e commitada (`3cfd6f5`, ADR 0021) |
-| Pós-12: pendências + inicializador | concluída (ADR 0022; commit do usuário, se já fez) |
-| Pós-12: resultado ao vivo | concluída (ADR 0023; commit do usuário, se já fez) |
-| Pós-12: exemplos clicáveis | **concluída, aguardando revisão e commit** (ADR 0024) |
+| Pós-12: pendências + inicializador | concluída e commitada (`a14ed79`, ADR 0022) |
+| Pós-12: resultado ao vivo | concluída e commitada (`4c8f902`, ADR 0023) |
+| Pós-12: exemplos clicáveis | concluída e commitada (`840ef9c`, ADR 0024) |
+| Pós-12: interface moderna | **concluída, aguardando revisão e commit** (ADR 0025) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -340,7 +341,7 @@ Backend, continuação:
     white→slate-900): nada de `dark:` nos componentes. **Cor nova = gerar o
     bloco de novo**; `useTheme`/`useIsDark`; script anti-piscada no
     `index.html`; Plotly recebe `dark`;
-  - foco global (`:focus-visible`, sky-600); campos com borda slate-500 (3:1);
+  - foco global (`:focus-visible`, índigo-600 desde o ADR 0025); campos com borda slate-500 (3:1);
     "Pular para o resultado" → `#result-area` (`tabIndex -1`); Esc limpa;
     anúncio curto em `role="status"` (o resultado não é mais `aria-live`);
     `prefers-reduced-motion`.
@@ -711,6 +712,16 @@ cd frontend && npm test && npm run build
   intent `probability` com 16 cálculos (contagem, anagramas, eventos,
   binomial), frases, fração + porcentagem, verificação por definições,
   listagem, Venn e recorrência; 1 451 testes no backend e 257 no frontend.
+- **Interface moderna (ADR 0025):** índigo de destaque (no bloco espelhado),
+  Inter local (`@fontsource-variable/inter`, importada no `main.tsx`), peças
+  `@utility` no `index.css` (`card`, `btn-primary`, `btn-secondary`, `field`,
+  `pill` + `pill-off`/`pill-on`: as cores ficam separadas da forma porque a
+  ordem entre utilitários próprios não é garantida). Pílulas = rádios nativos
+  ("Operações frequentes", `FEATURED`); a lista "Mais operações…" é o `select`
+  "Operação" (todas as operações; valor `""` quando a ativa é uma pílula).
+  Passos: `aria-label` "1. Raízes" no `li`. Animação: `animate-fade-up` com
+  chave `seq` por resposta. Não use `overflow-x-hidden` no contêiner da página:
+  ele esconde cortes no celular (aconteceu com o seletor de tema).
 - **Exemplos clicáveis (ADR 0024):** `utils/examples.ts` (lista única, todos
   em Automático) → `HelpText` (cartões; recolhe ao escolher) →
   `Calculator.pick` (volta a Automático, limpa campos e IA, calcula, entra no

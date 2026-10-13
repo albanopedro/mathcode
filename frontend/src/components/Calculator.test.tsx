@@ -1023,7 +1023,7 @@ describe("Calculator: history, copy and help", () => {
 
     await screen.findByRole("region", { name: "Resultado" });
     expect(screen.getByLabelText("Expressão ou equação")).toHaveValue("derivada de x^3");
-    expect(screen.getByLabelText("Operação")).toHaveValue("0");
+    expect(screen.getByRole("radio", { name: "Automático" })).toBeChecked();
     const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
     expect(body).toEqual({ input: "derivada de x^3" });
     expect(screen.getByText("Histórico (1)")).toBeInTheDocument();
@@ -1242,5 +1242,46 @@ describe("Calculator: live result (ADR 0023)", () => {
     await user.clear(input);
 
     expect(screen.queryByRole("region", { name: "Resultado" })).not.toBeInTheDocument();
+  });
+});
+
+describe("Calculator: operation pills (ADR 0025)", () => {
+  it("chooses a frequent operation with a pill, as a radio group", async () => {
+    answer(fixtures.derivative);
+    const user = userEvent.setup();
+    render(<Calculator />);
+    const pills = screen.getByRole("radiogroup", { name: "Operações frequentes" });
+    expect(within(pills).getAllByRole("radio").map((radio) => radio.closest("label")?.textContent)).toEqual([
+      "Automático",
+      "Assistente",
+      "Equação",
+      "Derivar",
+      "Integrar",
+      "Gráfico",
+    ]);
+    expect(within(pills).getByRole("radio", { name: "Automático" })).toBeChecked();
+
+    await user.click(within(pills).getByRole("radio", { name: "Derivar" }));
+
+    expect(within(pills).getByRole("radio", { name: "Derivar" })).toBeChecked();
+    expect(screen.getByLabelText("Ordem")).toBeInTheDocument(); // the fields of Derivar
+    expect(screen.getByLabelText("Operação")).toHaveValue(""); // "Mais operações…"
+    await user.type(screen.getByLabelText("Expressão ou equação"), "x^2{Enter}");
+    await screen.findByRole("region", { name: "Resultado" });
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0]![1]!.body as string);
+    expect(body.intent).toBe("derivative");
+  });
+
+  it("keeps every operation in the 'Mais operações' list", async () => {
+    const user = userEvent.setup();
+    render(<Calculator />);
+    const select = screen.getByLabelText("Operação");
+
+    await user.selectOptions(select, "Limite");
+
+    expect(screen.getByRole("option", { name: "Limite" })).toHaveProperty("selected", true);
+    const pills = screen.getByRole("radiogroup", { name: "Operações frequentes" });
+    expect(within(pills).getAllByRole("radio").some((radio) => (radio as HTMLInputElement).checked)).toBe(false);
+    expect(screen.getByLabelText("Ponto")).toBeInTheDocument();
   });
 });

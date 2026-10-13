@@ -23,7 +23,9 @@ export function HelpText({ id, onPick }: HelpTextProps) {
         onToggle={(event) => setOpen(event.currentTarget.open)}
         className="mt-1"
       >
-        <summary className="cursor-pointer text-slate-600">Exemplos (clique para calcular)</summary>
+        <summary className="cursor-pointer font-medium text-slate-600 hover:text-slate-900">
+          Exemplos (clique para calcular)
+        </summary>
         <ul aria-label="Exemplos" className="mt-2 grid gap-2 sm:grid-cols-2">
           {EXAMPLES.map((example) => (
             <li key={example.subject}>
@@ -33,9 +35,9 @@ export function HelpText({ id, onPick }: HelpTextProps) {
                   setOpen(false); // out of the way: the result appears right below
                   onPick(example.text);
                 }}
-                className="flex h-full w-full flex-col items-start gap-0.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-slate-500 hover:shadow motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+                className="group flex h-full w-full flex-col items-start gap-0.5 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md motion-reduce:hover:translate-y-0"
               >
-                <span className="text-xs font-medium text-slate-500">{example.subject}</span>
+                <span className="text-xs font-semibold text-indigo-700">{example.subject}</span>
                 <span className="font-mono text-slate-800">{example.text}</span>
               </button>
             </li>

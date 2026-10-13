@@ -28,7 +28,7 @@ export function StatisticsView({ details }: { details: StatisticsDetails }) {
                 <tr
                   key={measure.name}
                   aria-current={asked ? "true" : undefined}
-                  className={`border-t border-slate-100 ${asked ? "bg-sky-50 font-medium" : ""}`}
+                  className={`border-t border-slate-100 ${asked ? "bg-indigo-50 font-medium" : ""}`}
                 >
                   <th scope="row" className="py-1.5 pr-3 font-normal text-slate-700">
                     {measure.label} <MathFormula latex={`(${measure.symbol})`} />

@@ -12,7 +12,7 @@ export function ErrorView({ result, error }: ErrorViewProps) {
   return (
     <div
       role="alert"
-      className="flex flex-col gap-3 rounded-xl border border-rose-200 bg-rose-50 p-5 text-rose-900"
+      className="flex flex-col gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900 sm:p-6"
     >
       <h2 className="font-medium">Não foi possível calcular</h2>
       <p>{error.message}</p>
@@ -33,7 +33,7 @@ function InputMarker({ input, position }: { input: string; position: number }) {
   const after = chars.slice(position + 1).join("");
 
   return (
-    <p className="overflow-x-auto rounded-lg bg-white px-3 py-2 font-mono whitespace-pre text-slate-800">
+    <p className="overflow-x-auto rounded-xl bg-white px-3 py-2 font-mono whitespace-pre text-slate-800">
       {before}
       <mark className="rounded-sm bg-rose-200 text-rose-950">{at === "" ? " " : at}</mark>
       {after}

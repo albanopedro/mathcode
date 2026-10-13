@@ -146,6 +146,26 @@ export const OPERATIONS: readonly Operation[] = [
   },
 ];
 
+/**
+ * The most used operations, shown as pills above the input (ADR 0025); the others
+ * are in the "Mais operações" list. Labels are short, to fit a phone in two rows.
+ */
+export const FEATURED: readonly { intent: IntentName | null; label: string }[] = [
+  { intent: null, label: "Automático" },
+  { intent: "assistant", label: "Assistente" },
+  { intent: "solve_equation", label: "Equação" },
+  { intent: "derivative", label: "Derivar" },
+  { intent: "integral", label: "Integrar" },
+  { intent: "graph", label: "Gráfico" },
+];
+
+/** The index in OPERATIONS of an operation, by its intent. */
+export const indexOfOperation = (intent: IntentName | null): number =>
+  Math.max(
+    0,
+    OPERATIONS.findIndex((option) => option.intent === intent),
+  );
+
 /** Short name shown next to a result. */
 export const INTENT_LABELS: Record<IntentName, string> = {
   arithmetic: "Aritmética",

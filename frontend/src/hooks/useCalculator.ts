@@ -8,7 +8,7 @@ export type CalculatorState =
   | { status: "idle" }
   | { status: "loading" }
   /** `live`: calculated while typing, so an error is only a hint (ADR 0023). */
-  | { status: "done"; result: MathResult; live: boolean }
+  | { status: "done"; result: MathResult; live: boolean; seq: number }
   /** No MathResult at all: the API could not be reached or answered nonsense. */
   | { status: "failed"; message: string };
 
@@ -17,6 +17,7 @@ export function useCalculator() {
   /** A live calculation is running: the last result stays, dimmed, until it arrives. */
   const [busy, setBusy] = useState(false);
   const controller = useRef<AbortController | null>(null);
+  const answers = useRef(0); // numbers each answer, so the screen can animate a new one
 
   useEffect(() => () => controller.current?.abort(), []);
 
@@ -40,7 +41,8 @@ export function useCalculator() {
         const result = await calculate(input, intent, options, allowAi, current.signal);
         if (!current.signal.aborted) {
           setBusy(false);
-          setState({ status: "done", result, live });
+          answers.current += 1;
+          setState({ status: "done", result, live, seq: answers.current });
           return result;
         }
       } catch (error: unknown) {

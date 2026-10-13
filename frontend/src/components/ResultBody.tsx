@@ -59,7 +59,7 @@ export function ResultBody({ result, value, verification }: ResultBodyProps) {
   return (
     <>
         {showApprox ? (
-          <p className="overflow-x-auto font-mono text-2xl break-all text-slate-900">
+          <p className="overflow-x-auto rounded-xl bg-slate-50 px-4 py-5 text-center font-mono text-2xl break-all text-slate-900">
             <span aria-label="aproximadamente">≈</span> {approximation}
           </p>
         ) : asText ? (
@@ -70,22 +70,22 @@ export function ResultBody({ result, value, verification }: ResultBodyProps) {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto text-xl">
+          <div className="overflow-x-auto rounded-xl bg-slate-50 px-4 py-3 text-xl">
             <MathFormula latex={value.latex} display />
           </div>
         )}
 
         {approximation !== null && (
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <div role="group" aria-label="Forma do resultado" className="flex rounded-lg border border-slate-300">
+            <div role="group" aria-label="Forma do resultado" className="flex rounded-full border border-slate-200 bg-white p-0.5">
               {(["exact", "approx"] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   aria-pressed={display.mode === mode}
                   onClick={() => change({ mode })}
-                  className={`px-3 py-1 first:rounded-l-lg last:rounded-r-lg focus-visible:outline-2 focus-visible:outline-slate-500 ${
-                    display.mode === mode ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-50"
+                  className={`rounded-full px-3 py-1 transition ${
+                    display.mode === mode ? "bg-indigo-600 text-white" : "text-slate-700 hover:bg-slate-100"
                   }`}
                 >
                   {mode === "exact" ? "Exato" : "Aproximado"}
@@ -97,7 +97,7 @@ export function ResultBody({ result, value, verification }: ResultBodyProps) {
               <select
                 value={display.digits}
                 onChange={(event) => change({ digits: Number(event.target.value) })}
-                className="rounded-lg border border-slate-500 bg-white px-2 py-1"
+                className="field px-2 py-1"
               >
                 {Array.from({ length: MAX_DIGITS - MIN_DIGITS + 1 }, (_, i) => MIN_DIGITS + i).map(
                   (digits) => (
@@ -222,7 +222,7 @@ export function ResultBody({ result, value, verification }: ResultBodyProps) {
         {result.normalized_input && (
           <p className="text-sm text-slate-500">
             Entendido como:{" "}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-700">
+            <code className="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-slate-700">
               {result.normalized_input}
             </code>
           </p>
@@ -235,7 +235,7 @@ export function ResultBody({ result, value, verification }: ResultBodyProps) {
             {result.warnings.map((warning) => (
               <li
                 key={warning.code + warning.message}
-                className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-900"
+                className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm text-sky-900"
               >
                 {warning.message}
               </li>

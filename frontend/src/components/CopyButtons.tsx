@@ -25,8 +25,7 @@ export function CopyButtons({ value }: { value: ResultValue }) {
     }
   }
 
-  const button =
-    "rounded-lg border border-slate-300 px-2.5 py-1 text-xs text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-slate-500";
+  const button = "btn-secondary";
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button type="button" onClick={() => void copy("text")} className={button}>

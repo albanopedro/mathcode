@@ -12,13 +12,13 @@ export function ApiStatus() {
   return (
     <section
       aria-labelledby="api-status-title"
-      className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+      className="card px-5 py-4"
     >
-      <h2 id="api-status-title" className="text-sm font-medium text-slate-500">
+      <h2 id="api-status-title" className="text-xs font-semibold tracking-wide text-slate-500 uppercase">
         Status da API
       </h2>
 
-      <div role="status" className="mt-2 flex items-center gap-3">
+      <div role="status" className="mt-2 flex items-center gap-3 text-sm text-slate-700">
         {state.status === "checking" && (
           <>
             <Dot className="bg-slate-300" />
@@ -48,7 +48,7 @@ export function ApiStatus() {
         <button
           type="button"
           onClick={retry}
-          className="mt-4 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
+          className="btn-secondary mt-4 px-3 py-1.5 text-sm"
         >
           Tentar de novo
         </button>

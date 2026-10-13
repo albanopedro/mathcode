@@ -32,7 +32,7 @@ const BADGES: Record<VerificationStatus, { icon: string; className: string }> = 
 export function Verification({ report }: { report: VerificationReport }) {
   const badge = BADGES[report.status];
   return (
-    <div className={`rounded-lg border px-4 py-3 ${badge.className}`}>
+    <div className={`rounded-xl border px-4 py-3 ${badge.className}`}>
       <p className="flex items-baseline gap-2 font-medium">
         <span aria-hidden="true">{badge.icon}</span>
         {report.message}
@@ -48,7 +48,7 @@ export function Verification({ report }: { report: VerificationReport }) {
                   {outcome.icon}
                 </span>
                 <p className="min-w-0">
-                  <span className="mr-1.5 rounded bg-white/70 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap">
+                  <span className="mr-1.5 rounded-md bg-white/70 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap">
                     {KIND_LABELS[check.kind]}
                   </span>
                   <span className="sr-only">{outcome.label}: </span>

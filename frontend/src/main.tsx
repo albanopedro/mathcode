@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 
 // KaTeX styles and fonts are bundled by Vite: no CDN, works offline (ADR 0001).
 import "katex/dist/katex.min.css";
+// Inter (OFL), also bundled: the browser downloads only the subsets it needs (ADR 0025).
+import "@fontsource-variable/inter";
 
 import App from "./App";
 import "./index.css";

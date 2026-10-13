@@ -1,6 +1,27 @@
 @import "tailwindcss";
 
 /*
+ * The modern look (ADR 0025): Inter served by the app itself (no CDN), and one
+ * short entrance animation. prefers-reduced-motion (end of this file) turns it off.
+ */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji";
+  --animate-fade-up: fade-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/*
  * Dark theme (Phase 11, ADR 0019): the palette is mirrored instead of adding
  * dark: classes everywhere. Tailwind 4 writes every color as a variable, so
  * redefining them under .dark turns bg-white into a dark card and text-slate-900
@@ -81,6 +102,17 @@
   --color-violet-800: oklch(94.3% 0.029 294.588);
   --color-violet-900: oklch(96.9% 0.016 293.756);
   --color-violet-950: oklch(96.9% 0.016 293.756);
+  --color-indigo-50: oklch(25.7% 0.09 281.288);
+  --color-indigo-100: oklch(35.9% 0.144 278.697);
+  --color-indigo-200: oklch(39.8% 0.195 277.366);
+  --color-indigo-300: oklch(45.7% 0.24 277.023);
+  --color-indigo-400: oklch(58.5% 0.233 277.117);
+  --color-indigo-500: oklch(67.3% 0.182 276.935);
+  --color-indigo-600: oklch(78.5% 0.115 274.713);
+  --color-indigo-700: oklch(87% 0.065 274.039);
+  --color-indigo-800: oklch(93% 0.034 272.788);
+  --color-indigo-900: oklch(96.2% 0.018 272.314);
+  --color-indigo-950: oklch(96.2% 0.018 272.314);
 }
 
 /* The visual editor (MathLive, ADR 0020) sits in our own box: no background or
@@ -94,8 +126,42 @@ math-field {
 
 /* A visible focus ring on everything that can be focused with the keyboard. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--color-sky-600);
+  outline: 2px solid var(--color-indigo-600);
   outline-offset: 2px;
+}
+
+/*
+ * Shared pieces of the interface (ADR 0025), so every card, button and pill looks
+ * the same. Colors come from the palette, so the dark theme mirrors them too.
+ * Text fields keep a slate-500 border: 3:1 against the page (ADR 0019).
+ */
+@utility card {
+  @apply rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5;
+}
+
+@utility btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 font-medium text-white shadow-sm transition hover:bg-indigo-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600 disabled:shadow-none disabled:active:scale-100;
+}
+
+@utility btn-secondary {
+  @apply inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50;
+}
+
+@utility field {
+  @apply rounded-lg border border-slate-500 bg-white px-3 py-1.5 shadow-sm transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 focus:outline-none;
+}
+
+/* A pill (operations, switches): the shape here, the colors in pill-off or pill-on. */
+@utility pill {
+  @apply inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition select-none;
+}
+
+@utility pill-off {
+  @apply border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50;
+}
+
+@utility pill-on {
+  @apply border-indigo-600 bg-indigo-600 text-white hover:border-indigo-700 hover:bg-indigo-700;
 }
 
 @media (prefers-reduced-motion: reduce) {

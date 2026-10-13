@@ -17,7 +17,7 @@ export function HistoryPanel({ entries, onRedo, onRemove, onClear }: HistoryPane
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <details className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <details className="card p-4 sm:px-6">
       <summary className="cursor-pointer font-medium text-slate-700">
         Histórico ({entries.length})
       </summary>
@@ -32,12 +32,12 @@ export function HistoryPanel({ entries, onRedo, onRemove, onClear }: HistoryPane
             {entries.map((entry) => (
               <li
                 key={entry.id}
-                className="flex items-start gap-2 rounded-lg border border-slate-100 p-2"
+                className="flex items-start gap-2 rounded-xl border border-slate-100 p-2 transition hover:border-slate-200 hover:bg-slate-50"
               >
                 <button
                   type="button"
                   onClick={() => onRedo(entry)}
-                  className="flex min-w-0 flex-1 flex-col items-start gap-0.5 text-left focus-visible:outline-2 focus-visible:outline-slate-500"
+                  className="flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded-lg text-left"
                   aria-label={`Refazer: ${entry.input}`}
                 >
                   <span className="max-w-full truncate font-mono text-sm text-slate-800">
@@ -58,7 +58,7 @@ export function HistoryPanel({ entries, onRedo, onRemove, onClear }: HistoryPane
                   type="button"
                   onClick={() => onRemove(entry.id)}
                   aria-label={`Apagar do histórico: ${entry.input}`}
-                  className="rounded px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-slate-500"
+                  className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-200 hover:text-slate-800"
                 >
                   ✕
                 </button>
@@ -74,14 +74,14 @@ export function HistoryPanel({ entries, onRedo, onRemove, onClear }: HistoryPane
                     onClear();
                     setConfirming(false);
                   }}
-                  className="rounded-lg bg-rose-700 px-3 py-1.5 font-medium text-white hover:bg-rose-800"
+                  className="rounded-lg bg-rose-700 px-3 py-1.5 font-medium text-white transition hover:bg-rose-800"
                 >
                   Confirmar: apagar tudo
                 </button>
                 <button
                   type="button"
                   onClick={() => setConfirming(false)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+                  className="btn-secondary px-3 py-1.5 text-sm"
                 >
                   Cancelar
                 </button>
@@ -90,7 +90,7 @@ export function HistoryPanel({ entries, onRedo, onRemove, onClear }: HistoryPane
               <button
                 type="button"
                 onClick={() => setConfirming(true)}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-50"
+                className="btn-secondary px-3 py-1.5 text-sm"
               >
                 Limpar histórico
               </button>
