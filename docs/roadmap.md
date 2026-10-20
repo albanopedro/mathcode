@@ -28,6 +28,7 @@ Regras gerais:
 | — | Exemplos clicáveis | concluída |
 | — | Interface moderna | concluída (aguardando revisão) |
 | — | Auditoria de segurança: regex e event loop | concluída (aguardando revisão) |
+| — | Integração contínua (CI) | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -524,6 +525,28 @@ determinística.
 - **Medido:** o payload que travava o servidor agora responde em 0,028 s, e o
   health check responde em seguida.
 - **Testes:** 1 668 no backend (eram 1 659) e 354 no frontend (sem mudança).
+
+## Depois da Fase 12 — Integração contínua (feita)
+
+- **Decidido** ([ADR 0027](decisions/0027-integracao-continua.md)): dois jobs
+  independentes (backend e frontend), sem segredo, sem serviço e sem deploy.
+- **Entregue:**
+  - `.github/workflows/ci.yml`: push na `main`, pull requests e execução
+    manual;
+  - job do backend: Python 3.14, `ruff check`, `ruff format --check` e `pytest`;
+  - job do frontend: Node 22.12 e 26, `npm ci`, typecheck, testes e build;
+  - concorrência (um push cancela a rodada anterior), tempo limite de 15 min
+    por job e permissão mínima (`contents: read`);
+  - `engines` no `package.json`, declarando Node 22.12+ de forma legível por
+    máquina.
+- **Conferido antes de existir:** o comando de instalação do backend foi testado
+  num ambiente virtual limpo (`pip install -e "backend[dev]"` a partir da raiz
+  do repositório) e o frontend foi testado no Node 22.12 e no 26 — typecheck,
+  354 testes e build, nas duas versões.
+- **Por que agora:** o teste da geometria falhava 2 em 5 vezes com a máquina
+  ocupada, e nada acusava. A CI roda em máquina limpa e dá conta disso.
+- **Sugestões registradas:** matriz de Python quando sair a 3.15; cobertura de
+  código (hoje não diria nada).
 
 ## Sugestões registradas (fora do escopo atual)
 

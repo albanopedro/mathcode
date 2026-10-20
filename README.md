@@ -1,5 +1,7 @@
 # Mathcode
 
+[![CI](https://github.com/albanopedro/mathcode/actions/workflows/ci.yml/badge.svg)](https://github.com/albanopedro/mathcode/actions/workflows/ci.yml)
+
 Calculadora matemática que entende expressões e frases em português. Os
 cálculos são feitos por um motor determinístico (SymPy) e **todo resultado
 informa o quanto foi verificado**. A IA, que é opcional, só interpreta o
@@ -156,6 +158,10 @@ cd frontend
 npm test
 npm run build
 ```
+
+Tudo isso roda sozinho a cada push, na aba **Actions** do repositório
+([ADR 0027](docs/decisions/0027-integracao-continua.md)): o backend em Python
+3.14 e o frontend em Node 22.12 e 26. Sem segredo e sem deploy.
 
 ## Estrutura
 

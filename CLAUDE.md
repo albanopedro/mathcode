@@ -38,7 +38,9 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 6. Não reescrever sem necessidade; preservar o comportamento existente.
 7. Idiomas: conversa e docs em **português**; código, comentários e nomes em
    **inglês**; mensagens ao usuário final em português.
-8. `ruff format` **só nos arquivos da fase**, nunca no projeto inteiro.
+8. `ruff format` **só nos arquivos da fase**, nunca no projeto inteiro. Mas o
+   projeto inteiro precisa estar formatado: a CI roda `ruff format --check .`
+   (ADR 0027). Se ela reclamar, é porque algum arquivo ficou fora do formato.
 9. Não esconder erros e não contornar testes.
 
 ## Estado atual
@@ -63,6 +65,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: exemplos clicáveis | concluída e commitada (`840ef9c`, ADR 0024) |
 | Pós-12: interface moderna | **concluída, aguardando revisão e commit** (ADR 0025) |
 | Pós-12: auditoria de segurança (regex e event loop) | **concluída, aguardando revisão e commit** (ADR 0026) |
+| Pós-12: integração contínua (CI) | **concluída, aguardando revisão e commit** (ADR 0027) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -549,6 +552,10 @@ cd frontend && npm test && npm run build
   `mathcode-web` do `codes(dw)/.claude/launch.json`.
 - Ambiente: macOS, Python 3.14.3 (só essa versão) e Node 26. Não há Docker, uv
   nem Ollama.
+- **A CI** (`.github/workflows/ci.yml`, ADR 0027) roda o mesmo que está
+  acima, em máquina limpa: backend (Python 3.14) e frontend (Node 22.12 e 26).
+  Push na `main` e pull requests. Sem segredo e sem deploy. Para ver o que
+  ela faz: a aba Actions do repositório.
 
 ## Próximos passos
 
