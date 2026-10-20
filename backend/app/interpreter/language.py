@@ -231,9 +231,13 @@ def _percent(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
 
 # -- statistics (Phase 10, ADR 0011) -------------------------------------------------------------
 
-_NUMBER = r"[-+\u2212]?\s*\d+(?:[.,]\d+)?(?:\s*/\s*\d+(?:[.,]\d+)?)?"
+# The number never takes the blank before it: the separator does, once. When both
+# took it, each item of a list had two ways to read the same blank and the regex
+# tried all of them (ADR 0026).
+_NUMBER = r"[-+\u2212]?\d+(?:[.,]\d+)?(?:\s*/\s*\d+(?:[.,]\d+)?)?"
 # Values separated by "; ", ", " (with a space: "1,5" is a decimal) or a final " e ".
-_DATA = rf"(?P<data>{_NUMBER}(?:\s*(?:;|,\s|\se\s)\s*{_NUMBER})*)"
+# The gap is atomic: the regex commits to one split of the blanks (ADR 0026).
+_DATA = rf"(?P<data>\s*{_NUMBER}(?:(?>\s*(?:;|,\s|\se\s)\s*){_NUMBER})*)"
 _MEASURE = (
     r"(?:(?P<std>desvio[\s-]+padrao(?:\s+(?P<std_kind>amostral|populacional))?)"
     r"|(?P<variance>variancia(?:\s+(?P<variance_kind>amostral|populacional))?)"

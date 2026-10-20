@@ -396,6 +396,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 |---|---|
 | [0001](decisions/0001-custo-zero.md) | Custo zero (regra primordial) |
 | [0002](decisions/0002-parser-sem-eval.md) | Parser próprio sem `eval`, limites e execução isolada |
+| [0026](decisions/0026-redos-e-event-loop.md) | Regex sem backtracking (vão atômico) e event loop livre: nenhuma regra nem parsing roda no event loop |
 | [0003](decisions/0003-verificacao.md) | Estratégia e níveis de verificação |
 | [0004](decisions/0004-ai-provider.md) | Camada de IA só com provedores gratuitos |
 | [0005](decisions/0005-dominio-e-exatidao.md) | Domínio ℝ, exatidão e convenções |

@@ -1,10 +1,12 @@
 """POST /api/calculate through real worker processes."""
 
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 from fastapi.testclient import TestClient
 
+from app.api import calculate as calculate_api
 from app.api.calculate import MAX_REQUEST_INPUT_LENGTH
 from app.core.limits import MAX_INPUT_LENGTH
 from app.models.result import MathResult
@@ -194,6 +196,34 @@ def test_documented_in_openapi(api: TestClient) -> None:
     schema = api.get("/api/openapi.json").json()
     operation = schema["paths"]["/api/calculate"]["post"]
     assert {"200", "422", "500", "503"} <= set(operation["responses"])
+
+
+def test_the_rules_are_read_outside_the_event_loop(api: TestClient, monkeypatch) -> None:
+    """Reading the rules is CPU-bound, so it must not hold the event loop.
+
+    A long list used to freeze the regex, and the rules were read right in the
+    event loop: one request took the whole server down (ADR 0026).
+    """
+    where: list[str] = []
+
+    def watch(name: str, answer: object):
+        def call(*args: object, **kwargs: object) -> object:
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                where.append(name)  # a plain thread: what we want
+            else:
+                where.append(f"{name} (event loop)")
+            return answer
+
+        return call
+
+    monkeypatch.setattr(calculate_api, "plan_request", watch("plan_request", None))
+    monkeypatch.setattr(calculate_api, "needs_ai", watch("needs_ai", False))
+
+    api.post("/api/calculate", json={"input": "2 + 2", "allow_ai": True})
+
+    assert where == ["plan_request", "needs_ai"]
 
 
 # -- statistics (Phase 10) ------------------------------------------------------------------------

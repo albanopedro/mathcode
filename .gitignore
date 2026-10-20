@@ -25,3 +25,8 @@ dist/
 
 # Swagger UI copiado do npm (frontend/scripts/copy-swagger.mjs)
 backend/app/static/swagger/
+
+# Clone antigo do próprio projeto, que ficava dentro da pasta (um gitlink sem
+# .gitmodules, que quebrava "git clone" e "git submodule status").
+# Para tirar do índice: git rm --cached mathcode
+mathcode/

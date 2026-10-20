@@ -27,6 +27,7 @@ Regras gerais:
 | — | Resultado ao vivo | concluída |
 | — | Exemplos clicáveis | concluída |
 | — | Interface moderna | concluída (aguardando revisão) |
+| — | Auditoria de segurança: regex e event loop | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -494,6 +495,35 @@ determinística.
 - **Conferido no navegador:** contraste sem falhas nos dois temas, celular sem
   rolagem lateral, nada externo.
 - **Testes:** 354 no frontend (eram 352); backend sem mudança (1 659).
+
+## Depois da Fase 12 — Auditoria de segurança: regex e event loop (feita)
+
+- **Decidido** ([ADR 0026](decisions/0026-redos-e-event-loop.md)): o regex da
+  lista de valores não tem ambiguidade (vão atômico), e nenhuma regra nem
+  parsing roda no event loop.
+- **O problema encontrado:** uma entrada de 455 caracteres
+  (`"media " + "; ".join(["1"] * 150) + ","`) fazia o regex da estatística
+  voltar atrás 2¹⁵⁰ vezes. Como as regras eram lidas direto no event loop, o
+  servidor inteiro parava de responder — inclusive o health check — e não
+  voltava sozinho. Na configuração padrão (`MATHCODE_AI_PROVIDER=none`), bastava
+  `allow_ai=true`.
+- **Entregue:**
+  - `_NUMBER` não pega mais o espaço antes dele, e o vão entre itens é atômico
+    (`(?>...)`): cada item tem uma leitura só;
+  - `needs_ai()` e `plan_request()` vão para `asyncio.to_thread()`;
+  - teste de regressão em `tests/test_security.py` (150 itens lidos em menos de
+    2 s) e teste de que as regras são lidas fora do event loop, em
+    `tests/api/test_calculate.py`;
+  - `mathcode/` (clone antigo do próprio projeto, um gitlink sem `.gitmodules`
+    que quebrava `git clone`) sai do índice.
+- **Achado no caminho (pré-existente):** a verificação da área da esfera levava
+  1,04 s contra um orçamento de 1,5 s, e o teste da geometria falhava de 2 em 5
+  vezes quando a máquina estava ocupada. A causa era um `simplify` que deixava o
+  integrando pior (um produto de duas raízes), não melhor. Sem ele, a mesma
+  verificação leva 0,36 s, com o mesmo resultado exato.
+- **Medido:** o payload que travava o servidor agora responde em 0,028 s, e o
+  health check responde em seguida.
+- **Testes:** 1 668 no backend (eram 1 659) e 354 no frontend (sem mudança).
 
 ## Sugestões registradas (fora do escopo atual)
 

@@ -1,3 +1,4 @@
+import asyncio
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -79,10 +80,16 @@ async def post_calculate(
 ) -> JSONResponse:
     result = await _assistant(body, pool, ai)
     if result is None:
-        if body.allow_ai and body.intent is None and body.options is None and needs_ai(body.input):
-            result = await ai.calculate(body.input, pool)
-        else:
-            result = await pool.calculate(body.input, body.intent, body.options)
+        wants_ai = False
+        if body.allow_ai and body.intent is None and body.options is None:
+            # Reading the rules is CPU-bound (regex and parsing), so it happens in
+            # a thread: the event loop keeps answering meanwhile (ADR 0026).
+            wants_ai = await asyncio.to_thread(needs_ai, body.input)
+        result = (
+            await ai.calculate(body.input, pool)
+            if wants_ai
+            else await pool.calculate(body.input, body.intent, body.options)
+        )
     status = _HTTP_STATUS.get(result.error.code, 200) if result.error else 200
     return JSONResponse(status_code=status, content=result.model_dump(mode="json"))
 
@@ -102,7 +109,8 @@ async def _assistant(body: CalculateRequest, pool: WorkerPool, ai: AIService) ->
         )
         return _failure(body.input, ErrorCode.INVALID_INPUT_FOR_INTENT, message)
     try:
-        plan = plan_request(body.input)
+        # Splitting a compound request is regex work: off the event loop (ADR 0026).
+        plan = await asyncio.to_thread(plan_request, body.input)
     except MathError as error:
         return _failure(body.input, error.code, error.message)
     if plan is not None:

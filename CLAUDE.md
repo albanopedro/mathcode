@@ -62,11 +62,14 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: resultado ao vivo | concluída e commitada (`4c8f902`, ADR 0023) |
 | Pós-12: exemplos clicáveis | concluída e commitada (`840ef9c`, ADR 0024) |
 | Pós-12: interface moderna | **concluída, aguardando revisão e commit** (ADR 0025) |
+| Pós-12: auditoria de segurança (regex e event loop) | **concluída, aguardando revisão e commit** (ADR 0026) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
 um repositório embutido (gitlink). A correção sugerida é
-`git rm --cached mathcode` seguido de `rm -rf mathcode`.
+`git rm --cached mathcode` seguido de `rm -rf mathcode`. O `.gitignore` já
+ignora a pasta, para ela não voltar; falta só o comando acima, que é do
+usuário (o assistente não mexe no estado do Git).
 
 ## Arquitetura em uma tela
 
@@ -438,6 +441,16 @@ Backend, continuação:
   `(x+1)^1000*(x+2)^1000` e `sin(x)^1000 + cos(x)^1000`. Por isso nunca
   chamar `calculate()` direto no servidor; sempre passar pelo `WorkerPool`.
   Para medir entradas suspeitas, usar um subprocesso com limite de tempo.
+- **Nada de CPU no event loop** (ADR 0026). Regex e parsing são trabalho de
+  CPU sem limite conhecido: `needs_ai()` e `plan_request()` rodam em
+  `asyncio.to_thread()`. Se um dia algo novo for lido na API, vai para uma
+  thread, não para o event loop.
+- **Regex com dois `\s*` na mesma fronteira volta atrás exponencialmente**
+  (ADR 0026). O `\s*` do fim de um item e o `\s*` do começo do próximo disputam
+  o mesmo espaço: 2ⁿ leituras para n itens. Em `interpreter/language.py`, o
+  número não pega o espaço antes dele e o vão entre itens é atômico
+  (`(?>...)`). Regex novo precisa de teste de tempo, como o de
+  `tests/test_security.py`.
 - Os testes de API (`tests/api/`) sobem processos reais. Os helpers ficam em
   `tests/api/api_helpers.py`: `running_app(**settings)` e `SLOW_INPUT`.
 - O `TestClient` só roda o `lifespan` dentro de `with`. Os testes da Fase 1
