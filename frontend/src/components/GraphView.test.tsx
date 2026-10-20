@@ -7,8 +7,8 @@ import { GraphView } from "./GraphView";
 
 // jsdom cannot draw: Plotly is replaced, and the test checks what it receives.
 const plotly = vi.hoisted(() => ({
-  newPlot: vi.fn(() => Promise.resolve()),
-  purge: vi.fn(),
+  newPlot: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+  purge: vi.fn<(node: HTMLElement) => void>(),
 }));
 vi.mock("plotly.js-basic-dist-min", () => ({ default: plotly }));
 

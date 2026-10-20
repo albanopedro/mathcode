@@ -58,13 +58,17 @@ export function GraphView({ details }: { details: GraphDetails }) {
           Não foi possível carregar o gráfico.
         </p>
       )}
+      {/* The chart is drawn inside this div by Plotly, so it cannot be an <img>.
+          role="img" with a label is the accessible pattern for a chart. */}
+      {/* oxlint-disable jsx-a11y/prefer-tag-over-role */}
       <div
+        role="img"
         ref={element}
         data-testid="graph"
-        role="img"
         aria-label={`Gráfico de ${details.functions.map((f) => `y = ${f.label}`).join(", ")}`}
         className="h-80 w-full sm:h-96"
       />
+      {/* oxlint-enable jsx-a11y/prefer-tag-over-role */}
     </figure>
   );
 }

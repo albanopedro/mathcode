@@ -686,7 +686,7 @@ def present_vectors(outcome: VectorOutcome) -> Presentation:
             approx=f"{radians_approx} rad" if radians_approx else None,
         )
     else:
-        shown = str(sp.N(degrees, 6))
+        shown = _six(degrees)
         value = ResultValue(
             plain=f"θ = {plain(result)} rad ≈ {shown}°",
             latex=rf"\theta = {latex(result)} \approx {shown}^\circ",

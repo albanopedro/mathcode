@@ -304,6 +304,39 @@ def test_vector_words_without_brackets_explain_the_syntax() -> None:
     assert "[1, 2]" in exc.value.message
 
 
+@pytest.mark.parametrize(
+    "text",
+    [
+        "produto escalar de 1 2 e 3 4",
+        "produto interno de 1 2 e 3 4",
+        "produto vetorial de 1 2 e 3 4",
+        "vetor unitario de 1 2",
+        "versor de 1 2",
+        "norma de 3 4",
+        "modulo de 3 4",
+        "comprimento de 3 4",
+        "angulo entre 1 0 e 1 1",
+    ],
+)
+def test_every_vector_word_without_brackets_explains_the_syntax(text: str) -> None:
+    """Every word the vector rule knows also asks for the brackets.
+
+    The two rules had two different lists of words, so "norma de 3 4" fell
+    through to the parser ("Símbolo desconhecido: 'norma'"), which reads like a
+    typo of a variable name.
+    """
+    with pytest.raises(MathError) as exc:
+        match_language(text)
+    assert "[1, 2]" in exc.value.message
+
+
+def test_a_figure_keeps_a_word_that_both_areas_use() -> None:
+    """ "comprimento de um círculo" is an arc, not the length of a vector."""
+    found = match("comprimento de um círculo de raio 5")
+    assert found.intent is I.GEOMETRY
+    assert found.text == "r = 5"
+
+
 # -- geometry (Phase 10) --------------------------------------------------------------------------
 
 

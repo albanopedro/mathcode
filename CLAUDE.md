@@ -66,6 +66,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: interface moderna | **concluída, aguardando revisão e commit** (ADR 0025) |
 | Pós-12: auditoria de segurança (regex e event loop) | **concluída, aguardando revisão e commit** (ADR 0026) |
 | Pós-12: integração contínua (CI) | **concluída, aguardando revisão e commit** (ADR 0027) |
+| Pós-12: qualidade do frontend (lint e velocidade) | **concluída, aguardando revisão e commit** (ADR 0028) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -556,6 +557,10 @@ cd frontend && npm test && npm run build
   acima, em máquina limpa: backend (Python 3.14) e frontend (Node 22.12 e 26).
   Push na `main` e pull requests. Sem segredo e sem deploy. Para ver o que
   ela faz: a aba Actions do repositório.
+- **O lint do frontend é o oxlint**, não o ESLint (ADR 0028): o TypeScript 7
+  não expõe mais a API de JavaScript, e o `typescript-eslint` depende dela. As
+  regras ficam em `frontend/.oxlintrc.json`; `npm run lint` as roda. O
+  `tsc --noEmit` continua sendo quem verifica os tipos.
 
 ## Próximos passos
 

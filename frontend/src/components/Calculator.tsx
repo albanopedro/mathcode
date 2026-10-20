@@ -265,9 +265,9 @@ export function Calculator() {
       </form>
 
       {/* A short announcement for screen readers; the result itself is not read aloud whole. */}
-      <p role="status" className="sr-only">
+      <output className="sr-only">
         {announcement(state)}
-      </p>
+      </output>
       <div id="result-area" tabIndex={-1} aria-busy={loading} className="focus:outline-none">
         {loading && <ResultSkeleton />}
         {state.status === "done" &&

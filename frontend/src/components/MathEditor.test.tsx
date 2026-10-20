@@ -32,7 +32,7 @@ describe("visual editor", () => {
   it("shows what will be calculated, and sends that text", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(fixtures.arithmetic))),
+      vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.arithmetic))),
     );
     const user = userEvent.setup();
     render(<Calculator />);

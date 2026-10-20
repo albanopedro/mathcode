@@ -96,6 +96,9 @@ jobs:
       - name: Tipos
         run: npm run typecheck
 
+      - name: Lint (oxlint)
+        run: npm run lint
+
       - name: Testes
         run: npm test
 

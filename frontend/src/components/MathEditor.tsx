@@ -27,9 +27,15 @@ interface VirtualKeyboard {
 export function MathEditor({ initial, onLatex, onSubmit }: MathEditorProps) {
   const host = useRef<HTMLDivElement>(null);
   const callbacks = useRef({ onLatex, onSubmit });
-  callbacks.current = { onLatex, onSubmit };
   const [status, setStatus] = useState<"loading" | "ready" | "failed">("loading");
   const startWith = useRef(initial);
+
+  // The listeners are added once, when the field is ready, so they read the
+  // callbacks from the ref. The ref is updated after every render, so they
+  // always see the current ones.
+  useEffect(() => {
+    callbacks.current = { onLatex, onSubmit };
+  });
 
   useEffect(() => {
     let cancelled = false;

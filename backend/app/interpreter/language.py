@@ -316,6 +316,14 @@ _VECTOR_OPERATIONS = {
     "produto vetorial": "cross",
     "angulo": "angle",
 }
+# The same words in the two vector rules (with brackets and without). They were
+# two different lists, so "norma de 3 4" fell through to the parser ("Símbolo
+# desconhecido: 'norma'") instead of getting the message that asks for the
+# brackets.
+_VECTOR_KEYWORDS = (
+    r"norma|modulo|comprimento|vetor\s+unitario|versor|produto\s+escalar"
+    r"|produto\s+interno|produto\s+vetorial|angulo"
+)
 
 
 def _vector(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
@@ -355,6 +363,12 @@ _FIGURES = {
     "cone": "cone",
 }
 _SOLIDS = {"cube", "box", "sphere", "cylinder", "cone"}
+# The figures in the geometry rule, longest first: "triangulo retangulo" has to
+# come before "triangulo", or the shorter one wins and the figure is wrong.
+# Derived from the dictionary above, so the two can never disagree.
+_FIGURE_NAMES = "|".join(
+    name.replace(" ", r"\s+") for name in sorted(_FIGURES, key=len, reverse=True)
+)
 _GEOMETRY_VALUE = r"[-+]?\d+(?:[.,]\d+)?(?:\s*/\s*\d+(?:[.,]\d+)?)?"
 _MEASURE_WORDS = (
     r"(?P<word>raio|diametro|lados|lado|bases|base\s+maior|base\s+menor|base|altura|aresta"
@@ -722,15 +736,16 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
     (
         "vector",
         re.compile(
-            r"(?P<op>norma|modulo|comprimento|vetor\s+unitario|versor|produto\s+escalar"
-            r"|produto\s+interno|produto\s+vetorial|angulo)"
+            rf"(?P<op>{_VECTOR_KEYWORDS})"
             r"(?:\s+(?:de|do|da|dos|das|entre))?(?:\s+(?:os\s+)?vetor(?:es)?)?\s*:?\s+(?P<expr>\[.*)"
         ),
         _vector,
     ),
     (
         "vector_without_brackets",
-        re.compile(r"(?:produto\s+escalar|produto\s+vetorial|vetor\s+unitario|versor)\b[^\[]*"),
+        # The figure lookahead keeps "comprimento de um círculo de raio 5" in the
+        # geometry rule, where it is an arc and not a vector.
+        re.compile(rf"(?:{_VECTOR_KEYWORDS})\b(?![^[]*\b(?:{_FIGURE_NAMES})\b)[^\[]*"),
         _vector_without_brackets,
     ),
     (
@@ -755,9 +770,7 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
             r"|classifique|classificacao|hipotenusa|cateto)"
             r"(?:\s+(?:de|do|da)(?:\s+(?:um|uma|o|a))?|\s+o|\s+a)?"
             r"(?:\s+(?:circunferencia\s+do|da\s+circunferencia\s+do))?"
-            r"\s+(?P<figure>circulo|circunferencia|quadrado|retangulo|triangulo\s+retangulo"
-            r"|triangulo|trapezio|losango|paralelogramo|cubo|paralelepipedo|esfera|cilindro"
-            r"|cone)\b(?P<rest>.*)"
+            rf"\s+(?P<figure>{_FIGURE_NAMES})\b(?P<rest>.*)"
         ),
         _geometry,
     ),

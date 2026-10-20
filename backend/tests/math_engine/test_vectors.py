@@ -197,6 +197,12 @@ def test_angle_in_radians_and_degrees() -> None:
     assert approximate.details["degrees_approx"] == "16.260204708312"  # all 15 digits
 
 
+def test_the_degrees_have_no_trailing_zeros() -> None:
+    """The same 6 significant digits everywhere: 8.1301, not 8.13010."""
+    outcome = present_vectors(run("[1, 2]; [1, 3]", "angle"))
+    assert outcome.result.plain == "θ = acos(7*sqrt(2)/10) rad ≈ 8.1301°"
+
+
 def test_norm_with_its_approximation() -> None:
     p = present_vectors(run("[1, 2, 3]", "norm"))
     assert (p.result.plain, p.result.approx) == ("‖u‖ = sqrt(14)", "3.74165738677394")

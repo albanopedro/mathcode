@@ -77,7 +77,10 @@ export function ResultBody({ result, value, verification }: ResultBodyProps) {
 
         {approximation !== null && (
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <div role="group" aria-label="Forma do resultado" className="flex rounded-full border border-slate-200 bg-white p-0.5">
+            <fieldset
+              aria-label="Forma do resultado"
+              className="m-0 flex rounded-full border border-slate-200 bg-white p-0.5"
+            >
               {(["exact", "approx"] as const).map((mode) => (
                 <button
                   key={mode}
@@ -91,7 +94,7 @@ export function ResultBody({ result, value, verification }: ResultBodyProps) {
                   {mode === "exact" ? "Exato" : "Aproximado"}
                 </button>
               ))}
-            </div>
+            </fieldset>
             <label className="flex items-center gap-2 text-slate-600">
               Algarismos
               <select

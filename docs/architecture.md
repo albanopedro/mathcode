@@ -398,6 +398,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0002](decisions/0002-parser-sem-eval.md) | Parser próprio sem `eval`, limites e execução isolada |
 | [0026](decisions/0026-redos-e-event-loop.md) | Regex sem backtracking (vão atômico) e event loop livre: nenhuma regra nem parsing roda no event loop |
 | [0027](decisions/0027-integracao-continua.md) | Integração contínua: dois jobs (backend e frontend), Node na mínima e na atual, ruff format no projeto inteiro |
+| [0028](decisions/0028-lint-do-frontend.md) | Lint do frontend com oxlint: o TypeScript 7 não expõe mais a API de JS, então o ESLint não pode ler o código |
 | [0003](decisions/0003-verificacao.md) | Estratégia e níveis de verificação |
 | [0004](decisions/0004-ai-provider.md) | Camada de IA só com provedores gratuitos |
 | [0005](decisions/0005-dominio-e-exatidao.md) | Domínio ℝ, exatidão e convenções |

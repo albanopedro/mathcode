@@ -155,9 +155,15 @@ cd backend
 
 ```bash
 cd frontend
+npm run lint
+npm run typecheck
 npm test
 npm run build
 ```
+
+O lint é o [oxlint](https://oxc.rs/docs/guide/usage/linter.html): o ESLint não
+pode ler este código, porque o TypeScript 7 não expõe mais a API de JavaScript
+([ADR 0027](docs/decisions/0028-lint-do-frontend.md)).
 
 Tudo isso roda sozinho a cada push, na aba **Actions** do repositório
 ([ADR 0027](docs/decisions/0027-integracao-continua.md)): o backend em Python

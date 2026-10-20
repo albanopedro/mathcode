@@ -5,7 +5,7 @@ import { ApiError, calculate } from "./api";
 
 describe("calculate", () => {
   it("posts the input as JSON", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(fixtures.equation));
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(fixtures.equation));
     vi.stubGlobal("fetch", fetchMock);
 
     await calculate("2x + 5 = 17");
@@ -38,26 +38,26 @@ describe("calculate", () => {
       ...fixtures.timeout,
       error: { code: "SERVER_BUSY", message: "Ocupado.", position: null },
     };
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(busy, 503)));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(busy, 503)));
 
     expect((await calculate("2 + 2")).error?.code).toBe("SERVER_BUSY");
   });
 
   it("reports an unreachable API when the proxy answers 502", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 502 })));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(new Response("", { status: 502 })));
 
     await expect(calculate("2 + 2")).rejects.toThrow(/Não foi possível conectar à API/);
   });
 
   it("reports a rejected request (422)", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ detail: [] }, 422)));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ detail: [] }, 422)));
 
     await expect(calculate("2 + 2")).rejects.toThrow(/HTTP 422/);
   });
 
   it("sends allow_ai only when asked to", async () => {
     // A new Response each time: a body can be read only once.
-    const fetchMock = vi.fn(() => Promise.resolve(jsonResponse(fixtures.aiEquation)));
+    const fetchMock = vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.aiEquation)));
     vi.stubGlobal("fetch", fetchMock);
 
     await calculate("resolva x mais 3 igual a 10", null, null, true);
@@ -73,7 +73,7 @@ describe("calculate", () => {
   });
 
   it("does not trust an unexpected body", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ answer: 4 })));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ answer: 4 })));
 
     const promise = calculate("2 + 2");
     await expect(promise).rejects.toBeInstanceOf(ApiError);

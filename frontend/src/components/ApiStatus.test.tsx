@@ -15,7 +15,7 @@ const HEALTHY = { status: "ok", version: "0.1.0", environment: "development" };
 
 describe("ApiStatus", () => {
   it("shows the checking state first", () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise<Response>(() => {})));
 
     render(<ApiStatus />);
 
@@ -23,7 +23,7 @@ describe("ApiStatus", () => {
   });
 
   it("shows version and environment when the API is online", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(HEALTHY)));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(HEALTHY)));
 
     render(<ApiStatus />);
 
@@ -33,7 +33,7 @@ describe("ApiStatus", () => {
   });
 
   it("shows offline when the request fails", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockRejectedValue(new TypeError("Failed to fetch")));
 
     render(<ApiStatus />);
 
@@ -41,7 +41,7 @@ describe("ApiStatus", () => {
   });
 
   it("shows offline on an HTTP error", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({}, 500)));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({}, 500)));
 
     render(<ApiStatus />);
 
@@ -49,7 +49,7 @@ describe("ApiStatus", () => {
   });
 
   it("treats a gateway error as an unreachable API", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("", { status: 502 })));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(new Response("", { status: 502 })));
 
     render(<ApiStatus />);
 
@@ -59,7 +59,7 @@ describe("ApiStatus", () => {
   });
 
   it("does not trust a response with an unexpected shape", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ status: "ok" })));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse({ status: "ok" })));
 
     render(<ApiStatus />);
 
@@ -68,7 +68,7 @@ describe("ApiStatus", () => {
 
   it("checks again when the user clicks retry", async () => {
     const fetchMock = vi
-      .fn()
+      .fn<typeof fetch>()
       .mockRejectedValueOnce(new TypeError("Failed to fetch"))
       .mockResolvedValueOnce(jsonResponse(HEALTHY));
     vi.stubGlobal("fetch", fetchMock);

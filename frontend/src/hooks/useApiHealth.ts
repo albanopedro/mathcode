@@ -27,6 +27,9 @@ export function useApiHealth() {
       });
 
     return () => controller.abort();
+    // `attempt` is not read here on purpose: it is the trigger that makes the
+    // check run again when the user asks for it.
+    // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [attempt]);
 
   const retry = useCallback(() => {

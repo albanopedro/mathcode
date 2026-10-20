@@ -34,11 +34,11 @@ export function CopyButtons({ value }: { value: ResultValue }) {
       <button type="button" onClick={() => void copy("latex")} className={button}>
         Copiar LaTeX
       </button>
-      <span role="status" className="text-xs text-slate-500">
+      <output className="text-xs text-slate-500">
         {copied === "text" && "Texto copiado."}
         {copied === "latex" && "LaTeX copiado."}
         {copied === "failed" && "Não foi possível copiar (o navegador bloqueou)."}
-      </span>
+      </output>
     </div>
   );
 }

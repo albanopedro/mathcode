@@ -11,7 +11,10 @@ const OPTIONS: readonly { value: ThemeChoice; label: string }[] = [
 export function ThemeSelector() {
   const { choice, choose } = useTheme();
   return (
-    <div role="group" aria-label="Tema" className="flex rounded-full border border-slate-200 bg-white p-0.5 text-xs shadow-sm">
+    <fieldset
+      aria-label="Tema"
+      className="m-0 flex rounded-full border border-slate-200 bg-white p-0.5 text-xs shadow-sm"
+    >
       {OPTIONS.map((option) => (
         <button
           key={option.value}
@@ -27,6 +30,6 @@ export function ThemeSelector() {
           {option.label}
         </button>
       ))}
-    </div>
+    </fieldset>
   );
 }

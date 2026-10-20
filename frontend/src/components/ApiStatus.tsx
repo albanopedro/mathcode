@@ -18,7 +18,7 @@ export function ApiStatus() {
         Status da API
       </h2>
 
-      <div role="status" className="mt-2 flex items-center gap-3 text-sm text-slate-700">
+      <output className="mt-2 flex items-center gap-3 text-sm text-slate-700">
         {state.status === "checking" && (
           <>
             <Dot className="bg-slate-300" />
@@ -42,7 +42,7 @@ export function ApiStatus() {
             <span>Offline: {state.reason}</span>
           </>
         )}
-      </div>
+      </output>
 
       {state.status === "offline" && (
         <button

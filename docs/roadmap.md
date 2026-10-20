@@ -29,6 +29,7 @@ Regras gerais:
 | — | Interface moderna | concluída (aguardando revisão) |
 | — | Auditoria de segurança: regex e event loop | concluída (aguardando revisão) |
 | — | Integração contínua (CI) | concluída (aguardando revisão) |
+| — | Qualidade do frontend (lint e velocidade) | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -547,6 +548,27 @@ determinística.
   ocupada, e nada acusava. A CI roda em máquina limpa e dá conta disso.
 - **Sugestões registradas:** matriz de Python quando sair a 3.15; cobertura de
   código (hoje não diria nada).
+
+## Depois da Fase 12 — Qualidade do frontend (feita)
+
+- **Decidido** ([ADR 0028](decisions/0028-lint-do-frontend.md)): o lint do
+  frontend é feito pelo **oxlint**, e não pelo ESLint, porque o TypeScript 7
+  não expõe mais a API de JavaScript e o `typescript-eslint` depende dela.
+- **Entregue:**
+  - `.oxlintrc.json`: `correctness` e `suspicious` como erro, mais os plugins
+    `react`, `jsx-a11y`, `import`, `vitest` e `unicorn`; três regras desligadas
+    com o motivo no arquivo;
+  - `npm run lint`, e o passo correspondente na CI;
+  - pool do Vitest em `vmThreads`: um jsdom por worker, e não um por arquivo;
+  - os dois erros de UX que a auditoria tinha encontrado: a regra de vetores que
+    não cobria `norma`, `modulo`, `comprimento`, `angulo` e `produto interno`,
+    e os graus com zeros a mais (`8.13010°` em vez de `8.1301°`).
+- **O que o lint encontrou:** nenhum bug de lógica. `role="status"` onde
+  cabia `<output>` (3 lugares), `role="group"` onde cabia `<fieldset>` (2),
+  uma ref escrita durante o render (`MathEditor`) e nove `vi.fn()` sem tipo
+  nos testes.
+- **Velocidade:** a suíte do frontend foi de 17,99 s para 13,62 s.
+- **Testes:** 1 679 no backend (eram 1 668) e 354 no frontend (sem mudança).
 
 ## Sugestões registradas (fora do escopo atual)
 

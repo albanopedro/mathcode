@@ -16,7 +16,7 @@ describe("App: theme and keyboard", () => {
       addEventListener: () => {},
       removeEventListener: () => {},
     }));
-    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {}))); // the API status stays pending
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {}))); // the API status stays pending
     const user = userEvent.setup();
     render(<App />);
     const group = screen.getByRole("group", { name: "Tema" });
@@ -31,7 +31,7 @@ describe("App: theme and keyboard", () => {
   });
 
   it("starts with a link that skips to the result", async () => {
-    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>(() => new Promise(() => {})));
     const user = userEvent.setup();
     render(<App />);
     await user.tab();

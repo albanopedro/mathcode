@@ -15,6 +15,9 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // One jsdom per worker instead of one per file: the environment was half
+    // the time of the suite (25 files, 25 environments).
+    pool: "vmThreads",
     setupFiles: ["./src/test/setup.ts"],
     restoreMocks: true,
     unstubGlobals: true,

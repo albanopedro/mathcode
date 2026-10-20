@@ -14,7 +14,7 @@ vi.mock("plotly.js-basic-dist-min", () => ({
 }));
 
 function answer(result: MathResult, status = 200) {
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(result, status)));
+  vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockResolvedValue(jsonResponse(result, status)));
 }
 
 async function calculateText(text: string, operation?: string) {
@@ -202,7 +202,7 @@ describe("Calculator", () => {
   });
 
   it("shows when the API cannot be reached", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    vi.stubGlobal("fetch", vi.fn<typeof fetch>().mockRejectedValue(new TypeError("Failed to fetch")));
     await calculateText("2 + 2");
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Não foi possível conectar à API.");
@@ -212,7 +212,7 @@ describe("Calculator", () => {
     let resolve: (response: Response) => void = () => {};
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => new Promise<Response>((r) => (resolve = r))),
+      vi.fn<typeof fetch>(() => new Promise<Response>((r) => (resolve = r))),
     );
     await calculateText("2 + 2");
 
@@ -450,7 +450,7 @@ describe("Calculator: phrases and AI", () => {
     // A new Response each time: a body can be read only once.
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(fixtures.aiEquation))),
+      vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.aiEquation))),
     );
     const user = userEvent.setup();
     render(<Calculator />);
@@ -920,7 +920,7 @@ describe("Calculator: history, copy and help", () => {
   it("keeps each calculation and does it again from the history", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(fixtures.equation))),
+      vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.equation))),
     );
     const user = await calculateText("2x + 5 = 17");
     await screen.findByRole("region", { name: "Resultado" });
@@ -940,7 +940,7 @@ describe("Calculator: history, copy and help", () => {
   it("restores the operation and its fields", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(fixtures.trigReduce))),
+      vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.trigReduce))),
     );
     const user = await calculateText("cos(750°)", "Trigonometria");
     await screen.findByRole("region", { name: "Resultado" });
@@ -960,7 +960,7 @@ describe("Calculator: history, copy and help", () => {
   it("removes one entry, and clears all after confirming", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(fixtures.arithmetic))),
+      vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.arithmetic))),
     );
     const user = await calculateText("0.1 + 0.2");
     await screen.findByRole("region", { name: "Resultado" });
@@ -980,7 +980,7 @@ describe("Calculator: history, copy and help", () => {
 
   it("copies the result as text and as LaTeX", async () => {
     answer(fixtures.trigPeriodic);
-    const writeText = vi.fn(() => Promise.resolve());
+    const writeText = vi.fn<(text: string) => Promise<void>>(() => Promise.resolve());
     const user = await calculateText("sin(x) = 1/2");
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     await screen.findByRole("region", { name: "Resultado" });
@@ -995,7 +995,7 @@ describe("Calculator: history, copy and help", () => {
   it("says when the browser blocks copying", async () => {
     answer(fixtures.arithmetic);
     const user = await calculateText("0.1 + 0.2");
-    const writeText = vi.fn(() => Promise.reject(new Error("blocked")));
+    const writeText = vi.fn<(text: string) => Promise<void>>(() => Promise.reject(new Error("blocked")));
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     await screen.findByRole("region", { name: "Resultado" });
 
@@ -1036,7 +1036,7 @@ describe("Calculator: exact or approximate", () => {
   it("switches the headline and remembers the choice", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(fixtures.trigReduce))),
+      vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.trigReduce))),
     );
     const user = await calculateText("cos(750°)", "Trigonometria");
     const result = await screen.findByRole("region", { name: "Resultado" });
@@ -1188,7 +1188,7 @@ describe("Calculator: live result (ADR 0023)", () => {
     // A new Response each time: a body can be read only once.
     vi.stubGlobal(
       "fetch",
-      vi.fn(() => Promise.resolve(jsonResponse(fixtures.equation))),
+      vi.fn<typeof fetch>(() => Promise.resolve(jsonResponse(fixtures.equation))),
     );
     const user = userEvent.setup();
     render(<Calculator />);

@@ -7,9 +7,9 @@ function mockSystem(dark: boolean) {
   const query = {
     matches: dark,
     addEventListener: (_: string, listener: () => void) => listeners.push(listener),
-    removeEventListener: vi.fn(),
+    removeEventListener: vi.fn<(type: string, listener: () => void) => void>(),
   };
-  vi.stubGlobal("matchMedia", vi.fn(() => query));
+  vi.stubGlobal("matchMedia", vi.fn<() => typeof query>(() => query));
   return { query, fire: () => listeners.forEach((listener) => listener()) };
 }
 
@@ -46,7 +46,7 @@ describe("theme", () => {
 
   it("hears when the system changes", () => {
     const system = mockSystem(false);
-    const changed = vi.fn();
+    const changed = vi.fn<() => void>();
     watchSystem(changed);
     system.query.matches = true;
     system.fire();
