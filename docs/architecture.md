@@ -83,7 +83,8 @@ Intents disponíveis (`models/intents.py`):
 - `polynomial_division` (`A / B`);
 - `derivative`, `integral` e `limit`, com parâmetros em `options` (ADR 0007);
 - `graph`: uma ou mais funções, separadas por `;`, ou `y = f(x)` (ADR 0008);
-- `statistics`: uma lista de números, com o resumo ou uma medida (ADR 0011);
+- `statistics`: uma lista de números, com o resumo ou uma medida (ADR 0011;
+  quartis e IQR na ADR 0031);
 - `matrix`: uma expressão com matrizes (`[[1, 2], [3, 4]]`) e o cálculo pedido
   (ADR 0012);
 - `vector`: um vetor (`[1, 2, 3]`) ou dois separados por `;`, e o cálculo
@@ -195,7 +196,7 @@ Avisos (`core/notices.py`), cada um uma vez por resultado:
 | derivative | `variable`, `order` |
 | integral | `variable`, `definite`; se definida: `lower`, `upper`, `converges` |
 | limit | `variable`, `point`, `side` (o lado usado), `requested_side`, `exists`, `oscillates`; se os laterais diferem: `left`, `right` |
-| statistics | `measure` (pedida ou `null`), `count`, `data` e `sorted` (decimais finitos como decimais), `modes` e `measures` (12 entradas: `name`, `label`, `symbol`, `plain`, `latex`, `approx`; `null` quando não definida) |
+| statistics | `measure` (pedida ou `null`), `count`, `data` e `sorted` (decimais finitos como decimais), `modes` e `measures` (15 entradas: `name`, `label`, `symbol`, `plain`, `latex`, `approx`; `null` quando não definida; `q1`, `q3` e `iqr` são as medianas das metades e o intervalo interquartil) |
 | matrix | `operation`, `rows`, `cols`, `matrix` e `matrix_latex` (a matriz A sobre a qual o cálculo foi feito; com A·v, o vetor resultante como coluna) |
 | vector | `operation`, `dimension`, `vectors` e `vectors_latex` (u e v); no ângulo, `degrees` (exato ou `null`) e `degrees_approx` |
 | geometry | `figure`, `calculation`, `measures`, `points`, `formula` (LaTeX da fórmula usada), `quantity` (`length`, `area`, `volume` ou `null`); na reta, `equation` e `slope`; na classificação, `by_sides` e `by_angles` |
@@ -241,7 +242,7 @@ entendem seja enviada ao modelo de IA configurado no servidor. Só vale sem
 | integral | `variable`, `lower`, `upper` (os dois ou nenhum; aceitam `pi/2`, `inf`) |
 | limit | `variable`, `point` (obrigatório), `side` (`both`, `left` ou `right`) |
 | graph | `x_min`, `x_max` (opcionais; padrão −10 e 10; aceitam `-2pi`) |
-| statistics | `measure`: `count`, `sum`, `mean`, `median`, `mode`, `min`, `max`, `range`, `variance`, `std`, `sample_variance` ou `sample_std` (sem ela, o resumo) |
+| statistics | `measure`: `count`, `sum`, `mean`, `median`, `q1`, `q3`, `iqr`, `mode`, `min`, `max`, `range`, `variance`, `std`, `sample_variance` ou `sample_std` (sem ela, o resumo); `q1`/`q3` são as medianas das metades e `iqr = q3 − q1`, com pelo menos 4 valores (ADR 0031) |
 | matrix | `operation`: `evaluate` (padrão), `determinant`, `inverse`, `transpose`, `trace` ou `rank` |
 | vector | `operation`: `evaluate` (padrão), `norm`, `unit`, `dot`, `cross` ou `angle` (os três últimos com dois vetores, `u; v`) |
 | geometry | `figure` e `calculation`, os dois obrigatórios; as combinações válidas estão no catálogo (ADR 0014) |
@@ -302,7 +303,7 @@ Uma página só, `App.tsx`, com cabeçalho, `Calculator` e, no rodapé, o
 | probabilidade no `ResultView` | "Em porcentagem: 37,5%" (com "≈" quando arredondada), as letras repetidas dos anagramas e a fórmula usada (KaTeX); o campo Cálculo (com grupos: Contagem, Eventos, Distribuição binomial) fica em `OperationFields`, com o catálogo espelhado em `utils/probability.ts` |
 | vetores no `ResultView` | resultado vetor sempre em KaTeX e "u = (…)", "v = (…)" abaixo; o campo "Cálculo" de vetores fica em `OperationFields`; `utils/vectors.ts` valida os `details` |
 | matriz no `ResultView` | resultado matriz sempre em KaTeX (sem o limite de texto longo) e "Matriz A (m×n)" abaixo do resultado; o campo "Cálculo" fica em `OperationFields`; `utils/matrices.ts` valida os `details` |
-| `components/StatisticsView.tsx` | tabela do resumo estatístico (Medida, Valor em KaTeX, Aproximado), com a medida pedida destacada e os dados em ordem; `utils/statistics.ts` valida os `details` |
+| `components/StatisticsView.tsx` | tabela do resumo estatístico (Medida, Valor em KaTeX, Aproximado), com a medida pedida destacada, os quartis/IQR e os dados em ordem; `utils/statistics.ts` valida os `details` |
 | `components/OperationFields.tsx` | os campos extras da operação escolhida (variável, ordem, de/até, ponto, lado), descritos em `utils/operations.ts`; `buildOptions` envia só os preenchidos e não valida nada: a API explica o que estiver errado |
 | `components/ResultView.tsx` | fórmula em KaTeX, aproximação `≈`, tipo de operação, interpretação da frase, "Entendido como", verificação, avisos e legenda para `∅` ou ℝ |
 | `components/ErrorView.tsx` | `role="alert"`, mensagem e a entrada com o caractere de `error.position` destacado (contando code points, como o Python) e, se houver, a interpretação da frase |
@@ -401,6 +402,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0028](decisions/0028-lint-do-frontend.md) | Lint do frontend com oxlint: o TypeScript 7 não expõe mais a API de JS, então o ESLint não pode ler o código |
 | [0029](decisions/0029-helpers-compartilhados.md) | Helpers compartilhados em módulos folha: `core/text.py`, `parsing/angles.py`, `math_engine/values.py` |
 | [0030](decisions/0030-tempo-de-resposta.md) | Tempo de resposta: o integrando da superfície e a precisão do avaliador; o que **não** era gargalo |
+| [0031](decisions/0031-quartis-e-iqr.md) | Quartis e IQR: Q1/Q3 como medianas das metades (o valor central fica fora quando ímpar), IQR = Q3 − Q1, n ≥ 4 |
 | [0003](decisions/0003-verificacao.md) | Estratégia e níveis de verificação |
 | [0004](decisions/0004-ai-provider.md) | Camada de IA só com provedores gratuitos |
 | [0005](decisions/0005-dominio-e-exatidao.md) | Domínio ℝ, exatidão e convenções |

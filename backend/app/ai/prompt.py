@@ -27,8 +27,11 @@ Operations (intent) and their options:
 - "limit": options: variable, point (e.g. "0", "inf", "-inf"), side ("both", "left", "right").
 - "graph": functions separated by ";", e.g. "sin(x); cos(x)". Options: x_min, x_max.
 - "statistics": numbers separated by "; ", e.g. "10; 20; 30". Option: measure (count, sum,
-  mean, median, mode, min, max, range, variance, std, sample_variance, sample_std); no
-  measure for the whole summary. variance and std are the population ones.
+  mean, median, q1, q3, iqr, mode, min, max, range, variance, std, sample_variance,
+  sample_std); no measure for the whole summary. variance and std are the population ones.
+  q1 and q3 are the medians of the lower and upper halves (with an odd count the central
+  value is in neither half); iqr = q3 - q1 and needs at least 4 values; for the second
+  quartile use median.
 - "matrix": a matrix expression, one row per bracket, e.g. "[[1, 2], [3, 4]] * 2". Option:
   operation (evaluate, determinant, inverse, transpose, trace, rank); default evaluate.
 - "vector": vectors in one bracket, e.g. "[1, 2, 3]"; two vectors separated by "; ". Option:

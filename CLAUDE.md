@@ -2,10 +2,11 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-21, tempo de resposta (ADR 0030). Seis fases
-> depois da Fase 12: auditoria de segurança (0026), integração contínua
-> (0027), lint do frontend (0028), dívida de duplicação (0029) e tempo de
-> resposta (0030). O plano mestre acabou; o que resta é o backlog em
+> Última atualização: 2026-10-21, quartis e IQR (ADR 0031). Sete fases depois
+> da Fase 12: interface moderna (0025), auditoria de segurança (0026),
+> integração contínua (0027), lint do frontend (0028), dívida de duplicação
+> (0029), tempo de resposta (0030) e quartis e IQR (0031). O plano mestre
+> acabou; o que resta é o backlog em
 > [docs/roadmap.md](docs/roadmap.md) → "Sugestões registradas".
 
 ## O que é
@@ -72,13 +73,13 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: integração contínua (CI) | concluída e commitada (`3a92acf`, ADR 0027) |
 | Pós-12: qualidade do frontend (lint e velocidade) | concluída e commitada (`3cf6d98`, ADR 0028) |
 | Pós-12: dívida de duplicação (helpers compartilhados) | concluída e commitada (`c9b2e7e`, ADR 0029) |
-| Pós-12: tempo de resposta | **concluída, aguardando revisão e commit** (ADR 0030) |
+| Pós-12: tempo de resposta | concluída e commitada (`b41ca29`, ADR 0030) |
+| Pós-12: quartis e IQR | **concluída, aguardando revisão e commit** (ADR 0031) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
-Três coisas continuam abertas, todas em
+Duas coisas continuam abertas, ambas em
 [Próximos passos](#próximos-passos): o `git rm --cached mathcode` (é do
-usuário), o primeiro push com a CI rodando em Linux, e o aviso sobre o
-OpenCode v2.0.20.
+usuário) e o aviso sobre o OpenCode v2.0.20.
 
 ## Arquitetura em uma tela
 
@@ -247,19 +248,26 @@ Backend, continuação:
     → `verified_symbolic`; integrais definidas: `mpmath.quad`, e Newton–Leibniz
     em polinômios/racionais; limites: `partial`, ou `verified_symbolic` por
     continuidade.
-- **Estatística** ([ADR 0011](docs/decisions/0011-estatistica-descritiva.md)):
+- **Estatística** ([ADR 0011](docs/decisions/0011-estatistica-descritiva.md);
+  quartis na [ADR 0031](docs/decisions/0031-quartis-e-iqr.md)):
   - intent `statistics`, `StatisticsParams(data, measure?)`; sem `measure`, o
-    resumo (12 medidas em `details.measures`);
+    resumo (15 medidas em `details.measures`);
   - dados: racionais separados por `; ` ou `, `; `parse(texto,
     number_list=True)`; até 200 valores; sem operação, lista de números é erro
     que aponta a Estatística;
   - cálculo com `Fraction`; σ/σ² populacionais (resposta), s/s² amostrais
     (n ≥ 2); moda = maior frequência, sem moda se nada repete; mediana par =
     média dos centrais;
+  - quartis: Q1 e Q3 são as medianas das metades; com quantidade ímpar, o
+    valor central fica fora das duas; IQR = Q3 − Q1; n ≥ 4; sem interpolação;
+    Q2 é a mediana (não há linha duplicada);
   - verificação: releitura por `exact_value`, módulo `statistics` do Python,
-    soma dos desvios = 0, mediana divide, σ² = variância;
+    soma dos desvios = 0, mediana divide, σ² = variância; quartis refeitos
+    pelas metades (`statistics.median`), Q1 ≤ mediana ≤ Q3 e IQR = Q3 − Q1;
   - frases em `language.py` (`statistics` antes de `future`; "máximo de
-    x^2…" segue futuro; sem números → orientação de formato).
+    x^2…" segue futuro; "primeiro/1º quartil", "terceiro/3º quartil", "IQR",
+    "intervalo interquartil"; "segundo/2º quartil" = mediana; sem números →
+    orientação de formato); abaixo de 4 valores, aviso e "—".
 - **Matrizes** ([ADR 0012](docs/decisions/0012-matrizes.md)):
   - tokens `[` `]`, nó `Matrix` (um termo da expressão); até 8×8; só números;
   - intent `matrix`, `MatrixParams(expression, operation)`; operações
@@ -471,6 +479,10 @@ Backend, continuação:
   (a árvore é percorrida uma vez, e não duas). **Meça antes de mexer**: o
   `simplify` duplicado e o `approx()` recalculado *parecem* desperdício, mas
   o SymPy cacheia e o `approx` de uma raiz `CRootOf` custa 1 ms.
+- **Quartis e IQR** ([ADR 0031](docs/decisions/0031-quartis-e-iqr.md)): Q1 e
+  Q3 são as medianas das metades; com quantidade ímpar, o valor central fica
+  fora das duas. IQR = Q3 − Q1, e são precisos pelo menos 4 valores. **Sem
+  interpolação**: planilhas interpolam e dão outros valores. Q2 é a mediana.
 
 ## Armadilhas conhecidas
 
@@ -616,7 +628,8 @@ cd frontend && npm run lint && npm run typecheck && npm test && npm run build
 - **A CI** (`.github/workflows/ci.yml`, ADR 0027) roda o mesmo que está
   acima, em máquina limpa: backend (Python 3.14) e frontend (Node 22.12 e 26).
   Push na `main` e pull requests. Sem segredo e sem deploy. Para ver o que
-  ela faz: a aba Actions do repositório.
+  ela faz: a aba Actions do repositório. O primeiro push (`b41ca29`) rodou os
+  dois jobs em Linux com sucesso.
 - **O lint do frontend é o oxlint**, não o ESLint (ADR 0028): o TypeScript 7
   não expõe mais a API de JavaScript, e o `typescript-eslint` depende dela. As
   regras ficam em `frontend/.oxlintrc.json`; `npm run lint` as roda. O
@@ -632,12 +645,7 @@ O plano mestre (Fases 0 a 12) acabou. O que está **aberto agora**, em ordem:
    pasta fica vazia e `git submodule status` dá `fatal: no submodule mapping
    found`. O `.gitignore` já a ignora; falta o comando, que é do usuário
    (regra 2).
-2. **O primeiro push com a CI rodando.** A CI (ADR 0027) nunca rodou em
-   Linux: tudo foi validado em macOS. O primeiro push é a prova. Se o job do
-   backend ficar vermelho por ambiente (uma dependência que quebrou), o
-   conserto é do lado do projeto — o [ADR 0022](docs/decisions/0022-pendencias-e-inicializador.md)
-   mostra que o ambiente do projeto é reproduzível.
-3. **Aviso sobre o OpenCode:** o instalado é a **v2.0.20** (sem `--dir`). O
+2. **Aviso sobre o OpenCode:** o instalado é a **v2.0.20** (sem `--dir`). O
    DevAI foi feito na v1.18 e pode ter quebrado. O provedor do Mathcode usa
    `--standalone` (ADR 0009).
 
@@ -650,8 +658,7 @@ sugiro, na ordem:
 - **Matriz de Python na CI** quando sair a 3.15 (hoje a CI roda só a 3.14,
   que é o mínimo do projeto).
 - **Domínio complexo** como opção explícita.
-- **Estatística:** quartis e IQR (com a convenção explicada), média
-  ponderada, tabela de frequências, dados irracionais.
+- **Estatística:** média ponderada, tabela de frequências, dados irracionais.
 - **Matrizes:** autovalores e autovetores (tratando complexos), matrizes
   com letras, editor em grade.
 - **Vetores:** projeção, produto misto, vetor × matriz (linha).
@@ -704,6 +711,12 @@ a verificação é barata e pode ser feita a cada passo.
   vez**, e não duas). Um conjunto de 17 cálculos foi de 0,801 s para 0,243 s.
   Medidos e **deixados como estão**: o `simplify` duplicado (o SymPy
   cacheia) e o `approx()` recalculado (1 ms por raiz).
+- **Quartis e IQR (ADR 0031):** Q1 e Q3 são as medianas das metades (com
+  quantidade ímpar, o valor central fica fora das duas), IQR = Q3 − Q1 e são
+  precisos pelo menos 4 valores; sem interpolação. O resumo foi de 12 para 15
+  medidas, as frases ganharam primeiro/terceiro quartil e IQR, e a verificação
+  refaz as metades com `statistics.median`. 1 713 testes no backend e 355 no
+  frontend.
 
 - **Fase 0:** auditoria; ADRs 0001 a 0005; `architecture.md` e `roadmap.md`.
 - **Fase 1:** FastAPI `/api/health`; frontend mostrando o status da API; README,

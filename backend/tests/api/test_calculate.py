@@ -237,7 +237,13 @@ def test_statistics_summary(api: TestClient) -> None:
     assert result.success and result.intent == "statistics"
     assert result.result is not None and result.result.plain == "média = 5"
     assert data["details"]["measure"] is None
-    assert len(data["details"]["measures"]) == 12
+    assert len(data["details"]["measures"]) == 15
+    measures = {m["name"]: m for m in data["details"]["measures"]}
+    assert (measures["q1"]["plain"], measures["q3"]["plain"], measures["iqr"]["plain"]) == (
+        "4",
+        "6",
+        "2",
+    )
     assert data["verification"]["status"] == "verified_symbolic"
 
 
@@ -248,6 +254,16 @@ def test_statistics_measure_option(api: TestClient) -> None:
     )
     assert status == 200
     assert data["result"]["plain"] == "σ = 2"
+
+
+def test_statistics_quartile_option(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {"input": "1, 2, 3, 4", "intent": "statistics", "options": {"measure": "q1"}},
+    )
+    assert status == 200
+    assert data["result"]["plain"] == "Q₁ = 3/2"
+    assert data["details"]["measure"] == "q1"
 
 
 def test_statistics_unknown_measure_is_explained(api: TestClient) -> None:

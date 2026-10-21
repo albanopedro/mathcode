@@ -14,6 +14,9 @@ describe("statisticsDetails", () => {
       "sum",
       "mean",
       "median",
+      "q1",
+      "q3",
+      "iqr",
       "mode",
       "min",
       "max",
@@ -23,6 +26,11 @@ describe("statisticsDetails", () => {
       "sample_variance",
       "sample_std",
     ]);
+    const measureNamed = (name: string) =>
+      (details?.measures ?? []).find((measure) => measure.name === name);
+    expect(measureNamed("q1")?.plain).toBe("4");
+    expect(measureNamed("q3")?.plain).toBe("6");
+    expect(measureNamed("iqr")?.plain).toBe("2");
   });
 
   it("keeps the measure asked for", () => {

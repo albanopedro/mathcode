@@ -10,6 +10,9 @@ Conventions:
 - variance and standard deviation are the population ones (÷ n); the sample
   ones (÷ n − 1) come along, under their own names, and need n ≥ 2;
 - the median of an even number of values is the mean of the two central ones;
+- the quartiles are the medians of the halves: Q1 of the lower half and Q3 of
+  the upper half. With an odd count the central value (the median) is in neither
+  half; the IQR is Q3 − Q1, and all three need at least 4 values (ADR 0031);
 - the mode is every value with the highest frequency; if no value repeats,
   there is no mode (amodal).
 """
@@ -30,6 +33,7 @@ from app.parsing.ast import Equation, ExpressionList, Node, System, variables
 from app.parsing.build import ExpressionBuilder
 
 SAMPLE: frozenset[Measure] = frozenset({"sample_variance", "sample_std"})
+QUARTILES: frozenset[Measure] = frozenset({"q1", "q3", "iqr"})
 
 
 @dataclass(frozen=True)
@@ -41,6 +45,8 @@ class StatisticsOutcome:
     total: Fraction
     mean: Fraction
     median: Fraction
+    q1: Fraction | None  # median of the lower half; None below 4 values
+    q3: Fraction | None  # median of the upper half
     modes: tuple[Fraction, ...]  # ascending; empty when no value repeats
     minimum: Fraction
     maximum: Fraction
@@ -55,6 +61,10 @@ class StatisticsOutcome:
     @property
     def spread(self) -> Fraction:
         return self.maximum - self.minimum
+
+    @property
+    def iqr(self) -> Fraction | None:
+        return None if self.q1 is None or self.q3 is None else self.q3 - self.q1
 
     @property
     def std(self) -> sp.Expr:
@@ -80,12 +90,17 @@ def statistics(params: StatisticsParams) -> StatisticsOutcome:
             "A variância e o desvio padrão amostrais precisam de pelo menos 2 valores "
             "(dividem por n − 1).",
         )
+    if params.measure in QUARTILES and n < 4:
+        raise MathError(
+            ErrorCode.INVALID_INPUT_FOR_INTENT,
+            "Os quartis e o IQR precisam de pelo menos 4 valores.",
+        )
 
     total = sum(values, Fraction(0))
     mean = total / n
     ordered = sorted(values)
-    middle = n // 2
-    median = ordered[middle] if n % 2 else (ordered[middle - 1] + ordered[middle]) / 2
+    median = _median(ordered)
+    q1, q3 = _quartiles(ordered)
     counts = Counter(values)
     highest = max(counts.values())
     modes = tuple(sorted(v for v, c in counts.items() if c == highest)) if highest > 1 else ()
@@ -109,6 +124,13 @@ def statistics(params: StatisticsParams) -> StatisticsOutcome:
                 "(dividem por n − 1 = 0).",
             )
         )
+    if n < 4:
+        notices.append(
+            Notice(
+                NoticeCode.QUARTILES_NOT_DEFINED,
+                "Com menos de 4 valores, os quartis e o IQR não são definidos.",
+            )
+        )
     return StatisticsOutcome(
         parsed=parsed,
         items=items,
@@ -117,6 +139,8 @@ def statistics(params: StatisticsParams) -> StatisticsOutcome:
         total=total,
         mean=mean,
         median=median,
+        q1=q1,
+        q3=q3,
         modes=modes,
         minimum=ordered[0],
         maximum=ordered[-1],
@@ -124,6 +148,27 @@ def statistics(params: StatisticsParams) -> StatisticsOutcome:
         sample_variance=squares / (n - 1) if n > 1 else None,
         notices=tuple(notices),
     )
+
+
+def _median(ordered: list[Fraction]) -> Fraction:
+    middle = len(ordered) // 2
+    return ordered[middle] if len(ordered) % 2 else (ordered[middle - 1] + ordered[middle]) / 2
+
+
+def _quartiles(ordered: list[Fraction]) -> tuple[Fraction | None, Fraction | None]:
+    """Q1 and Q3 as the medians of the halves (ADR 0031).
+
+    With an odd count the central value (the median) belongs to neither half.
+    Below four values there are no quartiles: Q1 and Q3 would be the extremes,
+    which says nothing about the spread.
+    """
+    n = len(ordered)
+    if n < 4:
+        return None, None
+    middle = n // 2
+    lower = ordered[:middle]
+    upper = ordered[middle:] if n % 2 == 0 else ordered[middle + 1 :]
+    return _median(lower), _median(upper)
 
 
 def _items(parsed: ParseResult) -> tuple[Node, ...]:

@@ -122,11 +122,15 @@ class GraphParams(_Params):
 
 # Descriptive statistics (Phase 10, ADR 0011). Variance and standard deviation are
 # the population ones (÷ n); the sample ones (÷ n − 1) have names of their own.
+# The quartiles are the medians of the halves (ADR 0031); q2 is the median.
 type Measure = Literal[
     "count",
     "sum",
     "mean",
     "median",
+    "q1",
+    "q3",
+    "iqr",
     "mode",
     "min",
     "max",

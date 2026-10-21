@@ -53,6 +53,30 @@
         "approx": null
       },
       {
+        "name": "q1",
+        "label": "1º quartil",
+        "symbol": "Q_{1}",
+        "plain": null,
+        "latex": null,
+        "approx": null
+      },
+      {
+        "name": "q3",
+        "label": "3º quartil",
+        "symbol": "Q_{3}",
+        "plain": null,
+        "latex": null,
+        "approx": null
+      },
+      {
+        "name": "iqr",
+        "label": "Intervalo interquartil",
+        "symbol": "\\mathrm{IQR}",
+        "plain": null,
+        "latex": null,
+        "approx": null
+      },
+      {
         "name": "mode",
         "label": "Moda",
         "symbol": "\\mathrm{Mo}",
@@ -129,7 +153,7 @@
       {
         "kind": "comparison",
         "outcome": "passed",
-        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, moda, variâncias, mínimo, máximo, amplitude e soma."
+        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, quartis, moda, variâncias, mínimo, máximo, amplitude e soma."
       },
       {
         "kind": "symbolic",
@@ -162,6 +186,10 @@
     {
       "code": "SINGLE_VALUE",
       "message": "Com um só valor, a variância e o desvio padrão amostrais não são definidos (dividem por n − 1 = 0)."
+    },
+    {
+      "code": "QUARTILES_NOT_DEFINED",
+      "message": "Com menos de 4 valores, os quartis e o IQR não são definidos."
     }
   ],
   "error": null,

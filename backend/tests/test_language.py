@@ -193,6 +193,14 @@ def test_plain_math_has_no_interpretation() -> None:
         ("mínimo de 3, 7, 2", "3, 7, 2", "min"),
         ("soma de 1/2, 1/3", "1/2, 1/3", "sum"),
         ("média: 2, 4", "2, 4", "mean"),
+        ("qual o primeiro quartil de 1, 2, 3, 4?", "1, 2, 3, 4", "q1"),
+        ("1º quartil de 1, 2, 3, 4", "1, 2, 3, 4", "q1"),
+        ("q1 de 1, 2, 3, 4", "1, 2, 3, 4", "q1"),
+        ("terceiro quartil de 1, 2, 3, 4", "1, 2, 3, 4", "q3"),
+        ("segundo quartil de 1, 2, 3, 4", "1, 2, 3, 4", "median"),
+        ("IQR de 1, 2, 3, 4", "1, 2, 3, 4", "iqr"),
+        ("intervalo interquartil de 1, 2, 3, 4", "1, 2, 3, 4", "iqr"),
+        ("qual o intervalo interquartil de 1, 2, 3, 4?", "1, 2, 3, 4", "iqr"),
     ],
 )
 def test_statistics_phrases(text: str, data: str, measure: str) -> None:
@@ -208,6 +216,12 @@ def test_statistics_summary_phrase() -> None:
     assert found is not None and found.intent is I.STATISTICS and found.options == {}
 
 
+def test_quartiles_phrase_asks_for_the_summary() -> None:
+    found = match_language("quartis de 1, 2, 3, 4")
+    assert found is not None and found.intent is I.STATISTICS
+    assert found.text == "1, 2, 3, 4" and found.options == {}
+
+
 def test_maximum_of_numbers_is_statistics_and_of_a_function_is_extrema() -> None:
     numbers = match("máximo de 3, 5, 7")
     function = match("máximo de x^2 - 4x")
@@ -216,9 +230,16 @@ def test_maximum_of_numbers_is_statistics_and_of_a_function_is_extrema() -> None
 
 
 def test_statistics_without_numbers_explains_the_format() -> None:
-    with pytest.raises(MathError) as exc:
-        match_language("média das idades da turma")
-    assert "média de 10, 20, 30" in exc.value.message
+    for text in ("média das idades da turma", "primeiro quartil das notas"):
+        with pytest.raises(MathError) as exc:
+            match_language(text)
+        assert "média de 10, 20, 30" in exc.value.message
+
+
+def test_quartile_phrase_through_the_pipeline() -> None:
+    result = calculate("qual o primeiro quartil de 1, 2, 3, 4?")
+    assert result.success and result.intent is I.STATISTICS
+    assert result.result is not None and result.result.plain == "Q₁ = 3/2"
 
 
 def test_statistics_phrase_through_the_pipeline() -> None:

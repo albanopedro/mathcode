@@ -13,6 +13,10 @@
  *
  * In Phase 12 every response gained "plan" (empty outside the assistant): it was
  * added to the older files as [], exactly what the API now returns for them.
+ *
+ * In the quartiles phase (ADR 0031) the three statistics responses were captured
+ * again: every summary gained q1, q3 and iqr, and the single-value one gained the
+ * QUARTILES_NOT_DEFINED warning.
  */
 import type { MathResult } from "../../types/math";
 import aiClarification from "./ai-clarification.json";

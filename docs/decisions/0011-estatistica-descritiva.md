@@ -2,6 +2,8 @@
 
 - **Status:** aceita
 - **Data:** 2026-10-07
+- **Atualização:** a [ADR 0031](0031-quartis-e-iqr.md) acrescentou quartis e
+  IQR; o resumo passou de 12 para 15 medidas.
 
 ## Contexto
 
@@ -88,9 +90,9 @@ lido são pegos).
 - Resultado principal: a medida pedida (`σ = 2`, `\sigma = 2`) ou, no resumo,
   a média (`média = 20`).
 - `details`: `measure`, `count`, `data` e `sorted` (decimais finitos aparecem
-  como decimais: 9.5, não 19/2), `modes` e `measures` (as 12 medidas, cada uma
-  com rótulo, símbolo, `plain`, `latex` e `approx`; `null` quando não
-  definida).
+  como decimais: 9.5, não 19/2), `modes` e `measures` (as 12 medidas da época;
+  15 desde a [ADR 0031](0031-quartis-e-iqr.md), cada uma com rótulo, símbolo,
+  `plain`, `latex` e `approx`; `null` quando não definida).
 - O frontend mostra uma tabela (Medida, Valor, Aproximado) com a medida pedida
   destacada (`aria-current`) e os dados em ordem.
 

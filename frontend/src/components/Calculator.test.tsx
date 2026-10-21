@@ -546,8 +546,11 @@ describe("Calculator: statistics", () => {
     expect(within(result).getByText("Estatística")).toBeInTheDocument();
     const table = within(result).getByRole("table", { name: "Resumo estatístico" });
     const rows = within(table).getAllByRole("row");
-    expect(rows).toHaveLength(13); // header + 12 measures
+    expect(rows).toHaveLength(16); // header + 15 measures
     expect(within(table).getByRole("rowheader", { name: /Desvio padrão populacional/ })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: /1º quartil/ })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: /3º quartil/ })).toBeInTheDocument();
+    expect(within(table).getByRole("rowheader", { name: /Intervalo interquartil/ })).toBeInTheDocument();
     expect(within(result).getByText(/Dados em ordem \(n = 8\)/)).toHaveTextContent(
       "2; 4; 4; 4; 5; 5; 7; 9",
     );
@@ -566,13 +569,14 @@ describe("Calculator: statistics", () => {
     expect(asked[0]).toHaveTextContent("Desvio padrão populacional");
   });
 
-  it("shows undefined sample measures as a dash", async () => {
+  it("shows undefined measures as a dash", async () => {
     answer(fixtures.statisticsSingle);
     await calculateText("5", "Estatística");
 
     const result = await screen.findByRole("region", { name: "Resultado" });
-    expect(within(result).getAllByTitle("Não definido para estes dados")).toHaveLength(2);
+    expect(within(result).getAllByTitle("Não definido para estes dados")).toHaveLength(5);
     expect(within(result).getByText(/Com um só valor/)).toBeInTheDocument();
+    expect(within(result).getByText(/Com menos de 4 valores/)).toBeInTheDocument();
   });
 });
 

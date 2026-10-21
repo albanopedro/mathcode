@@ -7,7 +7,8 @@ Nothing is taken from the engine's own computation:
 - every measure is recomputed by Python's ``statistics`` module, which is
   exact on fractions, and compared exactly (comparison of methods);
 - exact properties are checked: the deviations from the mean add up to 0, the
-  median splits the data in halves, σ² and s² are the variances.
+  median splits the data in halves, Q1 and Q3 are the medians of the halves,
+  the IQR is Q3 − Q1, and σ² and s² are the variances.
 """
 
 import statistics as stdlib
@@ -60,8 +61,8 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
         passed(
             CheckKind.COMPARISON,
             "O módulo statistics do Python (aritmética exata com frações, independente do "
-            "motor) obtém os mesmos valores para média, mediana, moda, variâncias, mínimo, "
-            "máximo, amplitude e soma.",
+            "motor) obtém os mesmos valores para média, mediana, quartis, moda, variâncias, "
+            "mínimo, máximo, amplitude e soma.",
         )
     )
 
@@ -91,6 +92,18 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
         )
     )
 
+    quartiles_problem = _check_quartiles(outcome, len(data))
+    if quartiles_problem is not None:
+        return failure(CheckKind.SYMBOLIC, quartiles_problem, *checks)
+    if len(data) >= 4:
+        checks.append(
+            passed(
+                CheckKind.SYMBOLIC,
+                "Q1 e Q3 são as medianas das metades, Q1 ≤ mediana ≤ Q3, e o IQR é "
+                "exatamente Q3 − Q1.",
+            )
+        )
+
     roots_problem = _check_roots(outcome)
     if roots_problem is not None:
         return failure(CheckKind.SYMBOLIC, roots_problem, *checks)
@@ -109,11 +122,18 @@ def _compare_with_stdlib(outcome: StatisticsOutcome, data: Sequence[Fraction]) -
     n = len(data)
     mean = stdlib.mean(data)
     modes = sorted(stdlib.multimode(data)) if len(set(data)) < n else []
+    lower, upper = _halves(sorted(data))
+    q1 = stdlib.median(lower) if n >= 4 else None
+    q3 = stdlib.median(upper) if n >= 4 else None
+    iqr = q3 - q1 if q1 is not None and q3 is not None else None
     expected: list[tuple[str, object, object]] = [
         ("quantidade", n, outcome.count),
         ("média", mean, outcome.mean),
         ("soma", mean * n, outcome.total),
         ("mediana", stdlib.median(data), outcome.median),
+        ("primeiro quartil", q1, outcome.q1),
+        ("terceiro quartil", q3, outcome.q3),
+        ("intervalo interquartil", iqr, outcome.iqr),
         ("moda", modes, list(outcome.modes)),
         ("mínimo", min(data), outcome.minimum),
         ("máximo", max(data), outcome.maximum),
@@ -128,6 +148,29 @@ def _compare_with_stdlib(outcome: StatisticsOutcome, data: Sequence[Fraction]) -
     for name, theirs, ours in expected:
         if theirs != ours:
             return f"O módulo statistics obtém {name} = {theirs}, e não {ours}."
+    return None
+
+
+def _halves(data: Sequence[Fraction]) -> tuple[Sequence[Fraction], Sequence[Fraction]]:
+    """The lower and upper halves; an odd count leaves the median out of both."""
+    middle = len(data) // 2
+    if len(data) % 2:
+        return data[:middle], data[middle + 1 :]
+    return data[:middle], data[middle:]
+
+
+def _check_quartiles(outcome: StatisticsOutcome, n: int) -> str | None:
+    """None if the quartiles obey the convention and the IQR follows from them."""
+    if n < 4:
+        if outcome.q1 is not None or outcome.q3 is not None or outcome.iqr is not None:
+            return "Com menos de 4 valores, os quartis e o IQR não deveriam existir."
+        return None
+    if outcome.q1 is None or outcome.q3 is None or outcome.iqr is None:
+        return "Faltam os quartis ou o IQR."
+    if not outcome.q1 <= outcome.median <= outcome.q3:
+        return "Os quartis não estão em ordem: Q1 ≤ mediana ≤ Q3 não vale."
+    if outcome.iqr != outcome.q3 - outcome.q1:
+        return f"O IQR é {_show(outcome.iqr)}, e não Q3 − Q1 = {_show(outcome.q3 - outcome.q1)}."
     return None
 
 

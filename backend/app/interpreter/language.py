@@ -80,6 +80,7 @@ _KEYWORD = (
     r"(?:derivada|integral|primitiva|limite|grafico|raizes|raiz|zeros|zero|fatoracao"
     r"|simplificacao|segunda|terceira|quarta|quinta|media|mediana|moda|desvio|variancia"
     r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor|inversa|transposta|traco|posto"
+    r"|quart(?:il|is)|iqr|interquartil|intervalo|primeiro|segundo|terceiro|\d+\s*[ºo°]"
     r"|norma|modulo|comprimento|vetor|versor|produto|angulo"
     r"|perimetro|volume|distancia|ponto|reta|equacao|hipotenusa|cateto|classificacao"
     r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo|extremo"
@@ -237,6 +238,11 @@ _MEASURE = (
     r"(?:(?P<std>desvio[\s-]+padrao(?:\s+(?P<std_kind>amostral|populacional))?)"
     r"|(?P<variance>variancia(?:\s+(?P<variance_kind>amostral|populacional))?)"
     r"|(?P<median>mediana)"
+    r"|(?P<q1>(?:primeiro|1\s*[ºo°])\s+quartil|q\s*1)"
+    r"|(?P<q2>(?:segundo|2\s*[ºo°])\s+quartil|q\s*2)"
+    r"|(?P<q3>(?:terceiro|3\s*[ºo°])\s+quartil|q\s*3)"
+    r"|(?P<iqr>(?:intervalo\s+)?interquartil|iqr)"
+    r"|(?P<quartiles>quart(?:il|is))"
     r"|(?P<mean>media(?:\s+aritmetica)?)"
     r"|(?P<mode>moda)"
     r"|(?P<range>amplitude(?:\s+total)?)"
@@ -251,11 +257,27 @@ _FILLER = r"(?:\s+(?!e\b)[a-z]+){0,4}?\s*:?"
 
 def _statistics(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     measure: str | None = None
-    for name in ("std", "variance", "median", "mean", "mode", "range", "sum", "max", "min"):
+    for name in (
+        "std",
+        "variance",
+        "median",
+        "mean",
+        "q1",
+        "q2",
+        "q3",
+        "iqr",
+        "mode",
+        "range",
+        "sum",
+        "max",
+        "min",
+    ):
         if found.group(name):
             measure = name
     if measure in ("std", "variance") and found.group(f"{measure}_kind") == "amostral":
         measure = f"sample_{measure}"
+    if measure == "q2":  # the second quartile is the median
+        measure = "median"
     data = _grab(found, request, "data") or ""
     listed = re.sub(r"\s+e\s+", "; ", data)  # "10, 20 e 30"
     options: Options = {} if measure is None else {"measure": measure}
@@ -717,7 +739,11 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
     ("statistics", re.compile(rf"{_MEASURE}{_FILLER}\s+{_DATA}"), _statistics),
     (
         "statistics_without_data",
-        re.compile(r"(?:media|mediana|moda|variancia|desvio[\s-]+padrao|amplitude)\b.*"),
+        re.compile(
+            r"(?:(?:primeiro|segundo|terceiro|\d+\s*[ºo°])\s+quart(?:il|is)"
+            r"|media|mediana|moda|variancia|desvio[\s-]+padrao|amplitude"
+            r"|quart(?:il|is)|q\s*[123]|iqr|interquartil)\b.*"
+        ),
         _statistics_without_data,
     ),
     (

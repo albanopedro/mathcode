@@ -26,12 +26,13 @@ Regras gerais:
 | — | Pendências técnicas e inicializador | concluída |
 | — | Resultado ao vivo | concluída |
 | — | Exemplos clicáveis | concluída |
-| — | Interface moderna | concluída (aguardando revisão) |
-| — | Auditoria de segurança: regex e event loop | concluída (aguardando revisão) |
-| — | Integração contínua (CI) | concluída (aguardando revisão) |
-| — | Qualidade do frontend (lint e velocidade) | concluída (aguardando revisão) |
-| — | Dívida de duplicação (helpers compartilhados) | concluída (aguardando revisão) |
-| — | Tempo de resposta | concluída (aguardando revisão) |
+| — | Interface moderna | concluída |
+| — | Auditoria de segurança: regex e event loop | concluída |
+| — | Integração contínua (CI) | concluída |
+| — | Qualidade do frontend (lint e velocidade) | concluída |
+| — | Dívida de duplicação (helpers compartilhados) | concluída |
+| — | Tempo de resposta | concluída |
+| — | Quartis e IQR | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -618,6 +619,21 @@ determinística.
   duas medições para que ninguém mexa nelas sem medir antes.
 - **Testes:** 1 689 no backend (eram 1 687) e 354 no frontend (sem mudança).
 
+## Depois da Fase 12 — Quartis e IQR (feita)
+
+- **Decidido com o usuário** ([ADR 0031](decisions/0031-quartis-e-iqr.md)):
+  Q1 e Q3 são as medianas das metades; com quantidade ímpar, o valor central
+  fica fora das duas; IQR = Q3 − Q1; pelo menos 4 valores; sem interpolação.
+- **Entregue:**
+  - as três medidas no resumo (15 no total), com `q1`, `q3` e `iqr` na API;
+  - frases "primeiro/1º quartil", "terceiro/3º quartil", "IQR"/"intervalo
+    interquartil", "segundo/2º quartil" (= mediana) e "quartis" (= resumo);
+  - verificação independente pelas metades (`statistics.median`), com
+    Q1 ≤ mediana ≤ Q3 e IQR = Q3 − Q1;
+  - aviso e "—" abaixo de 4 valores; erro explicado ao pedir a medida;
+  - fixtures de estatística recapturados da API.
+- **Testes:** 1 713 no backend (eram 1 689) e 355 no frontend (eram 354).
+
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
@@ -629,7 +645,7 @@ determinística.
 - Comparação de métodos para integrais com limites irracionais (0 a π) e
   funções trigonométricas; continuidade lateral em pontos de borda (`sqrt(x)`
   em 0⁺).
-- Estatística: quartis e IQR (com convenção explicada), média ponderada,
+- Estatística: média ponderada,
   tabela de frequências, dados irracionais, rótulo "Dados" no campo de entrada.
 - Matrizes: autovalores e autovetores (tratar complexos), matrizes com letras,
   editor em grade (Fase 11).

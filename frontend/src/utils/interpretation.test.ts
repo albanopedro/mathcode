@@ -50,4 +50,17 @@ describe("describeInterpretation", () => {
     expect(text.operation).toBe("Estatística");
     expect(text.options).toEqual(["medida: desvio padrão populacional"]);
   });
+
+  it("names the quartile asked for", () => {
+    const interpretation: Interpretation = {
+      method: "rules",
+      intent: "statistics",
+      expression: "1, 2, 3, 4",
+      options: { measure: "q1" },
+      provider: null,
+      model: null,
+    };
+
+    expect(describeInterpretation(interpretation).options).toEqual(["medida: 1º quartil"]);
+  });
 });

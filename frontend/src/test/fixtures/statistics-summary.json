@@ -69,6 +69,30 @@
         "approx": "4.5"
       },
       {
+        "name": "q1",
+        "label": "1º quartil",
+        "symbol": "Q_{1}",
+        "plain": "4",
+        "latex": "4",
+        "approx": null
+      },
+      {
+        "name": "q3",
+        "label": "3º quartil",
+        "symbol": "Q_{3}",
+        "plain": "6",
+        "latex": "6",
+        "approx": null
+      },
+      {
+        "name": "iqr",
+        "label": "Intervalo interquartil",
+        "symbol": "\\mathrm{IQR}",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
         "name": "mode",
         "label": "Moda",
         "symbol": "\\mathrm{Mo}",
@@ -145,7 +169,7 @@
       {
         "kind": "comparison",
         "outcome": "passed",
-        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, moda, variâncias, mínimo, máximo, amplitude e soma."
+        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, quartis, moda, variâncias, mínimo, máximo, amplitude e soma."
       },
       {
         "kind": "symbolic",
@@ -156,6 +180,11 @@
         "kind": "symbolic",
         "outcome": "passed",
         "message": "A mediana divide os dados: 4 valor(es) são ≤ a ela e 4 são ≥ a ela, de 8."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Q1 e Q3 são as medianas das metades, Q1 ≤ mediana ≤ Q3, e o IQR é exatamente Q3 − Q1."
       },
       {
         "kind": "symbolic",

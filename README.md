@@ -98,6 +98,7 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Automático (vira gráfico) | `y = x² - 4x + 3` ou `sen(x); cos(x)` |
 | Gráfico (x de `-2pi` até `2pi`) | `tan(x)` |
 | Estatística | `2, 4, 4, 4, 5, 5, 7, 9` (resumo completo) |
+| Quartis e IQR (frase) | `primeiro quartil de 2, 4, 4, 4, 5, 5, 7, 9` ou `IQR de 2, 4, 4, 4, 5, 5, 7, 9` |
 | Matrizes (cálculo: Inversa) | `[[2, 1, 0], [1, 3, 1], [0, 1, 4]]` |
 | Automático (matrizes) | `[[1, 2], [3, 4]] * [[5, 6], [7, 8]]` |
 | Vetores (cálculo: Produto vetorial) | `[1, 2, 3]; [4, 5, 6]` |
