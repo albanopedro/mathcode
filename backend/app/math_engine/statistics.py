@@ -23,6 +23,7 @@ import sympy as sp
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import Notice, NoticeCode
 from app.formatting.expressions import plain
+from app.math_engine.values import to_rational
 from app.models.intents import Measure, StatisticsParams
 from app.parsing import ParseResult, parse
 from app.parsing.ast import Equation, ExpressionList, Node, System, variables
@@ -57,17 +58,13 @@ class StatisticsOutcome:
 
     @property
     def std(self) -> sp.Expr:
-        return sp.sqrt(rational(self.variance))
+        return sp.sqrt(to_rational(self.variance))
 
     @property
     def sample_std(self) -> sp.Expr | None:
         if self.sample_variance is None:
             return None
-        return sp.sqrt(rational(self.sample_variance))
-
-
-def rational(value: Fraction) -> sp.Rational:
-    return sp.Rational(value.numerator, value.denominator)
+        return sp.sqrt(to_rational(self.sample_variance))
 
 
 def statistics(params: StatisticsParams) -> StatisticsOutcome:

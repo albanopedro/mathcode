@@ -24,6 +24,7 @@ from fractions import Fraction
 import sympy as sp
 
 from app.math_engine.probability import BinomialSummary, ProbabilityOutcome
+from app.math_engine.values import to_fraction
 from app.models.result import CheckKind, VerificationCheck, VerificationReport, VerificationStatus
 from app.verification.exact import exact_value
 from app.verification.reports import failure, inconclusive, passed, report
@@ -36,10 +37,6 @@ _SHOWN = {"A": "P(A)", "B": "P(B)", "A∩B": "P(A ∩ B)", "A∪B": "P(A ∪ B)"
 
 class _Mismatch(Exception):
     """The second method disagrees: the message says how."""
-
-
-def _fraction(value: sp.Rational) -> Fraction:
-    return Fraction(int(value.p), int(value.q))
 
 
 def verify_probability(outcome: ProbabilityOutcome) -> VerificationReport:
@@ -59,7 +56,7 @@ def verify_probability(outcome: ProbabilityOutcome) -> VerificationReport:
 
 
 def _reread(outcome: ProbabilityOutcome, checks: list[VerificationCheck]) -> dict[str, Fraction]:
-    engine = {name: _fraction(value) for name, value in outcome.values.items()}
+    engine = {name: to_fraction(value) for name, value in outcome.values.items()}
     if outcome.calculation == "anagrams":
         counted: dict[str, int] = {}
         for letter in outcome.parsed.canonical:
@@ -205,7 +202,7 @@ def _distinct_orders(left: dict[str, int]) -> Iterator[str]:
 def _verify_events(
     outcome: ProbabilityOutcome, values: dict[str, Fraction], checks: list[VerificationCheck]
 ) -> None:
-    result = _fraction(outcome.result)  # a probability
+    result = to_fraction(outcome.result)  # a probability
     match outcome.calculation:
         case "complement":
             if result + values["A"] != 1:
@@ -303,7 +300,7 @@ def _verify_binomial(
         summary = outcome.result
         mean = sum((i * term for i, term in enumerate(terms)), Fraction(0))
         variance = sum((i * i * term for i, term in enumerate(terms)), Fraction(0)) - mean**2
-        if mean != _fraction(summary.mean) or variance != _fraction(summary.variance):
+        if mean != to_fraction(summary.mean) or variance != to_fraction(summary.variance):
             raise _Mismatch(f"Pelas somas, μ = {mean} e σ² = {variance}.")
         if summary.std.is_negative or sp.expand(summary.std**2) != summary.variance:
             raise _Mismatch("σ não é a raiz quadrada da variância.")
@@ -317,7 +314,7 @@ def _verify_binomial(
         return
 
     k = int(values["k"])
-    result = _fraction(outcome.result)  # a probability
+    result = to_fraction(outcome.result)  # a probability
     match outcome.calculation:
         case "binomial_exact":
             expected, how = terms[k], f"o termo {k} da distribuição refeita"

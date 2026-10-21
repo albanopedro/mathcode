@@ -13,6 +13,7 @@ import sympy as sp
 
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import Notice
+from app.math_engine.values import simplified
 from app.models.intents import MatrixOperation, MatrixParams
 from app.parsing import ParseResult, parse
 from app.parsing.ast import (
@@ -83,10 +84,6 @@ def is_exact_rational(matrix: sp.MatrixBase) -> bool:
     return all(entry.is_Rational for entry in matrix)
 
 
-def _simplified(value: sp.Expr) -> sp.Expr:
-    return value if value.is_Rational else sp.simplify(value)
-
-
 def _apply(operation: MatrixOperation, a: sp.ImmutableMatrix) -> Value:
     if operation == "evaluate":
         return a
@@ -101,8 +98,8 @@ def _apply(operation: MatrixOperation, a: sp.ImmutableMatrix) -> Value:
             f"{what[operation]} só existe para matrizes quadradas; esta é {_shape(a)}.",
         )
     if operation == "trace":
-        return _simplified(a.trace())
-    determinant = _simplified(a.det())
+        return simplified(a.trace())
+    determinant = simplified(a.det())
     if operation == "determinant":
         return determinant
     if determinant.is_zero:
@@ -289,7 +286,7 @@ class LinearEvaluator:
                 f"{MAX_MATRIX_POWER}.",
                 node.position,
             )
-        if exponent < 0 and _simplified(base.det()).is_zero:
+        if exponent < 0 and simplified(base.det()).is_zero:
             raise MathError(
                 ErrorCode.DOMAIN_ERROR,
                 "Potência negativa de uma matriz singular (determinante 0) não existe.",

@@ -14,7 +14,8 @@ import re
 from dataclasses import dataclass, field
 
 from app.core.errors import ErrorCode, MathError
-from app.interpreter.language import _LEADS, _VAR, _fold, function_text
+from app.core.text import fold as _fold
+from app.interpreter.language import _LEADS, _VAR, function_text
 from app.models.intents import IntentName
 from app.parsing import parse
 from app.parsing.ast import Equation, ExpressionList, System, variables

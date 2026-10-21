@@ -32,6 +32,7 @@ from app.math_engine.trigonometry import (
 )
 from app.models.result import CheckKind, ReasonCode, VerificationCheck, VerificationReport
 from app.models.result import VerificationStatus as Status
+from app.parsing.angles import radians_of
 from app.parsing.ast import Call
 from app.verification.algebra import REQUIRED_POINTS, describe, points, try_evaluate
 from app.verification.deadline import StepTimeout, time_limit
@@ -65,7 +66,7 @@ def _close(a: mpf, b: mpf) -> bool:
 
 def _verify_conversion(outcome: ConversionOutcome) -> VerificationReport:
     read = try_evaluate(outcome.tree, {})
-    answer = to_mpf(outcome.degrees * sp.pi / 180 if outcome.to_degrees else outcome.radians)
+    answer = to_mpf(radians_of(outcome.degrees) if outcome.to_degrees else outcome.radians)
     if read is None or answer is None or not agrees(read, answer):
         return failure(CheckKind.NUMERIC, "O avaliador independente lê outro ângulo na entrada.")
     checks = [

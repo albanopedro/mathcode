@@ -30,7 +30,7 @@ from app.models.result import (
 from app.parsing.ast import Equation
 from app.parsing.build import symbol
 from app.verification.algebra import REQUIRED_POINTS, describe, points, try_evaluate
-from app.verification.numeric import Evaluation, Point, agrees, decimal, rational
+from app.verification.numeric import Evaluation, Point, agrees, decimal, exact_rational
 from app.verification.periodic import reduce_to_polynomial, undefined_at, verify_periodic
 from app.verification.reports import failure, inconclusive, passed, report, show
 from app.verification.symbolic import reduces_to_zero
@@ -449,7 +449,7 @@ def _check_system_numerically(
     samples = points(outcome.parsed.canonical, free_names) if free_names else iter([{}])
     checked = 0
     for free_values in samples:
-        substitution = {symbol(n): rational(v) for n, v in free_values.items()}
+        substitution = {symbol(n): exact_rational(v) for n, v in free_values.items()}
         point = {var.name: decimal(value.subs(substitution)) for var, value in mapping.items()}
         for equation in outcome.system.equations:
             sides = _sides(equation, point)

@@ -24,6 +24,7 @@ from app.core.notices import Notice, NoticeCode
 from app.math_engine.inputs import require_equation, require_expression
 from app.models.intents import TrigonometryParams
 from app.parsing import ParseResult, parse
+from app.parsing.angles import degrees_of
 from app.parsing.ast import Call, Degrees, Equation, Node, System, Variable, variables, walk
 from app.parsing.build import ExpressionBuilder, symbol
 from app.parsing.vocabulary import TRIGONOMETRIC
@@ -88,7 +89,7 @@ def _convert(parsed: ParseResult) -> ConversionOutcome:
         tree=tree,
         radians=sp.simplify(radians),
         to_degrees=to_degrees,
-        degrees=sp.simplify(radians * 180 / PI),
+        degrees=degrees_of(radians),
         notices=tuple(notices),
     )
 

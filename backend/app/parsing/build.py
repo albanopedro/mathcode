@@ -12,6 +12,7 @@ import sympy as sp
 from app.core.errors import ErrorCode, MathError
 from app.core.limits import MAX_RESULT_DIGITS, MAX_SYMBOLIC_EXPONENT
 from app.core.notices import Notice, NoticeCode
+from app.parsing.angles import radians_of
 from app.parsing.ast import (
     Binary,
     Call,
@@ -100,7 +101,7 @@ class ExpressionBuilder:
             case Negate(operand=operand):
                 return -self.build(operand)
             case Degrees(operand=operand):
-                return self.build(operand) * sp.pi / 180
+                return radians_of(self.build(operand))
             case Binary():
                 return self._binary(node)
             case Call():

@@ -9,11 +9,11 @@ the math text is cut from what the user typed, so "x²" stays "x²".
 """
 
 import re
-import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from app.core.errors import ErrorCode, MathError
+from app.core.text import fold as _fold
 from app.models.intents import IntentName
 from app.parsing import parse
 from app.parsing.ast import variables
@@ -65,11 +65,6 @@ def match_language(request: str) -> LanguageMatch | None:
         # "quanto é 2 + 2?": only filler words around a math expression.
         return LanguageMatch(None, request[start:end].strip(), offset=start, rule="filler")
     return None
-
-
-def _fold(text: str) -> str:
-    """Lowercase without accents, one character for each character of ``text``."""
-    return "".join(unicodedata.normalize("NFD", ch)[0].lower() for ch in text)
 
 
 # -- words around the request --------------------------------------------------------------------

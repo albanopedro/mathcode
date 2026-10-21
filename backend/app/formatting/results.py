@@ -24,7 +24,7 @@ from app.math_engine.graphing import GraphOutcome
 from app.math_engine.matrices import MatrixOutcome, VectorValue
 from app.math_engine.periodic import Family
 from app.math_engine.probability import BinomialSummary, ProbabilityOutcome
-from app.math_engine.statistics import StatisticsOutcome, rational
+from app.math_engine.statistics import StatisticsOutcome
 from app.math_engine.systems import SystemKind, SystemOutcome
 from app.math_engine.trigonometry import (
     SIDES,
@@ -34,9 +34,11 @@ from app.math_engine.trigonometry import (
     TriangleOutcome,
     TrigonometryOutcome,
 )
+from app.math_engine.values import to_rational
 from app.math_engine.vectors import VectorOutcome
 from app.models.intents import Measure
 from app.models.result import ResultValue
+from app.parsing.angles import degrees_of
 from app.parsing.build import symbol
 
 _EMPTY = ResultValue(plain="∅", latex=r"\varnothing")
@@ -468,16 +470,16 @@ _MEASURES: dict[Measure, tuple[str, str, str]] = {
 def _statistics_value(outcome: StatisticsOutcome, measure: Measure) -> sp.Expr | None:
     values: dict[Measure, sp.Expr | None] = {
         "count": sp.Integer(outcome.count),
-        "sum": rational(outcome.total),
-        "mean": rational(outcome.mean),
-        "median": rational(outcome.median),
-        "min": rational(outcome.minimum),
-        "max": rational(outcome.maximum),
-        "range": rational(outcome.spread),
-        "variance": rational(outcome.variance),
+        "sum": to_rational(outcome.total),
+        "mean": to_rational(outcome.mean),
+        "median": to_rational(outcome.median),
+        "min": to_rational(outcome.minimum),
+        "max": to_rational(outcome.maximum),
+        "range": to_rational(outcome.spread),
+        "variance": to_rational(outcome.variance),
         "std": outcome.std,
         "sample_variance": (
-            None if outcome.sample_variance is None else rational(outcome.sample_variance)
+            None if outcome.sample_variance is None else to_rational(outcome.sample_variance)
         ),
         "sample_std": outcome.sample_std,
     }
@@ -488,7 +490,7 @@ def _statistics_entry(outcome: StatisticsOutcome, measure: Measure) -> dict[str,
     label, symbol, _ = _MEASURES[measure]
     entry: dict[str, Any] = {"name": measure, "label": label, "symbol": symbol}
     if measure == "mode":
-        modes = [rational(m) for m in outcome.modes]
+        modes = [to_rational(m) for m in outcome.modes]
         if not modes:
             return entry | {"plain": "nenhuma", "latex": r"\text{nenhuma}", "approx": None}
         return entry | {
@@ -672,7 +674,7 @@ def present_vectors(outcome: VectorOutcome) -> Presentation:
 
     # The angle: exact radians and degrees (ADR 0013). The headline keeps 6 significant
     # digits of the degrees; ``details`` has all of them.
-    degrees = sp.simplify(result * 180 / sp.pi)
+    degrees = degrees_of(result)
     exact_degrees = degrees.is_Rational
     radians_approx = approx(result)
     details |= {
@@ -873,7 +875,7 @@ def _six(value: sp.Expr) -> str:
 
 def _degrees(radians: sp.Expr) -> tuple[str, str, bool]:
     """An angle in degrees: (plain, LaTeX, exact). 6 significant digits when not exact."""
-    value = sp.simplify(radians * 180 / sp.pi)
+    value = degrees_of(radians)
     if value.is_Rational:
         return f"{plain(value)}°", rf"{latex(value)}^\circ", True
     short = _six(value)

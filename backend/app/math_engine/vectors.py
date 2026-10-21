@@ -15,6 +15,7 @@ import sympy as sp
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import Notice
 from app.math_engine.matrices import LinearEvaluator, VectorValue, check_size
+from app.math_engine.values import simplified
 from app.models.intents import VectorOperation, VectorParams
 from app.parsing import ParseResult, parse
 from app.parsing.ast import Equation, ExpressionList, Node, System
@@ -94,16 +95,12 @@ def _vector(evaluator: LinearEvaluator, item: Node) -> VectorValue:
     )
 
 
-def _simplified(value: sp.Expr) -> sp.Expr:
-    return value if value.is_Rational else sp.simplify(value)
-
-
 def norm(vector: VectorValue) -> sp.Expr:
-    return _simplified(sp.sqrt(sum(entry**2 for entry in vector.entries)))
+    return simplified(sp.sqrt(sum(entry**2 for entry in vector.entries)))
 
 
 def dot(u: VectorValue, v: VectorValue) -> sp.Expr:
-    return _simplified(sum(a * b for a, b in zip(u.entries, v.entries, strict=True)))
+    return simplified(sum(a * b for a, b in zip(u.entries, v.entries, strict=True)))
 
 
 def _apply(operation: VectorOperation, operands: tuple[VectorValue, ...]) -> sp.Expr | VectorValue:
@@ -118,7 +115,7 @@ def _apply(operation: VectorOperation, operands: tuple[VectorValue, ...]) -> sp.
             raise MathError(
                 ErrorCode.DOMAIN_ERROR, "O vetor nulo não tem vetor unitário (a norma é 0)."
             )
-        unit = sp.ImmutableMatrix([_simplified(entry / length) for entry in u.entries])
+        unit = sp.ImmutableMatrix([simplified(entry / length) for entry in u.entries])
         return VectorValue(unit)
 
     v = operands[1]
@@ -136,10 +133,10 @@ def _apply(operation: VectorOperation, operands: tuple[VectorValue, ...]) -> sp.
                 f"O produto vetorial só existe para vetores de 3 componentes; estes têm {u.size}.",
             )
         cross = u.column.cross(v.column)
-        return VectorValue(sp.ImmutableMatrix([_simplified(entry) for entry in cross]))
+        return VectorValue(sp.ImmutableMatrix([simplified(entry) for entry in cross]))
     lengths = norm(u) * norm(v)
     if lengths.is_zero:
         raise MathError(
             ErrorCode.DOMAIN_ERROR, "O ângulo não é definido quando um dos vetores é nulo."
         )
-    return _simplified(sp.acos(_simplified(dot(u, v) / lengths)))
+    return simplified(sp.acos(simplified(dot(u, v) / lengths)))

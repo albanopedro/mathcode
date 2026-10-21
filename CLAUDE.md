@@ -67,6 +67,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: auditoria de segurança (regex e event loop) | **concluída, aguardando revisão e commit** (ADR 0026) |
 | Pós-12: integração contínua (CI) | **concluída, aguardando revisão e commit** (ADR 0027) |
 | Pós-12: qualidade do frontend (lint e velocidade) | **concluída, aguardando revisão e commit** (ADR 0028) |
+| Pós-12: dívida de duplicação (helpers compartilhados) | **concluída, aguardando revisão e commit** (ADR 0029) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
@@ -449,6 +450,15 @@ Backend, continuação:
   CPU sem limite conhecido: `needs_ai()` e `plan_request()` rodam em
   `asyncio.to_thread()`. Se um dia algo novo for lido na API, vai para uma
   thread, não para o event loop.
+- **`core/` não importa SymPy** (ADR 0002, 0029): o processo do servidor nunca
+  carrega o SymPy. `core/text.py` é só texto; o que usa SymPy mora em
+  `parsing/angles.py` ou `math_engine/values.py`, que são folhas (não
+  importam nada do projeto). Há um teste que protege isso:
+  `tests/test_security.py::test_the_server_process_never_loads_sympy`.
+- **Nunca importar um nome privado de outro módulo.** Foi o que o planejador
+  fazia com `_fold` (ADR 0029). O que é de todos mora em `core/text.py`.
+- **`to_degrees` já é um nome do domínio** (o campo que diz se a resposta é em
+  graus). Por isso a conversão se chama `degrees_of`, e não `to_degrees`.
 - **Regex com dois `\s*` na mesma fronteira volta atrás exponencialmente**
   (ADR 0026). O `\s*` do fim de um item e o `\s*` do começo do próximo disputam
   o mesmo espaço: 2ⁿ leituras para n itens. Em `interpreter/language.py`, o

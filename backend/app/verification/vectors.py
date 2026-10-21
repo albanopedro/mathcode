@@ -23,6 +23,7 @@ from mpmath import mp, mpf
 
 from app.formatting.expressions import plain
 from app.math_engine.matrices import VectorValue
+from app.math_engine.values import to_rational
 from app.math_engine.vectors import VectorOutcome
 from app.models.result import (
     CheckKind,
@@ -44,10 +45,6 @@ from app.verification.reports import failure, inconclusive, passed, report, unve
 from app.verification.symbolic import compare_constants
 
 type Exact = list[Fraction]
-
-
-def _rational(value: Fraction) -> sp.Rational:
-    return sp.Rational(value.numerator, value.denominator)
 
 
 def _mpf(value: Fraction) -> mpf:
@@ -104,7 +101,7 @@ def _verify_exactly(outcome: VectorOutcome, vectors: list[Exact]) -> Verificatio
             if isinstance(result, VectorValue):
                 raise AssertionError("a norm is a number")
             squares = _dot(u, u)
-            verdict = compare_constants(result**2, _rational(squares))
+            verdict = compare_constants(result**2, to_rational(squares))
             if verdict.equal is False or result.is_negative:
                 return failure(CheckKind.SYMBOLIC, f"‖u‖² deveria ser u·u = {squares}.", *checks)
             if verdict.equal is None:
@@ -121,10 +118,10 @@ def _verify_exactly(outcome: VectorOutcome, vectors: list[Exact]) -> Verificatio
         case "unit":
             if not isinstance(result, VectorValue):
                 raise AssertionError("a unit vector is a vector")
-            length = sp.sqrt(_rational(_dot(u, u)))
+            length = sp.sqrt(to_rational(_dot(u, u)))
             unit_length = compare_constants(sum(x**2 for x in result.entries), sp.Integer(1))
             same = [
-                compare_constants(x * length, _rational(a))
+                compare_constants(x * length, to_rational(a))
                 for x, a in zip(result.entries, u, strict=True)
             ]
             if unit_length.equal is False or any(v.equal is False for v in same):
@@ -146,7 +143,7 @@ def _verify_exactly(outcome: VectorOutcome, vectors: list[Exact]) -> Verificatio
             )
         case "dot":
             own = _dot(u, vectors[1])
-            if _rational(own) != result:
+            if to_rational(own) != result:
                 return failure(
                     CheckKind.COMPARISON,
                     f"Somando os produtos com frações, u·v = {own}, e não {result}.",
@@ -182,7 +179,7 @@ def _check_cross(u: Exact, v: Exact, result: sp.Expr | VectorValue) -> str | Non
     if not isinstance(result, VectorValue):
         raise AssertionError("a cross product is a vector")
     w = _cross(u, v)
-    if [_rational(x) for x in w] != result.entries:
+    if [to_rational(x) for x in w] != result.entries:
         return f"Pela fórmula, u×v = {[str(x) for x in w]}."
     if _dot(w, u) != 0 or _dot(w, v) != 0:
         return "u×v não é perpendicular a u e a v."
@@ -197,7 +194,7 @@ def _verify_angle(
     theta = outcome.result
     if isinstance(theta, VectorValue):
         raise AssertionError("an angle is a number")
-    cosine = _rational(_dot(u, v)) / sp.sqrt(_rational(_dot(u, u) * _dot(v, v)))
+    cosine = to_rational(_dot(u, v)) / sp.sqrt(to_rational(_dot(u, u) * _dot(v, v)))
     with mp.workdps(BASE_PRECISION):
         expected = mpmath.acos(_mpf(_dot(u, v)) / mpmath.sqrt(_mpf(_dot(u, u) * _dot(v, v))))
         value = to_mpf(theta)

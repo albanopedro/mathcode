@@ -329,12 +329,12 @@ Mathcode/
 │   │   ├── main.py             cria o app FastAPI
 │   │   ├── calculator.py       pipeline: interpret → execute → verify → present
 │   │   ├── api/                rotas: health, calculate
-│   │   ├── core/               config, erros, avisos, limites, workers (pool)
+│   │   ├── core/               config, erros, avisos, limites, workers (pool), text.py
 │   │   ├── models/             schemas Pydantic (MathResult...)
-│   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build
+│   │   ├── parsing/            normalize, tokenizer, parser, ast, printer, build, angles
 │   │   ├── interpreter/        registry + detecção + frases em PT (language.py) + planner.py
 │   │   ├── assistant.py        executa o ExecutionPlan e junta os passos (Fase 12)
-│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics, matrices, vectors, geometry, probability, trigonometry, periodic, extrema
+│   │   ├── math_engine/        arithmetic, algebra, equations, systems, polynomials, calculus, graphing, statistics, matrices, vectors, geometry, probability, trigonometry, periodic, extrema, values
 │   │   ├── verification/       estratégias por intent + avaliador independente, frações exatas,
 │   │   │                       derivador próprio, continuidade, Newton–Leibniz, prazos
 │   │   ├── formatting/         plain/LaTeX/aproximação
@@ -399,6 +399,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0026](decisions/0026-redos-e-event-loop.md) | Regex sem backtracking (vão atômico) e event loop livre: nenhuma regra nem parsing roda no event loop |
 | [0027](decisions/0027-integracao-continua.md) | Integração contínua: dois jobs (backend e frontend), Node na mínima e na atual, ruff format no projeto inteiro |
 | [0028](decisions/0028-lint-do-frontend.md) | Lint do frontend com oxlint: o TypeScript 7 não expõe mais a API de JS, então o ESLint não pode ler o código |
+| [0029](decisions/0029-helpers-compartilhados.md) | Helpers compartilhados em módulos folha: `core/text.py`, `parsing/angles.py`, `math_engine/values.py` |
 | [0003](decisions/0003-verificacao.md) | Estratégia e níveis de verificação |
 | [0004](decisions/0004-ai-provider.md) | Camada de IA só com provedores gratuitos |
 | [0005](decisions/0005-dominio-e-exatidao.md) | Domínio ℝ, exatidão e convenções |

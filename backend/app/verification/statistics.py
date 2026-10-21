@@ -14,7 +14,8 @@ import statistics as stdlib
 from collections.abc import Sequence
 from fractions import Fraction
 
-from app.math_engine.statistics import StatisticsOutcome, rational
+from app.math_engine.statistics import StatisticsOutcome
+from app.math_engine.values import to_rational
 from app.models.result import CheckKind, VerificationCheck, VerificationReport, VerificationStatus
 from app.verification.exact import exact_value
 from app.verification.reports import failure, inconclusive, passed, report
@@ -132,12 +133,12 @@ def _compare_with_stdlib(outcome: StatisticsOutcome, data: Sequence[Fraction]) -
 
 def _check_roots(outcome: StatisticsOutcome) -> str | None:
     std, sample_std = outcome.std, outcome.sample_std
-    if std.is_negative or std**2 != rational(outcome.variance):
+    if std.is_negative or std**2 != to_rational(outcome.variance):
         return "O desvio padrão populacional ao quadrado não é a variância."
     if outcome.sample_variance is None:
         return None if sample_std is None else "Há desvio amostral sem variância amostral."
     if sample_std is None or sample_std.is_negative:
         return "Falta o desvio padrão amostral."
-    if sample_std**2 != rational(outcome.sample_variance):
+    if sample_std**2 != to_rational(outcome.sample_variance):
         return "O desvio padrão amostral ao quadrado não é a variância amostral."
     return None

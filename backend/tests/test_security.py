@@ -6,6 +6,8 @@ backtrack for an exponential time.
 
 import contextlib
 import re
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -55,6 +57,19 @@ def test_sympy_strings_are_never_passed_to_constructors() -> None:
     pattern = re.compile(r"\bsp\.S\(|\bsympy\.S\(|\bS\(\s*[\"']")
     offenders = [str(path) for path in APP.rglob("*.py") if pattern.search(path.read_text())]
     assert offenders == []
+
+
+def test_the_server_process_never_loads_sympy() -> None:
+    """The calculation runs in worker processes; the server itself stays light (ADR 0002).
+
+    The shared helpers live in modules that the API process imports, so this
+    guards against one of them dragging SymPy in.
+    """
+    code = "import sys, app.main; print('sympy' in sys.modules)"
+    out = subprocess.run(  # noqa: S603 - fixed code, this interpreter
+        [sys.executable, "-c", code], capture_output=True, text=True, check=True
+    )
+    assert out.stdout.strip() == "False"
 
 
 @pytest.mark.parametrize(

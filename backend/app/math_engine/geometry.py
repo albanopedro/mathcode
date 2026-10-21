@@ -13,6 +13,7 @@ import sympy as sp
 
 from app.core.errors import ErrorCode, MathError
 from app.core.notices import Notice
+from app.math_engine.values import simplified
 from app.models.intents import Figure, GeometryCalculation, GeometryParams
 from app.parsing import ParseResult, parse
 from app.parsing.ast import (
@@ -342,7 +343,7 @@ def _figure(
         case "rhombus", _:
             side = sp.sqrt((m["D"] / 2) ** 2 + (m["d"] / 2) ** 2)
             return (
-                _simplified(4 * side),
+                simplified(4 * side),
                 "P",
                 r"P = 4 \sqrt{\left(\frac{D}{2}\right)^2 + \left(\frac{d}{2}\right)^2}",
             )
@@ -367,24 +368,20 @@ def _figure(
             return PI * m["r"] ** 2 * m["h"], "V", r"V = \pi r^2 h"
         case "cylinder", _:
             r, h = m["r"], m["h"]
-            return _simplified(2 * PI * r * (r + h)), "S", r"S = 2 \pi r (r + h)"
+            return simplified(2 * PI * r * (r + h)), "S", r"S = 2 \pi r (r + h)"
         case "cone", "volume":
             return PI * m["r"] ** 2 * m["h"] / 3, "V", r"V = \frac{\pi r^2 h}{3}"
         case "cone", _:
             r, h = m["r"], m["h"]
             slant = sp.sqrt(r**2 + h**2)
             return (
-                _simplified(PI * r * (r + slant)),
+                simplified(PI * r * (r + slant)),
                 "S",
                 r"S = \pi r (r + g), \ g = \sqrt{r^2 + h^2}",
             )
         case "right_triangle", _:
             return _pythagoras(m)
     raise AssertionError(f"no formula for {figure} / {calculation}")
-
-
-def _simplified(value: sp.Expr) -> sp.Expr:
-    return value if value.is_Rational else sp.simplify(value)
 
 
 def _triangle(
@@ -394,7 +391,7 @@ def _triangle(
         return m["b"] * m["h"] / 2, "A", r"A = \frac{b \cdot h}{2}"
     a, b, c = m["a"], m["b"], m["c"]
     for side, rest in ((a, b + c), (b, a + c), (c, a + b)):
-        if _simplified(rest - side).is_positive is not True:
+        if simplified(rest - side).is_positive is not True:
             raise MathError(
                 ErrorCode.DOMAIN_ERROR,
                 "Esses lados não formam um triângulo: cada lado precisa ser menor que a soma "
@@ -405,29 +402,29 @@ def _triangle(
     if calculation == "classify":
         return classify(a, b, c), "", ""
     s = (a + b + c) / 2
-    area = _simplified(sp.sqrt(s * (s - a) * (s - b) * (s - c)))
+    area = simplified(sp.sqrt(s * (s - a) * (s - b) * (s - c)))
     return area, "A", r"A = \sqrt{s (s - a)(s - b)(s - c)}, \ s = \frac{a + b + c}{2}"
 
 
 def classify(a: sp.Expr, b: sp.Expr, c: sp.Expr) -> Classification:
     sides = sorted((a, b, c), key=lambda side: float(side))
-    equal = sum(1 for x, y in ((a, b), (b, c), (a, c)) if _simplified(x - y) == 0)
+    equal = sum(1 for x, y in ((a, b), (b, c), (a, c)) if simplified(x - y) == 0)
     by_sides = "equilátero" if equal == 3 else "isósceles" if equal == 1 else "escaleno"
     longest, others = sides[2], sides[:2]
-    gap = _simplified(longest**2 - others[0] ** 2 - others[1] ** 2)
+    gap = simplified(longest**2 - others[0] ** 2 - others[1] ** 2)
     by_angles = "retângulo" if gap == 0 else "obtusângulo" if gap.is_positive else "acutângulo"
     return Classification(by_sides, by_angles)
 
 
 def _pythagoras(m: dict[str, sp.Expr]) -> tuple[sp.Expr, str, str]:
     if "c" not in m:
-        return _simplified(sp.sqrt(m["a"] ** 2 + m["b"] ** 2)), "c", "c = \\sqrt{a^2 + b^2}"
+        return simplified(sp.sqrt(m["a"] ** 2 + m["b"] ** 2)), "c", "c = \\sqrt{a^2 + b^2}"
     leg, missing = (m["a"], "b") if "a" in m else (m["b"], "a")
-    if _simplified(m["c"] - leg).is_positive is not True:
+    if simplified(m["c"] - leg).is_positive is not True:
         raise MathError(ErrorCode.DOMAIN_ERROR, "A hipotenusa precisa ser maior que o cateto.")
     known = "a" if missing == "b" else "b"
     return (
-        _simplified(sp.sqrt(m["c"] ** 2 - leg**2)),
+        simplified(sp.sqrt(m["c"] ** 2 - leg**2)),
         missing,
         rf"{missing} = \sqrt{{c^2 - {known}^2}}",
     )
@@ -470,13 +467,13 @@ def _analytic(
     if calculation == "distance":
         squares = sum((x - y) ** 2 for x, y in zip(p, q, strict=True))
         return (
-            _simplified(sp.sqrt(squares)),
+            simplified(sp.sqrt(squares)),
             "d",
             r"d = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}",
         )
     if calculation == "midpoint":
         return (
-            tuple(_simplified((x + y) / 2) for x, y in zip(p, q, strict=True)),
+            tuple(simplified((x + y) / 2) for x, y in zip(p, q, strict=True)),
             "M",
             r"M = \left(\frac{x_1 + x_2}{2}, \frac{y_1 + y_2}{2}\right)",
         )
@@ -493,7 +490,7 @@ def _two_d(points: tuple[tuple[sp.Expr, ...], ...], what: str) -> None:
 def _line(p: tuple[sp.Expr, ...], q: tuple[sp.Expr, ...]) -> tuple[Line, str, str]:
     _two_d((p, q), "A reta")
     (x1, y1), (x2, y2) = p, q
-    dx, dy = _simplified(x2 - x1), _simplified(y2 - y1)
+    dx, dy = simplified(x2 - x1), simplified(y2 - y1)
     if dx == 0 and dy == 0:
         raise MathError(
             ErrorCode.INVALID_INPUT_FOR_INTENT,
@@ -502,12 +499,12 @@ def _line(p: tuple[sp.Expr, ...], q: tuple[sp.Expr, ...]) -> tuple[Line, str, st
     if dx == 0:
         return Line(sp.Integer(1), sp.Integer(0), x1, None, None), "", "x = x_1"
     # dy·x − dx·y = dy·x1 − dx·y1, without a common factor when the numbers are rational
-    a, b, c = dy, -dx, _simplified(dy * x1 - dx * y1)
+    a, b, c = dy, -dx, simplified(dy * x1 - dx * y1)
     if all(n.is_Rational for n in (a, b, c)):
         common = sp.gcd(sp.gcd(a, b), c) if c != 0 else sp.gcd(a, b)
         a, b, c = a / common, b / common, c / common
-    slope = _simplified(dy / dx)
-    intercept = _simplified(y1 - slope * x1)
+    slope = simplified(dy / dx)
+    intercept = simplified(y1 - slope * x1)
     return (
         Line(a, b, c, slope, intercept),
         "",
@@ -532,7 +529,7 @@ def _polygon_area(points: tuple[tuple[sp.Expr, ...], ...]) -> tuple[sp.Expr, str
         x1 * y2 - x2 * y1
         for (x1, y1), (x2, y2) in zip(points, points[1:] + points[:1], strict=True)
     )
-    area = _simplified(sp.Abs(twice) / 2)
+    area = simplified(sp.Abs(twice) / 2)
     if area == 0:
         raise MathError(
             ErrorCode.INVALID_INPUT_FOR_INTENT, "Os pontos estão alinhados: a área é 0."

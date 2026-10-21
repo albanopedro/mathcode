@@ -23,6 +23,7 @@ import sympy as sp
 from mpmath import mp, mpf
 
 from app.core.limits import MAX_RESULT_DIGITS
+from app.math_engine.values import to_rational
 from app.parsing.ast import Binary, Call, Constant, Degrees, Negate, Node, Number, Variable
 
 BASE_PRECISION = 60  # digits beyond the largest intermediate value
@@ -89,7 +90,7 @@ def to_mpf(expr: sp.Expr, point: Mapping[sp.Symbol, str] | None = None) -> mpf |
     SymPy's ``evalf`` is adaptive: the 50 digits returned are significant digits
     of the result itself, even after cancellation.
     """
-    subs = {s: rational(v) for s, v in (point or {}).items()}
+    subs = {s: exact_rational(v) for s, v in (point or {}).items()}
     value = expr.evalf(50, subs=subs)
     if not value.is_Number or value.is_real is not True or not value.is_finite:
         return None
@@ -111,10 +112,9 @@ def sample_points(key: str, names: Sequence[str]) -> Iterator[dict[str, str]]:
         yield {name: f"{rng.uniform(-10, 10):.6f}" for name in names}
 
 
-def rational(value: str) -> sp.Rational:
+def exact_rational(value: str) -> sp.Rational:
     """An exact decimal string as a SymPy rational (via Fraction: no text reaches SymPy)."""
-    fraction = Fraction(value)
-    return sp.Rational(fraction.numerator, fraction.denominator)
+    return to_rational(Fraction(value))
 
 
 class _Evaluator:

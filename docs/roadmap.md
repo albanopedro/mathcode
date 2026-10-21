@@ -30,6 +30,7 @@ Regras gerais:
 | — | Auditoria de segurança: regex e event loop | concluída (aguardando revisão) |
 | — | Integração contínua (CI) | concluída (aguardando revisão) |
 | — | Qualidade do frontend (lint e velocidade) | concluída (aguardando revisão) |
+| — | Dívida de duplicação (helpers compartilhados) | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -569,6 +570,33 @@ determinística.
   nos testes.
 - **Velocidade:** a suíte do frontend foi de 17,99 s para 13,62 s.
 - **Testes:** 1 679 no backend (eram 1 668) e 354 no frontend (sem mudança).
+
+## Depois da Fase 12 — Dívida de duplicação (feita)
+
+- **Decidido** ([ADR 0029](decisions/0029-helpers-compartilhados.md)): os
+  helpers compartilhados moram em **módulos folha**, que não importam nada do
+  projeto, para não inverter a hierarquia nem criar ciclo.
+- **Entregue:**
+  - `core/text.py`: `fold`, que estava escrito duas vezes (e era importado
+    pelo nome privado pelo planejador);
+  - `parsing/angles.py`: `degrees_of` e `radians_of`, que estavam escritos em
+    quatro módulos;
+  - `math_engine/values.py`: `simplified` (três cópias), `to_rational` e
+    `to_fraction`;
+  - as duas funções `rational` de nomes iguais e assinaturas diferentes
+    (`Fraction` e `str`) viraram `to_rational` e `exact_rational`;
+  - teste novo que protege o invariante de que o processo do servidor não
+    carrega SymPy.
+- **Achado no caminho:** os nomes `to_degrees`/`to_radians` colidiam com o
+  campo `to_degrees` do modelo de trigonometria, e a variável local
+  sombreava a função importada. Os helpers se chamam `degrees_of` e
+  `radians_of` por isso.
+- **O que ficou de fora, e por quê:** os renderizadores de número (`approx`,
+  `_six`, `_short_float`, `show`) têm precisões diferentes e são APIs, não
+  cópias; os separadores de lista do parser e da probabilidade já concordavam;
+  e o `simplify` repetido e o `approx()` recalculado são desperdício de tempo,
+  não duplicação — ficam para uma fase com medição.
+- **Testes:** 1 687 no backend (eram 1 679) e 354 no frontend (sem mudança).
 
 ## Sugestões registradas (fora do escopo atual)
 

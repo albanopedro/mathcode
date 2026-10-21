@@ -17,7 +17,6 @@ Results are exact: integers for counts, fractions for probabilities.
 
 import math
 import re
-import unicodedata
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Literal
@@ -27,6 +26,7 @@ import sympy as sp
 from app.core.errors import ErrorCode, MathError
 from app.core.limits import MAX_RESULT_DIGITS
 from app.core.notices import Notice, NoticeCode
+from app.core.text import fold as _fold
 from app.models.intents import ProbabilityCalculation, ProbabilityParams
 from app.parsing import parse
 from app.parsing.ast import Equation, ExpressionList, Node, System, has_brackets, has_points
@@ -368,11 +368,6 @@ def _split(text: str) -> list[tuple[int, str]]:
             ErrorCode.INVALID_INPUT_FOR_INTENT, "Há um valor vazio entre os separadores."
         )
     return items
-
-
-def _fold(text: str) -> str:
-    """Lowercase without accents."""
-    return "".join(unicodedata.normalize("NFD", ch)[0].lower() for ch in text)
 
 
 def _natural(values: dict[str, sp.Rational], name: str, minimum: int = 0) -> int:
