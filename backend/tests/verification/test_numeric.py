@@ -7,6 +7,7 @@ from mpmath import mp, mpf
 from app.parsing import parse
 from app.parsing.ast import Equation, Node
 from app.parsing.build import symbol
+from app.verification import numeric
 from app.verification.numeric import (
     BASE_PRECISION,
     MAX_PRECISION,
@@ -95,6 +96,41 @@ def test_refuses_intermediate_values_too_large_to_bound() -> None:
     with pytest.raises(TooLarge):
         evaluate(tree("exp(exp(10)) - exp(exp(10))"))  # e^22026 has ~9566 digits
     assert MAX_PRECISION < 9566
+
+
+def test_a_simple_value_is_evaluated_in_one_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The precision starts with the guard margin, so the tree is walked once.
+
+    Without it, the precision asked for is one digit short of what the value
+    needs, and every evaluation walked the whole tree a second time.
+    """
+    walks: list[object] = []
+    original = numeric._Evaluator.run
+
+    def counting(self: numeric._Evaluator, node: object) -> object:
+        walks.append(node)
+        return original(self, node)
+
+    monkeypatch.setattr(numeric._Evaluator, "run", counting)
+    evaluate(tree("2 + 2"))
+
+    assert len(walks) == 1
+
+
+def test_a_huge_value_still_gets_a_second_pass() -> None:
+    """A value of 10^100 needs 100 more digits, and the retry is what gives them."""
+    walks: list[object] = []
+    original = numeric._Evaluator.run
+
+    def counting(self: numeric._Evaluator, node: object) -> object:
+        walks.append(node)
+        return original(self, node)
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(numeric._Evaluator, "run", counting)
+        evaluate(tree("10^100"))
+
+    assert len(walks) == 2
 
 
 def test_to_mpf() -> None:

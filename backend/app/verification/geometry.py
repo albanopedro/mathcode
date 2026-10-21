@@ -93,13 +93,14 @@ def _integral(integrand: sp.Expr, low: sp.Expr, high: sp.Expr) -> sp.Expr:
 def _revolution_surface(radius: sp.Expr, low: sp.Expr, high: sp.Expr) -> sp.Expr:
     """2π ∫ f √(1 + f'²) dx: the surface swept by y = f(x) around the x axis.
 
-    The integrand goes to SymPy as it is: simplifying it first only makes the
-    integral slower (for the sphere, `simplify` turns it into a product of two
-    square roots and the integral takes three times as long), and the result is
-    the same either way.
+    The integrand goes to SymPy as ``√(f² + f²f'²)``, which is the same number
+    as ``f √(1 + f'²)`` when the radius is not negative — and it is a length,
+    positive on the intervals here. Written the other way, SymPy cannot cancel
+    the radicals, and the integral of the sphere takes half a second; this way
+    it takes a thousandth.
     """
     slope = sp.diff(radius, x)
-    return 2 * sp.pi * _integral(radius * sp.sqrt(1 + slope**2), low, high)
+    return 2 * sp.pi * _integral(sp.sqrt(radius**2 + radius**2 * slope**2), low, high)
 
 
 def _vertices(figure: str, m: dict[str, sp.Expr], calculation: str) -> list[Vertex] | None:

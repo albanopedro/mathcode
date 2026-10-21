@@ -54,7 +54,11 @@ class Evaluation:
 def evaluate(node: Node, point: Point | None = None, digits: int = BASE_PRECISION) -> Evaluation:
     """Value at ``point`` with at least ``digits`` digits beyond the largest intermediate value."""
     point = point or {}
-    precision = digits
+    # The precision starts with the guard margin, so the retry below is only
+    # needed for values bigger than 10^GUARD_DIGITS. Without it, every value of
+    # one or more needs one digit more than the precision asked for, and the
+    # tree is walked twice for every evaluation.
+    precision = digits + GUARD_DIGITS
     while True:
         evaluator = _Evaluator(point)
         value: mpf | None = None

@@ -26,6 +26,13 @@ pedido: nunca é ela que calcula.
 > quando não conseguiu conferir, e mostra cada checagem feita: substituição,
 > avaliação numérica, comparação com um segundo método, completude.
 > Os próximos passos estão no [roadmap](docs/roadmap.md).
+>
+> Depois da Fase 12 o plano acabou, e o projeto entrou na fase de
+> endurecimento: uma auditoria de segurança (um regex com backtracking
+> exponencial que derrubava o servidor — [ADR 0026](docs/decisions/0026-redos-e-event-loop.md)),
+> integração contínua em cada push ([ADR 0027](docs/decisions/0027-integracao-continua.md)),
+> lint do frontend ([ADR 0028](docs/decisions/0028-lint-do-frontend.md)) e
+> menos tempo de resposta ([ADR 0030](docs/decisions/0030-tempo-de-resposta.md)).
 
 ## Princípios
 

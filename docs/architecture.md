@@ -400,6 +400,7 @@ preciso configurar CORS. Todas as rotas da API ficam sob `/api`.
 | [0027](decisions/0027-integracao-continua.md) | Integração contínua: dois jobs (backend e frontend), Node na mínima e na atual, ruff format no projeto inteiro |
 | [0028](decisions/0028-lint-do-frontend.md) | Lint do frontend com oxlint: o TypeScript 7 não expõe mais a API de JS, então o ESLint não pode ler o código |
 | [0029](decisions/0029-helpers-compartilhados.md) | Helpers compartilhados em módulos folha: `core/text.py`, `parsing/angles.py`, `math_engine/values.py` |
+| [0030](decisions/0030-tempo-de-resposta.md) | Tempo de resposta: o integrando da superfície e a precisão do avaliador; o que **não** era gargalo |
 | [0003](decisions/0003-verificacao.md) | Estratégia e níveis de verificação |
 | [0004](decisions/0004-ai-provider.md) | Camada de IA só com provedores gratuitos |
 | [0005](decisions/0005-dominio-e-exatidao.md) | Domínio ℝ, exatidão e convenções |

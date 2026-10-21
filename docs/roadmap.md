@@ -31,6 +31,7 @@ Regras gerais:
 | — | Integração contínua (CI) | concluída (aguardando revisão) |
 | — | Qualidade do frontend (lint e velocidade) | concluída (aguardando revisão) |
 | — | Dívida de duplicação (helpers compartilhados) | concluída (aguardando revisão) |
+| — | Tempo de resposta | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -597,6 +598,25 @@ determinística.
   e o `simplify` repetido e o `approx()` recalculado são desperdício de tempo,
   não duplicação — ficam para uma fase com medição.
 - **Testes:** 1 687 no backend (eram 1 679) e 354 no frontend (sem mudança).
+
+## Depois da Fase 12 — Tempo de resposta (feita)
+
+- **Decidido** ([ADR 0030](decisions/0030-tempo-de-resposta.md)): medir antes
+  de mexer. Os dois candidatos que a auditoria apontava **não** eram gargalo;
+  o gargalo real eram outros dois.
+- **Entregue:**
+  - a superfície de revolução é integrada como `√(f² + f²f'²)`, que cancela o
+    denominador na álgebra: a área da esfera cai de **441 ms para 30 ms**;
+  - o avaliador independente começa a precisão com a margem que já existia
+    (`GUARD_DIGITS`), então uma avaliação comum percorre a árvore **uma vez**,
+    e não duas.
+- **Medido:** um conjunto de 17 cálculos foi de **0,801 s para 0,243 s** (3,3
+  vezes), com mediana de 0,8 ms e p95 de 63 ms.
+- **O que ficou como está, de propósito:** o `simplify` repetido na
+  trigonometria (o SymPy cacheia, e tirar não ganhou nada) e o `approx()`
+  recalculado na formatação (custa ~1 ms por raiz). O ADR 0030 registra as
+  duas medições para que ninguém mexa nelas sem medir antes.
+- **Testes:** 1 689 no backend (eram 1 687) e 354 no frontend (sem mudança).
 
 ## Sugestões registradas (fora do escopo atual)
 

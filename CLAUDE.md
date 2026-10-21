@@ -2,7 +2,11 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-13, interface moderna (ADR 0025), depois da Fase 12 (a última do prompt mestre).
+> Última atualização: 2026-10-21, tempo de resposta (ADR 0030). Seis fases
+> depois da Fase 12: auditoria de segurança (0026), integração contínua
+> (0027), lint do frontend (0028), dívida de duplicação (0029) e tempo de
+> resposta (0030). O plano mestre acabou; o que resta é o backlog em
+> [docs/roadmap.md](docs/roadmap.md) → "Sugestões registradas".
 
 ## O que é
 
@@ -63,18 +67,18 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: pendências + inicializador | concluída e commitada (`a14ed79`, ADR 0022) |
 | Pós-12: resultado ao vivo | concluída e commitada (`4c8f902`, ADR 0023) |
 | Pós-12: exemplos clicáveis | concluída e commitada (`840ef9c`, ADR 0024) |
-| Pós-12: interface moderna | **concluída, aguardando revisão e commit** (ADR 0025) |
-| Pós-12: auditoria de segurança (regex e event loop) | **concluída, aguardando revisão e commit** (ADR 0026) |
-| Pós-12: integração contínua (CI) | **concluída, aguardando revisão e commit** (ADR 0027) |
-| Pós-12: qualidade do frontend (lint e velocidade) | **concluída, aguardando revisão e commit** (ADR 0028) |
-| Pós-12: dívida de duplicação (helpers compartilhados) | **concluída, aguardando revisão e commit** (ADR 0029) |
+| Pós-12: interface moderna | concluída e commitada (`26f0fc0`, ADR 0025) |
+| Pós-12: auditoria de segurança (regex e event loop) | concluída e commitada (`38b27b6`, ADR 0026) |
+| Pós-12: integração contínua (CI) | concluída e commitada (`3a92acf`, ADR 0027) |
+| Pós-12: qualidade do frontend (lint e velocidade) | concluída e commitada (`3cf6d98`, ADR 0028) |
+| Pós-12: dívida de duplicação (helpers compartilhados) | concluída e commitada (`c9b2e7e`, ADR 0029) |
+| Pós-12: tempo de resposta | **concluída, aguardando revisão e commit** (ADR 0030) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
-Pendência do usuário (ainda aberta no `4052f9d`): `mathcode/` está no Git como
-um repositório embutido (gitlink). A correção sugerida é
-`git rm --cached mathcode` seguido de `rm -rf mathcode`. O `.gitignore` já
-ignora a pasta, para ela não voltar; falta só o comando acima, que é do
-usuário (o assistente não mexe no estado do Git).
+Três coisas continuam abertas, todas em
+[Próximos passos](#próximos-passos): o `git rm --cached mathcode` (é do
+usuário), o primeiro push com a CI rodando em Linux, e o aviso sobre o
+OpenCode v2.0.20.
 
 ## Arquitetura em uma tela
 
@@ -103,7 +107,14 @@ Arquivos-chave do backend (`backend/app/`):
   - `config.py`: Settings, com variáveis `MATHCODE_*` e o `.env` da raiz;
   - `errors.py`: `ErrorCode` e `MathError(code, message, position)`;
   - `notices.py`: avisos não fatais;
-  - `limits.py`: os limites de segurança.
+  - `limits.py`: os limites de segurança;
+  - `text.py`: `fold` (minúsculas sem acento), compartilhado com o
+    interpretador e o motor. `core/` **não importa SymPy**.
+- `parsing/angles.py`: `degrees_of` e `radians_of` (a conversão de graus, que
+  estava escrita em quatro módulos).
+- `math_engine/values.py`: `simplified`, `to_rational` e `to_fraction`.
+- Os três acima são **módulos folha**: não importam nada do projeto, então
+  qualquer camada pode usá-los sem inverter a hierarquia (ADR 0029).
 - `parsing/vocabulary.py`: a lista fechada de funções, os aliases em PT
   (`sen`, `tg`, `raiz`...) e as constantes `pi` e `e`.
 - `parsing/ast.py`: os nós da AST, mais `Equation` e `System` (equações
@@ -431,6 +442,35 @@ Backend, continuação:
   (5 s), `MATHCODE_QUEUE_TIMEOUT` (10 s), `MATHCODE_AI_PROVIDER` (`none`),
   `MATHCODE_AI_MODEL` (`opencode/space-bunny-free`) e `MATHCODE_AI_TIMEOUT`
   (90 s).
+- **Event loop livre** ([ADR 0026](docs/decisions/0026-redos-e-event-loop.md)):
+  regex e parsing são trabalho de CPU sem limite conhecido, então **nunca
+  rodam no event loop** — `needs_ai()` e `plan_request()` vão para
+  `asyncio.to_thread()`. E nenhum regex pode ter duas maneiras de ler o mesmo
+  texto: no padrão da lista de valores, o vão entre itens é **atômico**
+  (`(?>...)`), senão o backtracking é exponencial e derruba o servidor.
+- **Integração contínua** ([ADR 0027](docs/decisions/0027-integracao-continua.md)):
+  dois jobs independentes (backend Python 3.14; frontend Node 22.12 e 26), sem
+  segredo e sem deploy. O `ruff format --check` roda no **projeto inteiro**,
+  mesmo que o costume local seja formatar só os arquivos da fase.
+- **Lint do frontend** ([ADR 0028](docs/decisions/0028-lint-do-frontend.md)):
+  **oxlint**, não ESLint, porque o TypeScript 7 não expõe mais a API de
+  JavaScript e o `typescript-eslint` depende dela. As regras estão em
+  `frontend/.oxlintrc.json`; `npm run lint` as roda; o `tsc --noEmit` continua
+  quem verifica os tipos. Elemento nativo > `role`: `<output>` em vez de
+  `role="status"`, `<fieldset>` em vez de `role="group"`.
+- **Helpers em módulos folha**
+  ([ADR 0029](docs/decisions/0029-helpers-compartilhados.md)): o que é de todos
+  mora em `core/text.py`, `parsing/angles.py` ou `math_engine/values.py`, que
+  **não importam nada do projeto** — assim nenhuma camada inverte a hierarquia
+  e nenhuma cria ciclo. `core/` não importa SymPy: o processo do servidor não
+  pode carregar o SymPy.
+- **Tempo de resposta**
+  ([ADR 0030](docs/decisions/0030-tempo-de-resposta.md)): a superfície de
+  revolução é integrada como `√(f² + f²f'²)` (cancela o denominador na
+  álgebra), e o avaliador independente começa a precisão com `GUARD_DIGITS`
+  (a árvore é percorrida uma vez, e não duas). **Meça antes de mexer**: o
+  `simplify` duplicado e o `approx()` recalculado *parecem* desperdício, mas
+  o SymPy cacheia e o `approx` de uma raiz `CRootOf` custa 1 ms.
 
 ## Armadilhas conhecidas
 
@@ -459,6 +499,12 @@ Backend, continuação:
   fazia com `_fold` (ADR 0029). O que é de todos mora em `core/text.py`.
 - **`to_degrees` já é um nome do domínio** (o campo que diz se a resposta é em
   graus). Por isso a conversão se chama `degrees_of`, e não `to_degrees`.
+- **Meça antes de mexer no tempo** (ADR 0030). O `simplify` repetido na
+  trigonometria e o `approx()` recalculado na formatação **parecem**
+  desperdício, mas o SymPy cacheia o `simplify` e o `approx` de uma raiz
+  `CRootOf` custa 1 ms: as medições estão no ADR 0030. O que era gargalo
+  mesmo era o integrando da superfície de revolução e a precisão inicial do
+  avaliador.
 - **Regex com dois `\s*` na mesma fronteira volta atrás exponencialmente**
   (ADR 0026). O `\s*` do fim de um item e o `\s*` do começo do próximo disputam
   o mesmo espaço: 2ⁿ leituras para n itens. Em `interpreter/language.py`, o
@@ -546,6 +592,10 @@ Backend, continuação:
 - KaTeX em linha com raiz, numa linha que quebra, passa da altura da linha: num
   `<p>` com `overflow-x-auto` aparece uma barra vertical. Use
   `overflow-y-hidden py-1` (feito na fórmula da probabilidade).
+- No **oxlint**, o `oxlint-disable-next-line` só vale para a linha seguinte:
+  num elemento com vários atributos, a regra é reportada na linha do atributo,
+  não na da tag. Use o par `oxlint-disable` / `oxlint-enable` (foi o caso do
+  `role="img"` do gráfico, em `GraphView.tsx`).
 
 ## Como rodar
 
@@ -554,7 +604,7 @@ navegador). Para checar:
 
 ```bash
 cd backend && .venv/bin/pytest && .venv/bin/ruff check . && .venv/bin/ruff format --check .
-cd frontend && npm test && npm run build
+cd frontend && npm run lint && npm run typecheck && npm test && npm run build
 ```
 
 - API: `uvicorn app.main:app --port 8100`, a partir de `backend/`.
@@ -574,133 +624,86 @@ cd frontend && npm test && npm run build
 
 ## Próximos passos
 
-- Fase 9: decisões do usuário (2026-10-07):
-  1. **Checagens estruturadas** no `VerificationReport`: cada checagem com tipo
-     (simbólica, substituição, numérica, comparação de métodos, completude,
-     domínio), resultado (passou / falhou / inconclusiva) e texto; o relatório
-     ganha as estratégias usadas e o motivo quando não verifica. Muda a API e o
-     frontend (ícones por checagem).
-  2. **Comparações de métodos** (todas aprovadas):
-     - derivada: derivador próprio (regras sobre a árvore), comparado com o
-       `diff` do SymPy → `verified_symbolic`;
-     - aritmética: frações exatas (`Fraction`) para contas só com racionais;
-     - limite: continuidade no ponto (interior do domínio) → `verified_symbolic`;
-     - integral definida: Newton–Leibniz para polinômios e racionais sem polo
-       no intervalo (Sturm).
-  3. **Não verificável vira "não verificado" com motivo**, não erro: prazo
-     próprio para a verificação dentro do worker (SIGALRM) e exceção num
-     verificador → `unverified`. Trocar a substituição lenta de raízes
-     `CRootOf` (sp.simplify → minpoly, >20 s em `x^20 - 3x^7 + 1 = 0`) por
-     divisibilidade de polinômios.
-- Fase 10 (em andamento): **um domínio por alteração**, cada um com parada e
-  relatório. Decisões do usuário (2026-10-07):
-  1. 1º domínio: **estatística descritiva** (matrizes, geometria,
-     probabilidade, vetores e trigonometria ficam para as próximas etapas);
-  2. medidas: média, mediana, moda, variância, desvio padrão, mínimo, máximo,
-     amplitude, soma e n. Quartis ficam como sugestão (convenções diferentes);
-  3. resposta principal: **σ populacional (÷ n)**, com o amostral s (÷ n − 1)
-     junto, rotulado, e um aviso explicando a diferença;
-  4. operação "Estatística" + lista → **resumo** com todas as medidas; frase
-     ("média de 10, 20, 30") → a medida pedida em destaque, com o resumo.
-- Estatística concluída (ADR 0011).
-- **Matrizes (2º domínio, concluído, ADR 0012).** Decisões do usuário (2026-10-07):
-  1. operações: determinante, inversa, transposta, traço, posto e aritmética
-     (soma, subtração, produto, escalar, potência inteira) escrita como
-     expressão; autovalores ficam como sugestão (podem ser complexos; ℝ);
-  2. entradas: **só números exatos** (inteiros, decimais, frações, √2, pi),
-     até 8×8;
-  3. sintaxe **[[1, 2], [3, 4]]** (uma linha por colchete; separadores atuais);
-  4. interface: operação "Matrizes" + campo "Cálculo" (Determinante, Inversa,
-     Transposta, Traço, Posto, Calcular expressão); frases e expressões com
-     colchetes no Automático também.
-- **Vetores (3º domínio, concluído, ADR 0013).** Decisões do usuário (2026-10-07):
-  1. sintaxe `[1, 2, 3]` (um colchete; até 8 componentes; números exatos);
-  2. operações: soma, subtração e × número (expressão); produto escalar,
-     norma, vetor unitário, ângulo; produto vetorial (3D); matriz × vetor (o
-     vetor é coluna); `vetor * vetor` é recusado (ambíguo);
-  3. interface: operação "Vetores" + campo "Cálculo" (Norma, Unitário,
-     Produto escalar, Produto vetorial, Ângulo, Calcular expressão); dois
-     vetores separados por `;`; frases e Automático também;
-  4. ângulo em radianos exatos **e** em graus (θ = π/4 = 45°).
-- **Geometria (4º domínio, concluído, ADR 0014).** Decisões do usuário (2026-10-07):
-  1. conteúdos (todos): figuras planas (área/perímetro: círculo, quadrado,
-     retângulo, triângulo [b,h ou 3 lados/Heron], trapézio, losango,
-     paralelogramo); sólidos (volume/superfície: cubo, paralelepípedo, esfera,
-     cilindro, cone); analítica (distância, ponto médio, reta por 2 pontos,
-     área de polígono); Pitágoras e classificação de triângulos;
-  2. interface: operação "Geometria" + campos Figura e Cálculo; medidas no
-     texto como `r = 5` ou `b = 4; h = 3` (o parser já lê como equações);
-     frases também;
-  3. pontos `(1, 2)` (hoje erro; nada muda de significado);
-  4. sem unidades (números puros).
-  - Revisada e commitada pelo usuário.
-  - Desenho: intent `geometry`, `GeometryParams(measures, figure, calculation)`
-    com catálogo único de figuras; nó `Point` no parser; verificação por outro
-    caminho (vértices + cadarço, integração/sólido de revolução, Heron ×
-    coordenadas, a²+b²=c², triangulação × cadarço, substituição na reta).
-- **Probabilidade (5º domínio, concluído, ADR 0015).** Decisões do usuário
-  (2026-10-08): fazer **os dois** domínios restantes, um por alteração,
-  probabilidade primeiro;
-  1. conteúdos (todos): fatorial e contagem (com e sem repetição), anagramas,
-     eventos (não A, e, ou, condicional), binomial (=, ≤, ≥, média/variância);
-  2. `5!`, `C(10, 3)` e `A(6, 2)` na linguagem (C/A só com dois argumentos);
-  3. eventos `P(A) = 1/2; P(B) = 1/3`, `P(A e B)` opcional; sem ela, só o
-     cálculo "independentes";
-  4. fração + porcentagem; `30%` aceito só na entrada da operação;
-  5. operação "Probabilidade" + campo Cálculo.
-  - Revisada e commitada pelo usuário (`f5418fc`).
-- **Trigonometria (6º e último domínio, concluído, ADR 0016).** Decisões do
-  usuário (2026-10-08):
-  1. conteúdos (todos): valores e conversões (sec, csc, cot, graus ↔
-     radianos, redução ao 1º quadrante), equações (solução geral e num
-     intervalo), identidades (prova ou contraexemplo), triângulos (leis dos
-     senos e dos cossenos);
-  2. operação "Trigonometria" + Cálculo; equações onde já estavam (Resolver
-     equação e Automático);
-  3. solução geral + as soluções de [0, 2π); campos De/Até mudam o intervalo;
-  4. `a = 5; b = 7; C = 60°` → triângulo completo (graus; dois no ambíguo);
-  5. identidade: prova ou contraexemplo.
-  - Revisada e commitada pelo usuário (`4ce1830`).
-- **Fase 11 (UX).** Decisões do usuário (2026-10-09): todos os itens (histórico
-  + copiar, exato ↔ aproximado, dark mode + acessibilidade, MathLive), **um
-  por etapa**; histórico: últimos 50, só neste navegador; ajuda recolhível.
-  - 11.1 e 11.2 commitadas; 11.3 (tema Sistema/Claro/Escuro no topo +
-    contraste, foco, teclado, leitores de tela, movimento reduzido) concluída,
-    aguardando revisão.
-  - 11.4 (editor visual: botão lembrado, teclado em toque, "Será calculado")
-    commitada (`9487586`). **Fase 11 completa.**
-- **Fase 12 (assistente).** Decisões do usuário (2026-10-09): lista com "e" +
-  estudo da função; regras locais + IA opcional; um cartão com os passos;
-  Automático detecta + operação "Assistente"; vértice e extremos como cálculo
-  novo verificado; domínio vira sugestão. Concluída, aguardando revisão. **Era a
-  última fase do prompt mestre.**
-- Fase 8: decisões do usuário foram caixa "Permitir IA" por pedido; poucas
-  chamadas reais com frases fictícias; Ollama adiado.
-- Aviso pendente ao usuário: o opencode instalado é a **v2.0.20** (sem
-  `--dir`). O DevAI foi feito na v1.18 e pode ter quebrado.
-- Sugestões registradas, fora do escopo: domínio complexo opcional; passos de
-  resolução por regras; `docker-compose` quando houver Docker; ESLint no
-  frontend; limite de tamanho do corpo HTTP antes da leitura; seletor de operação
-  na interface (feito na Fase 5); sistemas não lineares; divisão com várias
-  variáveis; provedor Ollama (quando
-  instalado); regras locais para "o dobro de" e "a metade de"; comparação de
-  métodos para integrais com limites irracionais e trigonométricas;
-  continuidade lateral em pontos de borda; estatística:
-  quartis/IQR, média ponderada, tabela de frequências, dados irracionais,
-  rótulo "Dados" no campo de entrada; matrizes: autovalores (complexos),
-  matrizes com letras, editor em grade; vetores: projeção, produto misto,
-  vetor × matriz, vetores com letras; geometria: unidades, perímetro do
-  trapézio, polígonos regulares, setor, pirâmide/prisma, distância ponto-reta,
-  pontos com nome; probabilidade: fatorial com variáveis, fatorial duplo,
-  permutação circular, outras distribuições, tabela/gráfico da binomial, mais
-  de dois eventos, probabilidades irracionais; trigonometria: inequações,
-  completude de sin(x) = cos(x), graus/minutos/segundos, área pelos senos,
-  intervalo para soluções finitas; resumir o texto de ajuda da calculadora
-  (Fase 11); assistente: domínio, passos encadeados, extremos periódicos/com
-  módulo, máximo/mínimo absolutos num intervalo, inflexão e concavidade,
-  assíntotas.
+O plano mestre (Fases 0 a 12) acabou. O que está **aberto agora**, em ordem:
+
+1. **`git rm --cached mathcode`** — o único item de código que ficou
+   pendente. `mathcode/` é um clone antigo do próprio projeto, versionado
+   como um gitlink (modo 160000) **sem `.gitmodules`**: num clone novo a
+   pasta fica vazia e `git submodule status` dá `fatal: no submodule mapping
+   found`. O `.gitignore` já a ignora; falta o comando, que é do usuário
+   (regra 2).
+2. **O primeiro push com a CI rodando.** A CI (ADR 0027) nunca rodou em
+   Linux: tudo foi validado em macOS. O primeiro push é a prova. Se o job do
+   backend ficar vermelho por ambiente (uma dependência que quebrou), o
+   conserto é do lado do projeto — o [ADR 0022](docs/decisions/0022-pendencias-e-inicializador.md)
+   mostra que o ambiente do projeto é reproduzível.
+3. **Aviso sobre o OpenCode:** o instalado é a **v2.0.20** (sem `--dir`). O
+   DevAI foi feito na v1.18 e pode ter quebrado. O provedor do Mathcode usa
+   `--standalone` (ADR 0009).
+
+O **backlog** de funcionalidades está em
+[docs/roadmap.md](docs/roadmap.md) → "Sugestões registradas". As que eu
+sugiro, na ordem:
+
+- **`docker-compose.yml`**, quando houver Docker para testar (a regra do
+  projeto: um arquivo que não pode ser testado não entra).
+- **Matriz de Python na CI** quando sair a 3.15 (hoje a CI roda só a 3.14,
+  que é o mínimo do projeto).
+- **Domínio complexo** como opção explícita.
+- **Estatística:** quartis e IQR (com a convenção explicada), média
+  ponderada, tabela de frequências, dados irracionais.
+- **Matrizes:** autovalores e autovetores (tratando complexos), matrizes
+  com letras, editor em grade.
+- **Vetores:** projeção, produto misto, vetor × matriz (linha).
+- **Trigonometria:** inequações; completude provada para `sin(x) = cos(x)`;
+  graus, minutos e segundos.
+- **Geometria:** unidades, polígonos regulares, setor circular, pirâmide e
+  prisma, distância de ponto a reta, pontos com nome (`A(1, 2)`).
+- **Probabilidade:** outras distribuições (geométrica, Poisson, normal),
+  tabela e gráfico da binomial, mais de dois eventos.
+- **Assistente:** domínio de uma função; passos encadeados; extremos
+  periódicos e com módulo; inflexão e concavidade; assíntotas no estudo.
+- **Histórico:** exportar/importar, busca, favoritos.
+- **Acessibilidade:** axe-core na CI, alto contraste, tamanho de fonte.
+
+Uma fase por vez, com testes + build + relatório e **parada até a
+autorização** (regra 3). O `npx oxlint` roda em menos de um segundo, então
+a verificação é barata e pode ser feita a cada passo.
 
 ## Histórico
+
+- **Auditoria de segurança (ADR 0026):** um regex com backtracking
+  exponencial na lista de valores (`2^n` leituras para n itens) travava o
+  servidor inteiro: as regras eram lidas no **event loop**, e uma entrada de
+  455 caracteres derrubava tudo, inclusive o health check (e na configuração
+  padrão, sem IA ligada). Causa raiz corrigida (vão atômico) + camada
+  estrutural (`needs_ai` e `plan_request` em `asyncio.to_thread()`). No
+  caminho: a verificação da área da esfera foi corrigida (o `simplify` só
+  piorava o integrando). 1 679 testes.
+- **Integração contínua (ADR 0027):** `.github/workflows/ci.yml` com dois
+  jobs independentes (backend Python 3.14; frontend Node 22.12 e 26), sem
+  segredo e sem deploy; `ruff format --check` no projeto inteiro; `engines`
+  no `package.json`; badge no README.
+- **Lint do frontend (ADR 0028):** **oxlint** no lugar do ESLint, porque o
+  TypeScript 7 não expõe mais a API de JavaScript e o `typescript-eslint`
+  depende dela. `.oxlintrc.json`; `npm run lint` (também na CI); pool
+  `vmThreads` no Vitest (a suíte foi de 17,99 s para 13,62 s). O lint
+  achou: `role="status"` → `<output>` (3), `role="group"` → `<fieldset>`
+  (2), uma ref escrita durante o render (`MathEditor`) e nove `vi.fn()` sem
+  tipo. O `role="img"` do Plotly foi mantido de propósito, comentado.
+- **Dívida de duplicação (ADR 0029):** `core/text.py` (`fold`),
+  `parsing/angles.py` (`degrees_of`, `radians_of`) e
+  `math_engine/values.py` (`simplified`, `to_rational`, `to_fraction`).
+  Acabou o nome privado importado de outro módulo (`_fold`) e as duas
+  funções `rational` de nomes iguais e assinaturas diferentes. Os helpers
+  são módulos folha: não importam nada do projeto.
+- **Tempo de resposta (ADR 0030):** a superfície de revolução é integrada
+  como `√(f² + f²f'²)`, que cancela o denominador na álgebra (a área da
+  esfera foi de **441 ms para 30 ms**), e o avaliador independente começa a
+  precisão com `GUARD_DIGITS` (a árvore passou a ser percorrida **uma
+  vez**, e não duas). Um conjunto de 17 cálculos foi de 0,801 s para 0,243 s.
+  Medidos e **deixados como estão**: o `simplify` duplicado (o SymPy
+  cacheia) e o `approx()` recalculado (1 ms por raiz).
 
 - **Fase 0:** auditoria; ADRs 0001 a 0005; `architecture.md` e `roadmap.md`.
 - **Fase 1:** FastAPI `/api/health`; frontend mostrando o status da API; README,
