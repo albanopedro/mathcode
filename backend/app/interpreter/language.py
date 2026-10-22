@@ -80,7 +80,7 @@ _KEYWORD = (
     r"(?:derivada|integral|primitiva|limite|grafico|raizes|raiz|zeros|zero|fatoracao"
     r"|simplificacao|segunda|terceira|quarta|quinta|media|mediana|moda|desvio|variancia"
     r"|amplitude|soma|resumo|estatisticas?|maior|menor|valor|inversa|transposta|traco|posto"
-    r"|quart(?:il|is)|iqr|interquartil|intervalo|primeiro|segundo|terceiro|\d+\s*[ºo°]"
+    r"|quart(?:il|is)|iqr|interquartil|intervalo|primeiro|segundo|terceiro|frequencias?|tabela|\d+\s*[ºo°]"
     r"|norma|modulo|comprimento|vetor|versor|produto|angulo"
     r"|perimetro|volume|distancia|ponto|reta|equacao|hipotenusa|cateto|classificacao"
     r"|determinante|matriz|area|perimetro|volume|probabilidade|vertice|maximo|minimo|extremo"
@@ -234,6 +234,7 @@ _NUMBER = r"[-+\u2212]?\d+(?:[.,]\d+)?(?:\s*/\s*\d+(?:[.,]\d+)?)?"
 # Values separated by "; ", ", " (with a space: "1,5" is a decimal) or a final " e ".
 # The gap is atomic: the regex commits to one split of the blanks (ADR 0026).
 _DATA = rf"(?P<data>\s*{_NUMBER}(?:(?>\s*(?:;|,\s|\se\s)\s*){_NUMBER})*)"
+_WEIGHTS = rf"(?P<weights>\s*{_NUMBER}(?:(?>\s*(?:;|,\s|\se\s)\s*){_NUMBER})*)"
 _MEASURE = (
     r"(?:(?P<std>desvio[\s-]+padrao(?:\s+(?P<std_kind>amostral|populacional))?)"
     r"|(?P<variance>variancia(?:\s+(?P<variance_kind>amostral|populacional))?)"
@@ -243,6 +244,7 @@ _MEASURE = (
     r"|(?P<q3>(?:terceiro|3\s*[ºo°])\s+quartil|q\s*3)"
     r"|(?P<iqr>(?:intervalo\s+)?interquartil|iqr)"
     r"|(?P<quartiles>quart(?:il|is))"
+    r"|(?P<frequency>(?:tabela\s+de\s+)?frequencias?)"
     r"|(?P<mean>media(?:\s+aritmetica)?)"
     r"|(?P<mode>moda)"
     r"|(?P<range>amplitude(?:\s+total)?)"
@@ -266,6 +268,7 @@ def _statistics(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
         "q2",
         "q3",
         "iqr",
+        "frequency",
         "mode",
         "range",
         "sum",
@@ -285,11 +288,35 @@ def _statistics(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     return LanguageMatch(IntentName.STATISTICS, listed, options, offset=offset, rule=rule)
 
 
+def _weighted_mean(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    data = _grab(found, request, "data") or ""
+    weights = _grab(found, request, "weights") or ""
+    listed = re.sub(r"\s+e\s+", "; ", data)
+    listed_weights = re.sub(r"\s+e\s+", "; ", weights)
+    offset = found.start("data") if listed == data else None
+    return LanguageMatch(
+        IntentName.STATISTICS,
+        listed,
+        {"measure": "mean", "weights": listed_weights},
+        offset=offset,
+        rule=rule,
+    )
+
+
+def _weighted_without_weights(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
+    raise MathError(
+        ErrorCode.INVALID_INPUT_FOR_INTENT,
+        "Para a média ponderada, informe os valores e os pesos: "
+        "'média ponderada de 7, 8, 9 com pesos 2, 3, 5'.",
+    )
+
+
 def _statistics_without_data(found: re.Match[str], request: str, rule: str) -> LanguageMatch:
     raise MathError(
         ErrorCode.INVALID_INPUT_FOR_INTENT,
         "Para estatística, escreva os números separados por '; ' ou ', ', como em "
-        "'média de 10, 20, 30' ou 'desvio padrão de 2; 4; 4; 5'.",
+        "'média de 10, 20, 30', 'desvio padrão de 2; 4; 4; 5' ou "
+        "'tabela de frequências de 1, 2, 2, 3'.",
     )
 
 
@@ -736,13 +763,27 @@ _RULES: list[tuple[str, re.Pattern[str], Callable[[re.Match[str], str, str], Lan
         ),
         _events,
     ),
+    (
+        "weighted_mean",
+        re.compile(
+            rf"(?:media\s+ponderada|media\s+com\s+pesos?){_FILLER}\s*{_DATA}"
+            rf"\s*(?:,|;)?\s*(?:com\s+(?:os\s+)?)?pesos?\s*:?\s*{_WEIGHTS}"
+        ),
+        _weighted_mean,
+    ),
+    (
+        "weighted_mean_without_weights",
+        re.compile(r"(?:media\s+ponderada|media\s+com\s+(?:os\s+)?pesos?)\b.*"),
+        _weighted_without_weights,
+    ),
     ("statistics", re.compile(rf"{_MEASURE}{_FILLER}\s+{_DATA}"), _statistics),
     (
         "statistics_without_data",
         re.compile(
             r"(?:(?:primeiro|segundo|terceiro|\d+\s*[ºo°])\s+quart(?:il|is)"
             r"|media|mediana|moda|variancia|desvio[\s-]+padrao|amplitude"
-            r"|quart(?:il|is)|q\s*[123]|iqr|interquartil)\b.*"
+            r"|quart(?:il|is)|q\s*[123]|iqr|interquartil"
+            r"|(?:tabela\s+de\s+)?frequencias?)\b.*"
         ),
         _statistics_without_data,
     ),

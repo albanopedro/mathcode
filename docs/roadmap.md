@@ -32,7 +32,8 @@ Regras gerais:
 | — | Qualidade do frontend (lint e velocidade) | concluída |
 | — | Dívida de duplicação (helpers compartilhados) | concluída |
 | — | Tempo de resposta | concluída |
-| — | Quartis e IQR | concluída (aguardando revisão) |
+| — | Quartis e IQR | concluída |
+| — | Média ponderada e tabela de frequências | concluída (aguardando revisão) |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -634,6 +635,28 @@ determinística.
   - fixtures de estatística recapturados da API.
 - **Testes:** 1 713 no backend (eram 1 689) e 355 no frontend (eram 354).
 
+## Depois da Fase 12 — Média ponderada e tabela de frequências (feita)
+
+- **Decidido com o usuário** ([ADR 0032](decisions/0032-media-ponderada-e-frequencias.md)):
+  pesos são frequências inteiras positivas, um por valor, com soma até 200;
+  o motor expande os dados e reaproveita todas as medidas. A tabela de
+  frequências fica no resumo e a medida `frequency` a pede explicitamente.
+- **Entregue:**
+  - `weights` na API e na frase "média ponderada de 7, 8, 9 com pesos
+    2, 3, 5"; a média vira `Σwx / Σw` e as linhas "Média ponderada" e "Soma
+    ponderada" aparecem no resumo;
+  - `details.frequency` em todo resultado: valor, frequência, relativa exata
+    e acumulada; dados repetidos são combinados;
+  - medida `frequency`, com manchete "tabela de frequências (n = …)" e a
+    tabela destacada no frontend;
+  - frases "tabela de frequências de …", "frequências de …" e
+    "qual a tabela de frequências de …?";
+  - verificação independente: valores e pesos relidos, expansão reconstruída,
+    módulo `statistics` sobre a lista expandida e tabela conferida contra
+    `Counter`, com relativas somando 1;
+  - quatro fixtures recapturados e dois novos (média ponderada e tabela).
+- **Testes:** 1 740 no backend (eram 1 713) e 363 no frontend (eram 355).
+
 ## Sugestões registradas (fora do escopo atual)
 
 - Domínio complexo como opção explícita.
@@ -645,8 +668,8 @@ determinística.
 - Comparação de métodos para integrais com limites irracionais (0 a π) e
   funções trigonométricas; continuidade lateral em pontos de borda (`sqrt(x)`
   em 0⁺).
-- Estatística: média ponderada,
-  tabela de frequências, dados irracionais, rótulo "Dados" no campo de entrada.
+- Estatística: dados irracionais, entrada agrupada `valor (frequência)`,
+  pesos fracionários, rótulo "Dados" no campo de entrada.
 - Matrizes: autovalores e autovetores (tratar complexos), matrizes com letras,
   editor em grade (Fase 11).
 - Vetores: projeção, produto misto, vetor × matriz (linha), vetores com letras.

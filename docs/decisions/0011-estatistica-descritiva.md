@@ -90,8 +90,10 @@ lido são pegos).
 - Resultado principal: a medida pedida (`σ = 2`, `\sigma = 2`) ou, no resumo,
   a média (`média = 20`).
 - `details`: `measure`, `count`, `data` e `sorted` (decimais finitos aparecem
-  como decimais: 9.5, não 19/2), `modes` e `measures` (as 12 medidas da época;
-  15 desde a [ADR 0031](0031-quartis-e-iqr.md), cada uma com rótulo, símbolo,
+  como decimais: 9.5, não 19/2), `modes`, `weighted` e `frequency` (a tabela
+  de frequências da [ADR 0032](0032-media-ponderada-e-frequencias.md)) e
+  `measures` (as 12 medidas da época; 15 desde a
+  [ADR 0031](0031-quartis-e-iqr.md), cada uma com rótulo, símbolo,
   `plain`, `latex` e `approx`; `null` quando não definida).
 - O frontend mostra uma tabela (Medida, Valor, Aproximado) com a medida pedida
   destacada (`aria-current`) e os dados em ordem.
@@ -100,7 +102,8 @@ lido são pegos).
 
 - Há um intent novo; a API aceita `{"intent": "statistics", "options":
   {"measure": "std"}}`.
-- Sugestões registradas: quartis e IQR (com uma convenção escolhida e
-  explicada), média ponderada, tabela de frequências, dados com irracionais e
-  rótulo do campo de entrada por operação ("Dados" em vez de "Expressão ou
-  equação").
+- Sugestões registradas (algumas já feitas): quartis e IQR
+  ([ADR 0031](0031-quartis-e-iqr.md)), média ponderada e tabela de frequências
+  ([ADR 0032](0032-media-ponderada-e-frequencias.md)), dados com irracionais,
+  entrada agrupada `valor (frequência)` e rótulo do campo de entrada por
+  operação ("Dados" em vez de "Expressão ou equação").

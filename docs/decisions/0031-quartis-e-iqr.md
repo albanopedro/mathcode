@@ -101,5 +101,6 @@ Status: `verified_symbolic`, como o resto da estatística.
 - `docs/architecture.md` reflete as 15 medidas; os rótulos da interpretação
   ("medida: 1º quartil") foram atualizados no frontend.
 - Testes: 1 713 no backend (eram 1 689) e 355 no frontend (eram 354).
-- Fica registrado para o futuro: média ponderada, tabela de frequências e
-  dados irracionais continuam no backlog.
+- Média ponderada e tabela de frequências foram feitas na
+  [ADR 0032](0032-media-ponderada-e-frequencias.md); dados irracionais
+  continuam no backlog.

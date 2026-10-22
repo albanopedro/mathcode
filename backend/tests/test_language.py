@@ -201,6 +201,9 @@ def test_plain_math_has_no_interpretation() -> None:
         ("IQR de 1, 2, 3, 4", "1, 2, 3, 4", "iqr"),
         ("intervalo interquartil de 1, 2, 3, 4", "1, 2, 3, 4", "iqr"),
         ("qual o intervalo interquartil de 1, 2, 3, 4?", "1, 2, 3, 4", "iqr"),
+        ("tabela de frequências de 1, 2, 2, 3", "1, 2, 2, 3", "frequency"),
+        ("frequências de 1, 2, 2, 3", "1, 2, 2, 3", "frequency"),
+        ("qual a tabela de frequências de 1, 2, 2, 3?", "1, 2, 2, 3", "frequency"),
     ],
 )
 def test_statistics_phrases(text: str, data: str, measure: str) -> None:
@@ -209,6 +212,33 @@ def test_statistics_phrases(text: str, data: str, measure: str) -> None:
     assert found.intent is I.STATISTICS
     assert found.text == data
     assert found.options == {"measure": measure}
+
+
+def test_weighted_mean_phrase_carries_the_weights() -> None:
+    found = match_language("média ponderada de 7, 8, 9 com pesos 2, 3, 5")
+    assert found is not None and found.intent is I.STATISTICS
+    assert found.text == "7, 8, 9"
+    assert found.options == {"measure": "mean", "weights": "2, 3, 5"}
+
+
+def test_weighted_mean_phrase_accepts_e_as_a_separator() -> None:
+    found = match_language("média ponderada de 7, 8 e 9 com pesos 2, 3 e 5")
+    assert found is not None and found.intent is I.STATISTICS
+    assert found.text == "7, 8; 9"
+    assert found.options == {"measure": "mean", "weights": "2, 3; 5"}
+
+
+def test_weighted_mean_phrase_accepts_filler_and_os_pesos() -> None:
+    found = match_language("média ponderada das notas 7, 8, 9 com os pesos 2, 3, 5")
+    assert found is not None and found.intent is I.STATISTICS
+    assert found.text == "7, 8, 9"
+    assert found.options == {"measure": "mean", "weights": "2, 3, 5"}
+
+
+def test_weighted_mean_without_weights_is_explained() -> None:
+    with pytest.raises(MathError) as exc:
+        match_language("média ponderada de 7, 8, 9")
+    assert "informe os valores e os pesos" in exc.value.message
 
 
 def test_statistics_summary_phrase() -> None:
@@ -230,7 +260,11 @@ def test_maximum_of_numbers_is_statistics_and_of_a_function_is_extrema() -> None
 
 
 def test_statistics_without_numbers_explains_the_format() -> None:
-    for text in ("média das idades da turma", "primeiro quartil das notas"):
+    for text in (
+        "média das idades da turma",
+        "primeiro quartil das notas",
+        "tabela de frequências das notas",
+    ):
         with pytest.raises(MathError) as exc:
             match_language(text)
         assert "média de 10, 20, 30" in exc.value.message
@@ -247,6 +281,21 @@ def test_statistics_phrase_through_the_pipeline() -> None:
     assert result.success and result.intent is I.STATISTICS
     assert result.result is not None and result.result.plain == "média = 20"
     assert result.interpretation is not None and result.interpretation.method == "rules"
+
+
+def test_weighted_mean_phrase_through_the_pipeline() -> None:
+    result = calculate("média ponderada de 7, 8, 9 com pesos 2, 3, 5")
+    assert result.success and result.intent is I.STATISTICS
+    assert result.result is not None and result.result.plain == "média ponderada = 83/10"
+    assert result.details["weighted"] is True
+
+
+def test_frequency_table_phrase_through_the_pipeline() -> None:
+    result = calculate("tabela de frequências de 1, 2, 2, 3")
+    assert result.success and result.intent is I.STATISTICS
+    assert result.result is not None
+    assert result.result.plain == "tabela de frequências (n = 4)"
+    assert result.details["measure"] == "frequency"
 
 
 def test_statistics_error_points_into_the_phrase() -> None:

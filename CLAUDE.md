@@ -2,12 +2,16 @@
 
 > Arquivo de continuidade. É lido automaticamente pelo Claude Code em sessões
 > novas e é **atualizado ao fim de cada fase e a cada decisão importante**.
-> Última atualização: 2026-10-21, quartis e IQR (ADR 0031). Sete fases depois
-> da Fase 12: interface moderna (0025), auditoria de segurança (0026),
-> integração contínua (0027), lint do frontend (0028), dívida de duplicação
-> (0029), tempo de resposta (0030) e quartis e IQR (0031). O plano mestre
-> acabou; o que resta é o backlog em
+> Última atualização: 2026-10-21, média ponderada e tabela de frequências
+> (ADR 0032). Oito fases depois da Fase 12: interface moderna (0025), auditoria
+> de segurança (0026), integração contínua (0027), lint do frontend (0028),
+> dívida de duplicação (0029), tempo de resposta (0030), quartis e IQR (0031)
+> e média ponderada e tabela de frequências (0032). O plano mestre acabou; o
+> que resta é o backlog em
 > [docs/roadmap.md](docs/roadmap.md) → "Sugestões registradas".
+>
+> Handoff detalhado desta fase:
+> [docs/contexto-media-ponderada-e-frequencias.md](docs/contexto-media-ponderada-e-frequencias.md).
 
 ## O que é
 
@@ -74,7 +78,8 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: qualidade do frontend (lint e velocidade) | concluída e commitada (`3cf6d98`, ADR 0028) |
 | Pós-12: dívida de duplicação (helpers compartilhados) | concluída e commitada (`c9b2e7e`, ADR 0029) |
 | Pós-12: tempo de resposta | concluída e commitada (`b41ca29`, ADR 0030) |
-| Pós-12: quartis e IQR | **concluída, aguardando revisão e commit** (ADR 0031) |
+| Pós-12: quartis e IQR | concluída e commitada (`e1dbb14`, ADR 0031) |
+| Pós-12: média ponderada e tabela de frequências | **concluída, aguardando revisão e commit** (ADR 0032) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Duas coisas continuam abertas, ambas em
@@ -239,7 +244,8 @@ Backend, continuação:
 - **Cálculo** ([ADR 0007](docs/decisions/0007-calculo.md)):
   - os parâmetros vão em `options`, só com `intent` explícito (`INTENT_OPTIONS`);
   - valor inválido dá 200 com `INVALID_INPUT_FOR_INTENT`; tipo errado dá 422
-    (StrictStr de até 100 caracteres, StrictInt de −1000 a 1000);
+    (StrictStr de até 500 caracteres, o mesmo da entrada; StrictInt de −1000 a
+    1000);
   - primitivas usam ln|u|, e o verificador exige que a primitiva seja real onde
     o integrando é;
   - limites só pelos lados reais (`ONE_SIDED_DOMAIN`), com "não existe" quando
@@ -249,25 +255,38 @@ Backend, continuação:
     em polinômios/racionais; limites: `partial`, ou `verified_symbolic` por
     continuidade.
 - **Estatística** ([ADR 0011](docs/decisions/0011-estatistica-descritiva.md);
-  quartis na [ADR 0031](docs/decisions/0031-quartis-e-iqr.md)):
-  - intent `statistics`, `StatisticsParams(data, measure?)`; sem `measure`, o
-    resumo (15 medidas em `details.measures`);
+  quartis na [ADR 0031](docs/decisions/0031-quartis-e-iqr.md); pesos e tabela
+  de frequências na [ADR 0032](docs/decisions/0032-media-ponderada-e-frequencias.md)):
+  - intent `statistics`, `StatisticsParams(data, measure?, weights?)`; sem
+    `measure`, o resumo (15 medidas em `details.measures`) mais a tabela de
+    frequências em `details.frequency`;
   - dados: racionais separados por `; ` ou `, `; `parse(texto,
     number_list=True)`; até 200 valores; sem operação, lista de números é erro
     que aponta a Estatística;
+  - pesos: inteiros positivos, um por valor, soma até 200 (o mesmo limite);
+    o motor expande cada valor w vezes e todas as medidas usam a lista
+    expandida; `mean` vira `Σwx / Σw`, `count` vira `Σw`; aviso
+    `WEIGHTED_DATA`;
   - cálculo com `Fraction`; σ/σ² populacionais (resposta), s/s² amostrais
     (n ≥ 2); moda = maior frequência, sem moda se nada repete; mediana par =
     média dos centrais;
   - quartis: Q1 e Q3 são as medianas das metades; com quantidade ímpar, o
     valor central fica fora das duas; IQR = Q3 − Q1; n ≥ 4; sem interpolação;
     Q2 é a mediana (não há linha duplicada);
-  - verificação: releitura por `exact_value`, módulo `statistics` do Python,
-    soma dos desvios = 0, mediana divide, σ² = variância; quartis refeitos
-    pelas metades (`statistics.median`), Q1 ≤ mediana ≤ Q3 e IQR = Q3 − Q1;
+  - tabela de frequências: uma linha por valor distinto (valor, frequência,
+    relativa exata `frequency / n` e acumulada); é uma seção, não uma 16ª
+    medida; `measure: "frequency"` pede a tabela, com manchete própria;
+  - verificação: releitura por `exact_value` (valores **e** pesos), expansão
+    reconstruída, módulo `statistics` do Python, soma dos desvios = 0,
+    mediana divide, σ² = variância; quartis refeitos pelas metades
+    (`statistics.median`), Q1 ≤ mediana ≤ Q3 e IQR = Q3 − Q1; tabela conferida
+    contra `Counter`, com relativas somando exatamente 1;
   - frases em `language.py` (`statistics` antes de `future`; "máximo de
     x^2…" segue futuro; "primeiro/1º quartil", "terceiro/3º quartil", "IQR",
-    "intervalo interquartil"; "segundo/2º quartil" = mediana; sem números →
-    orientação de formato); abaixo de 4 valores, aviso e "—".
+    "intervalo interquartil"; "segundo/2º quartil" = mediana; "média
+    ponderada … com pesos …" → `mean` + `weights`; "tabela de frequências
+    de …"/"frequências de …" → `frequency`; sem números → orientação de
+    formato); abaixo de 4 valores, aviso e "—".
 - **Matrizes** ([ADR 0012](docs/decisions/0012-matrizes.md)):
   - tokens `[` `]`, nó `Matrix` (um termo da expressão); até 8×8; só números;
   - intent `matrix`, `MatrixParams(expression, operation)`; operações
@@ -483,6 +502,14 @@ Backend, continuação:
   Q3 são as medianas das metades; com quantidade ímpar, o valor central fica
   fora das duas. IQR = Q3 − Q1, e são precisos pelo menos 4 valores. **Sem
   interpolação**: planilhas interpolam e dão outros valores. Q2 é a mediana.
+- **Média ponderada e tabela de frequências**
+  ([ADR 0032](docs/decisions/0032-media-ponderada-e-frequencias.md)): pesos
+  são **frequências inteiras positivas**, um por valor, com soma até 200; o
+  motor expande os dados e reaproveita todas as medidas (`mean` = `Σwx / Σw`,
+  `count` = `Σw`). A tabela de frequências (valor, frequência, relativa exata
+  e acumulada) acompanha todo resumo; `measure: "frequency"` pede a tabela,
+  que não é uma 16ª medida. Sem interpolação e sem pesos fracionários nesta
+  fase.
 
 ## Armadilhas conhecidas
 
@@ -658,7 +685,8 @@ sugiro, na ordem:
 - **Matriz de Python na CI** quando sair a 3.15 (hoje a CI roda só a 3.14,
   que é o mínimo do projeto).
 - **Domínio complexo** como opção explícita.
-- **Estatística:** média ponderada, tabela de frequências, dados irracionais.
+- **Estatística:** dados irracionais, entrada agrupada `valor (frequência)`,
+  pesos fracionários.
 - **Matrizes:** autovalores e autovetores (tratando complexos), matrizes
   com letras, editor em grade.
 - **Vetores:** projeção, produto misto, vetor × matriz (linha).
@@ -717,6 +745,14 @@ a verificação é barata e pode ser feita a cada passo.
   medidas, as frases ganharam primeiro/terceiro quartil e IQR, e a verificação
   refaz as metades com `statistics.median`. 1 713 testes no backend e 355 no
   frontend.
+- **Média ponderada e tabela de frequências (ADR 0032):** pesos são
+  frequências inteiras positivas, um por valor, com soma até 200; o motor
+  expande os dados e todas as medidas continuam valendo (`mean` = `Σwx / Σw`,
+  `count` = `Σw`). Todo resumo ganhou `details.frequency` (valor, frequência,
+  relativa exata e acumulada), e `measure: "frequency"` pede a tabela, que o
+  frontend destaca. A verificação relê valores **e** pesos, reconstrói a
+  expansão e confere a tabela contra `Counter`. 1 740 testes no backend e 363
+  no frontend.
 
 - **Fase 0:** auditoria; ADRs 0001 a 0005; `architecture.md` e `roadmap.md`.
 - **Fase 1:** FastAPI `/api/health`; frontend mostrando o status da API; README,

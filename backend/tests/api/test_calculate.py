@@ -97,7 +97,7 @@ def test_invalid_option_values_are_answers(api: TestClient) -> None:
     "options",
     [
         {"order": [1]},  # not a text or a number
-        {"point": "1" * 101},  # too long (and must not become a huge int)
+        {"point": "1" * 501},  # too long (and must not become a huge int)
         {"order": 10**6},  # number out of range
         {f"k{n}": "x" for n in range(9)},  # too many
     ],
@@ -237,6 +237,8 @@ def test_statistics_summary(api: TestClient) -> None:
     assert result.success and result.intent == "statistics"
     assert result.result is not None and result.result.plain == "média = 5"
     assert data["details"]["measure"] is None
+    assert data["details"]["weighted"] is False
+    assert len(data["details"]["frequency"]) == 5
     assert len(data["details"]["measures"]) == 15
     measures = {m["name"]: m for m in data["details"]["measures"]}
     assert (measures["q1"]["plain"], measures["q3"]["plain"], measures["iqr"]["plain"]) == (
@@ -264,6 +266,37 @@ def test_statistics_quartile_option(api: TestClient) -> None:
     assert status == 200
     assert data["result"]["plain"] == "Q₁ = 3/2"
     assert data["details"]["measure"] == "q1"
+
+
+def test_statistics_weighted_mean_option(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {
+            "input": "7, 8, 9",
+            "intent": "statistics",
+            "options": {"measure": "mean", "weights": "2, 3, 5"},
+        },
+    )
+    assert status == 200
+    assert data["result"]["plain"] == "média ponderada = 83/10"
+    assert data["details"]["weighted"] is True
+    assert data["details"]["count"] == 10
+    assert data["details"]["frequency"] == [
+        {"value": "7", "frequency": 2, "relative": "1/5", "cumulative": 2},
+        {"value": "8", "frequency": 3, "relative": "3/10", "cumulative": 5},
+        {"value": "9", "frequency": 5, "relative": "1/2", "cumulative": 10},
+    ]
+    assert data["verification"]["status"] == "verified_symbolic"
+
+
+def test_statistics_frequency_option(api: TestClient) -> None:
+    status, data = post(
+        api,
+        {"input": "1, 2, 2, 3", "intent": "statistics", "options": {"measure": "frequency"}},
+    )
+    assert status == 200
+    assert data["result"]["plain"] == "tabela de frequências (n = 4)"
+    assert data["details"]["measure"] == "frequency"
 
 
 def test_statistics_unknown_measure_is_explained(api: TestClient) -> None:

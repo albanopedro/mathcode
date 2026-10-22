@@ -14,9 +14,11 @@
  * In Phase 12 every response gained "plan" (empty outside the assistant): it was
  * added to the older files as [], exactly what the API now returns for them.
  *
- * In the quartiles phase (ADR 0031) the three statistics responses were captured
+ * In the quartiles phase (ADR 0031) the four statistics responses were captured
  * again: every summary gained q1, q3 and iqr, and the single-value one gained the
- * QUARTILES_NOT_DEFINED warning.
+ * QUARTILES_NOT_DEFINED warning. In the weights and frequency phase (ADR 0032)
+ * they were captured again with `weighted` and `frequency`, and two new ones were
+ * added: the weighted mean and the frequency table.
  */
 import type { MathResult } from "../../types/math";
 import aiClarification from "./ai-clarification.json";
@@ -74,10 +76,12 @@ import probabilitySummary from "./probability-summary.json";
 import probabilityUnionPhrase from "./probability-union-phrase.json";
 import quadratic from "./quadratic.json";
 import simplifyDomain from "./simplify-domain.json";
+import statisticsFrequency from "./statistics-frequency.json";
 import statisticsNoMode from "./statistics-no-mode.json";
 import statisticsPhrase from "./statistics-phrase.json";
 import statisticsSingle from "./statistics-single.json";
 import statisticsSummary from "./statistics-summary.json";
+import statisticsWeighted from "./statistics-weighted.json";
 import systemInfinite from "./system-infinite.json";
 import systemNone from "./system-none.json";
 import systemUnique from "./system-unique.json";
@@ -137,6 +141,8 @@ const raw = {
   statisticsPhrase,
   statisticsSingle,
   statisticsSummary,
+  statisticsWeighted,
+  statisticsFrequency,
   aiClarification,
   aiEquation,
   aiUnavailable,

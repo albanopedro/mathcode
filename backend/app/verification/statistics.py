@@ -1,17 +1,20 @@
-"""Verification of descriptive statistics (ADR 0011).
+"""Verification of descriptive statistics (ADR 0011; weights and frequency in ADR 0032).
 
 Nothing is taken from the engine's own computation:
 
-- the values are read again from the parser's tree with exact fractions
-  (``verification/exact.py``, no SymPy) and compared with the engine's;
+- the values and the weights are read again from the parser's tree with exact
+  fractions (``verification/exact.py``, no SymPy) and compared with the engine's;
+- the expanded data (each value repeated by its weight) is rebuilt from them;
 - every measure is recomputed by Python's ``statistics`` module, which is
   exact on fractions, and compared exactly (comparison of methods);
 - exact properties are checked: the deviations from the mean add up to 0, the
   median splits the data in halves, Q1 and Q3 are the medians of the halves,
-  the IQR is Q3 − Q1, and σ² and s² are the variances.
+  the IQR is Q3 − Q1, the frequency table matches the counts, and σ² and s² are
+  the variances.
 """
 
 import statistics as stdlib
+from collections import Counter
 from collections.abc import Sequence
 from fractions import Fraction
 
@@ -38,23 +41,35 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
                 "motor; as medidas foram conferidas a partir deles.",
             )
         )
-        data = list(outcome.values)
+        values = list(outcome.values)
     else:
-        data = [value for value in reread if value is not None]
-        if data != list(outcome.values):
+        values = [value for value in reread if value is not None]
+        if values != list(outcome.values):
             return failure(
                 CheckKind.COMPARISON,
                 "Relendo os valores com frações exatas, eles não são os usados no cálculo.",
             )
-        checks.append(
-            passed(
-                CheckKind.COMPARISON,
-                f"Os {len(data)} valores, relidos da expressão com frações exatas (sem o "
-                "SymPy), são os mesmos usados no cálculo.",
+        if outcome.weights is None:
+            message = (
+                f"Os {len(values)} valores, relidos da expressão com frações exatas (sem o "
+                "SymPy), são os mesmos usados no cálculo."
             )
+        else:
+            message = (
+                f"Os {len(values)} valores e os {len(outcome.weights)} pesos, relidos da "
+                "expressão com frações exatas (sem o SymPy), são os mesmos usados no cálculo."
+            )
+        checks.append(passed(CheckKind.COMPARISON, message))
+
+    expanded = _expanded(outcome, values, checks)
+    if expanded is None:
+        return failure(
+            CheckKind.COMPARISON,
+            "A expansão dos dados pelos pesos não é a usada no cálculo.",
+            *checks,
         )
 
-    mismatch = _compare_with_stdlib(outcome, data)
+    mismatch = _compare_with_stdlib(outcome, expanded)
     if mismatch is not None:
         return failure(CheckKind.COMPARISON, mismatch, *checks)
     checks.append(
@@ -66,7 +81,7 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
         )
     )
 
-    deviations = sum((value - outcome.mean for value in data), Fraction(0))
+    deviations = sum((value - outcome.mean for value in expanded), Fraction(0))
     if deviations != 0:
         return failure(
             CheckKind.SYMBOLIC,
@@ -77,9 +92,9 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
         passed(CheckKind.SYMBOLIC, "A soma dos desvios em relação à média é exatamente 0.")
     )
 
-    half = len(data) / 2
-    below = sum(1 for value in data if value <= outcome.median)
-    above = sum(1 for value in data if value >= outcome.median)
+    half = len(expanded) / 2
+    below = sum(1 for value in expanded if value <= outcome.median)
+    above = sum(1 for value in expanded if value >= outcome.median)
     if below < half or above < half:
         return failure(
             CheckKind.SYMBOLIC, "A mediana não divide os dados em duas metades.", *checks
@@ -88,14 +103,14 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
         passed(
             CheckKind.SYMBOLIC,
             f"A mediana divide os dados: {below} valor(es) são ≤ a ela e {above} são ≥ a ela, "
-            f"de {len(data)}.",
+            f"de {len(expanded)}.",
         )
     )
 
-    quartiles_problem = _check_quartiles(outcome, len(data))
+    quartiles_problem = _check_quartiles(outcome, len(expanded))
     if quartiles_problem is not None:
         return failure(CheckKind.SYMBOLIC, quartiles_problem, *checks)
-    if len(data) >= 4:
+    if len(expanded) >= 4:
         checks.append(
             passed(
                 CheckKind.SYMBOLIC,
@@ -103,6 +118,17 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
                 "exatamente Q3 − Q1.",
             )
         )
+
+    frequency_problem = _check_frequency(outcome, expanded)
+    if frequency_problem is not None:
+        return failure(CheckKind.SYMBOLIC, frequency_problem, *checks)
+    checks.append(
+        passed(
+            CheckKind.SYMBOLIC,
+            "A tabela de frequências corresponde à contagem dos dados, e as relativas "
+            "somam exatamente 1.",
+        )
+    )
 
     roots_problem = _check_roots(outcome)
     if roots_problem is not None:
@@ -115,6 +141,46 @@ def verify_statistics(outcome: StatisticsOutcome) -> VerificationReport:
         )
     )
     return report(VerificationStatus.VERIFIED_SYMBOLIC, checks)
+
+
+def _expanded(
+    outcome: StatisticsOutcome,
+    values: list[Fraction],
+    checks: list[VerificationCheck],
+) -> list[Fraction] | None:
+    """The data used for the measures, rebuilt from the values and the weights."""
+    if outcome.weights is None:
+        expanded = list(values)
+    else:
+        weight_reread = [exact_value(item) for item in outcome.weight_items]
+        if any(value is None for value in weight_reread):
+            checks.append(
+                inconclusive(
+                    CheckKind.COMPARISON,
+                    "Alguns pesos não são frações simples e foram lidos só pelo motor; as "
+                    "medidas foram conferidas a partir deles.",
+                )
+            )
+            weights = list(outcome.weights)
+        else:
+            weights = [value for value in weight_reread if value is not None]
+            if any(value.denominator != 1 or value <= 0 for value in weights):
+                return None
+            if [int(value) for value in weights] != list(outcome.weights):
+                return None
+            checks.append(
+                passed(
+                    CheckKind.COMPARISON,
+                    f"Os {len(weights)} pesos, relidos da expressão com frações exatas (sem o "
+                    "SymPy), são os mesmos usados no cálculo.",
+                )
+            )
+        if len(weights) != len(values):
+            return None
+        expanded = [
+            value for value, weight in zip(values, weights, strict=True) for _ in range(int(weight))
+        ]
+    return expanded if tuple(expanded) == outcome.expanded else None
 
 
 def _compare_with_stdlib(outcome: StatisticsOutcome, data: Sequence[Fraction]) -> str | None:
@@ -171,6 +237,30 @@ def _check_quartiles(outcome: StatisticsOutcome, n: int) -> str | None:
         return "Os quartis não estão em ordem: Q1 ≤ mediana ≤ Q3 não vale."
     if outcome.iqr != outcome.q3 - outcome.q1:
         return f"O IQR é {_show(outcome.iqr)}, e não Q3 − Q1 = {_show(outcome.q3 - outcome.q1)}."
+    return None
+
+
+def _check_frequency(outcome: StatisticsOutcome, expanded: Sequence[Fraction]) -> str | None:
+    """None if the frequency table is the count of the data, with exact relatives."""
+    counts = Counter(expanded)
+    total = len(expanded)
+    cumulative = 0
+    expected: list[tuple[Fraction, int, Fraction, int]] = []
+    for value in sorted(counts):
+        count = counts[value]
+        cumulative += count
+        expected.append((value, count, Fraction(count, total), cumulative))
+    actual: list[tuple[Fraction, int, Fraction, int]] = [
+        (row.value, row.frequency, row.relative, row.cumulative) for row in outcome.frequency
+    ]
+    if actual != expected:
+        return "A tabela de frequências não corresponde à contagem dos dados."
+    if sum(row.frequency for row in outcome.frequency) != total:
+        return "A soma das frequências não é a quantidade de dados."
+    if sum((row.relative for row in outcome.frequency), Fraction(0)) != 1:
+        return "As frequências relativas não somam exatamente 1."
+    if outcome.frequency and outcome.frequency[-1].cumulative != total:
+        return "A última frequência acumulada não é a quantidade de dados."
     return None
 
 

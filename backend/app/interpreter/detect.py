@@ -77,8 +77,8 @@ _OPTION_PROBLEMS = {
     "x_min": "O início da faixa de x precisa ter de 1 a 100 caracteres.",
     "x_max": "O fim da faixa de x precisa ter de 1 a 100 caracteres.",
     "measure": (
-        "Medida desconhecida. Use count, sum, mean, median, mode, min, max, range, variance, "
-        "std, sample_variance ou sample_std."
+        "Medida desconhecida. Use count, sum, mean, median, q1, q3, iqr, mode, min, max, "
+        "range, variance, std, sample_variance, sample_std ou frequency."
     ),
     "operation": (
         "Cálculo desconhecido. Para matrizes: evaluate, determinant, inverse, transpose, trace "

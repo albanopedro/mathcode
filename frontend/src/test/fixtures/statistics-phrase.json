@@ -12,6 +12,7 @@
   "details": {
     "measure": "std",
     "count": 8,
+    "weighted": false,
     "data": [
       "2",
       "4",
@@ -34,6 +35,38 @@
     ],
     "modes": [
       "4"
+    ],
+    "frequency": [
+      {
+        "value": "2",
+        "frequency": 1,
+        "relative": "1/8",
+        "cumulative": 1
+      },
+      {
+        "value": "4",
+        "frequency": 3,
+        "relative": "3/8",
+        "cumulative": 4
+      },
+      {
+        "value": "5",
+        "frequency": 2,
+        "relative": "1/4",
+        "cumulative": 6
+      },
+      {
+        "value": "7",
+        "frequency": 1,
+        "relative": "1/8",
+        "cumulative": 7
+      },
+      {
+        "value": "9",
+        "frequency": 1,
+        "relative": "1/8",
+        "cumulative": 8
+      }
     ],
     "measures": [
       {
@@ -185,6 +218,11 @@
         "kind": "symbolic",
         "outcome": "passed",
         "message": "Q1 e Q3 são as medianas das metades, Q1 ≤ mediana ≤ Q3, e o IQR é exatamente Q3 − Q1."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A tabela de frequências corresponde à contagem dos dados, e as relativas somam exatamente 1."
       },
       {
         "kind": "symbolic",

@@ -8,7 +8,7 @@ import sympy as sp
 
 from app.core.errors import ErrorCode, MathError
 from app.formatting.results import present_statistics
-from app.math_engine.statistics import StatisticsOutcome, statistics
+from app.math_engine.statistics import FrequencyRow, StatisticsOutcome, statistics
 from app.models.intents import StatisticsParams
 from app.models.result import VerificationStatus as S
 from app.verification.statistics import verify_statistics
@@ -16,6 +16,12 @@ from app.verification.statistics import verify_statistics
 
 def stats(data: str, measure: str | None = None) -> StatisticsOutcome:
     return statistics(StatisticsParams(data=data, measure=measure))  # type: ignore[arg-type]
+
+
+def weighted(data: str, weights: str, measure: str | None = None) -> StatisticsOutcome:
+    return statistics(
+        StatisticsParams(data=data, weights=weights, measure=measure)  # type: ignore[arg-type]
+    )
 
 
 # -- the measures -------------------------------------------------------------------------------
@@ -73,6 +79,33 @@ def test_quartiles_need_four_values(data: str) -> None:
 )
 def test_modes(data: str, modes: tuple[F, ...]) -> None:
     assert stats(data).modes == modes
+
+
+def test_weighted_mean_is_the_mean_of_the_expanded_data() -> None:
+    o = weighted("7, 8, 9", "2, 3, 5", "mean")
+    assert o.weighted
+    assert o.count == 10
+    assert o.values == (7, 8, 9)
+    assert o.expanded == (7, 7, 8, 8, 8, 9, 9, 9, 9, 9)
+    assert o.total == 83
+    assert o.mean == F(83, 10)
+    assert o.median == F(17, 2)
+    assert o.modes == (F(9),)
+    assert o.frequency == (
+        FrequencyRow(F(7), 2, F(1, 5), 2),
+        FrequencyRow(F(8), 3, F(3, 10), 5),
+        FrequencyRow(F(9), 5, F(1, 2), 10),
+    )
+    assert "WEIGHTED_DATA" in [n.code for n in o.notices]
+
+
+def test_frequency_table_of_raw_data() -> None:
+    o = stats("1, 2, 2, 3")
+    assert o.frequency == (
+        FrequencyRow(F(1), 1, F(1, 4), 1),
+        FrequencyRow(F(2), 2, F(1, 2), 3),
+        FrequencyRow(F(3), 1, F(1, 4), 4),
+    )
 
 
 def test_order_does_not_matter_but_is_kept() -> None:
@@ -138,6 +171,29 @@ def test_too_many_values() -> None:
     assert exc.value.code is ErrorCode.LIMIT_EXCEEDED
 
 
+@pytest.mark.parametrize(
+    ("weights", "message"),
+    [
+        ("2, 3", "quantidade de pesos"),
+        ("2, 3, 0", "inteiros positivos"),
+        ("2, 3, -1", "inteiros positivos"),
+        ("2, 3, 2.5", "inteiros positivos"),
+        ("2, 3, x", "sem variáveis"),
+        ("2, 3, sqrt(2)", "racionais"),
+    ],
+)
+def test_invalid_weights(weights: str, message: str) -> None:
+    with pytest.raises(MathError) as exc:
+        weighted("7, 8, 9", weights)
+    assert message in exc.value.message
+
+
+def test_too_many_weighted_observations() -> None:
+    with pytest.raises(MathError) as exc:
+        weighted("1, 2", "200, 1")
+    assert exc.value.code is ErrorCode.LIMIT_EXCEEDED
+
+
 # -- verification ---------------------------------------------------------------------------------
 
 
@@ -178,6 +234,27 @@ def test_values_that_are_not_plain_fractions_are_read_by_the_engine_only() -> No
     assert report.checks[0].outcome == "inconclusive"
 
 
+def test_weighted_data_is_verified() -> None:
+    report = verify_statistics(weighted("7, 8, 9", "2, 3, 5"))
+    assert report.status is S.VERIFIED_SYMBOLIC
+    assert any("tabela de frequências" in check.message for check in report.checks)
+
+
+@pytest.mark.parametrize(
+    "tamper",
+    [
+        lambda o: replace(o, weights=(2, 3, 6)),
+        lambda o: replace(o, expanded=o.expanded[:-1]),
+        lambda o: replace(o, frequency=o.frequency[:-1]),
+        lambda o: replace(o, mean=o.mean + F(1, 10**9)),
+    ],
+)
+def test_catches_a_wrong_weighted_result(tamper: object) -> None:
+    outcome = weighted("7, 8, 9", "2, 3, 5")
+    report = verify_statistics(tamper(outcome))  # type: ignore[operator]
+    assert report.status is S.FAILED
+
+
 # -- presentation ---------------------------------------------------------------------------------
 
 
@@ -214,12 +291,48 @@ def test_summary_shows_the_mean_and_every_measure() -> None:
     }
     assert p.details["data"] == ["10", "20", "30"]
     assert p.details["measure"] is None
+    assert p.details["weighted"] is False
+    assert p.details["frequency"] == [
+        {"value": "10", "frequency": 1, "relative": "1/3", "cumulative": 1},
+        {"value": "20", "frequency": 1, "relative": "1/3", "cumulative": 2},
+        {"value": "30", "frequency": 1, "relative": "1/3", "cumulative": 3},
+    ]
 
 
 def test_requested_measure_is_the_result() -> None:
     p = present_statistics(stats("2, 4, 4, 4, 5, 5, 7, 9", "std"))
     assert (p.result.plain, p.result.latex) == ("σ = 2", r"\sigma = 2")
     assert p.details["measure"] == "std"
+
+
+def test_weighted_summary_says_it_is_weighted() -> None:
+    p = present_statistics(weighted("7, 8, 9", "2, 3, 5"))
+    assert p.result.plain == "média ponderada = 83/10"
+    assert p.result.latex == r"\bar{x}_w = \frac{83}{10}"
+    assert p.result.approx == "8.3"
+    assert p.details["weighted"] is True
+    assert p.details["sorted"] == ["7", "7", "8", "8", "8", "9", "9", "9", "9", "9"]
+    mean = next(m for m in p.details["measures"] if m["name"] == "mean")
+    assert mean["label"] == "Média ponderada"
+    assert mean["symbol"] == r"\bar{x}_w"
+    assert p.details["frequency"] == [
+        {"value": "7", "frequency": 2, "relative": "1/5", "cumulative": 2},
+        {"value": "8", "frequency": 3, "relative": "3/10", "cumulative": 5},
+        {"value": "9", "frequency": 5, "relative": "1/2", "cumulative": 10},
+    ]
+
+
+def test_frequency_measure_shows_the_table_not_a_number() -> None:
+    p = present_statistics(stats("1, 2, 2, 3", "frequency"))
+    assert p.result.plain == "tabela de frequências (n = 4)"
+    assert p.result.latex == r"\text{Tabela de frequências}"
+    assert p.result.approx is None
+    assert p.details["measure"] == "frequency"
+    assert p.details["frequency"] == [
+        {"value": "1", "frequency": 1, "relative": "1/4", "cumulative": 1},
+        {"value": "2", "frequency": 2, "relative": "1/2", "cumulative": 3},
+        {"value": "3", "frequency": 1, "relative": "1/4", "cumulative": 4},
+    ]
 
 
 @pytest.mark.parametrize(

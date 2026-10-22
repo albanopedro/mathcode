@@ -494,6 +494,10 @@ def _statistics_value(outcome: StatisticsOutcome, measure: Measure) -> sp.Expr |
 
 def _statistics_entry(outcome: StatisticsOutcome, measure: Measure) -> dict[str, Any]:
     label, symbol, _ = _MEASURES[measure]
+    if outcome.weighted and measure == "mean":
+        label, symbol = "Média ponderada", r"\bar{x}_w"
+    elif outcome.weighted and measure == "sum":
+        label, symbol = "Soma ponderada", r"\sum wx"
     entry: dict[str, Any] = {"name": measure, "label": label, "symbol": symbol}
     if measure == "mode":
         modes = [to_rational(m) for m in outcome.modes]
@@ -528,27 +532,47 @@ def _data_text(value: Fraction) -> str:
 def present_statistics(outcome: StatisticsOutcome) -> Presentation:
     measures = [_statistics_entry(outcome, measure) for measure in _MEASURES]
     shown = outcome.measure or "mean"
-    entry = next(m for m in measures if m["name"] == shown)
-    _, symbol, name = _MEASURES[shown]
-    if shown == "mode" and not outcome.modes:
+    if shown == "frequency":
         result = ResultValue(
-            plain="moda: nenhuma (nenhum valor se repete)",
-            latex=r"\text{Sem moda: nenhum valor se repete}",
+            plain=f"tabela de frequências (n = {outcome.count})",
+            latex=r"\text{Tabela de frequências}",
         )
     else:
-        result = ResultValue(
-            plain=f"{name} = {entry['plain']}",
-            latex=f"{symbol} = {entry['latex']}",
-            approx=entry["approx"],
-        )
+        entry = next(m for m in measures if m["name"] == shown)
+        _, symbol, name = _MEASURES[shown]
+        if outcome.weighted and shown == "mean":
+            symbol, name = r"\bar{x}_w", "média ponderada"
+        elif outcome.weighted and shown == "sum":
+            symbol, name = r"\sum wx", "soma ponderada"
+        if shown == "mode" and not outcome.modes:
+            result = ResultValue(
+                plain="moda: nenhuma (nenhum valor se repete)",
+                latex=r"\text{Sem moda: nenhum valor se repete}",
+            )
+        else:
+            result = ResultValue(
+                plain=f"{name} = {entry['plain']}",
+                latex=f"{symbol} = {entry['latex']}",
+                approx=entry["approx"],
+            )
     return Presentation(
         result,
         {
             "measure": outcome.measure,
             "count": outcome.count,
+            "weighted": outcome.weighted,
             "data": [_data_text(v) for v in outcome.values],
-            "sorted": [_data_text(v) for v in sorted(outcome.values)],
+            "sorted": [_data_text(v) for v in sorted(outcome.expanded)],
             "modes": [_data_text(m) for m in outcome.modes],
+            "frequency": [
+                {
+                    "value": _data_text(row.value),
+                    "frequency": row.frequency,
+                    "relative": str(row.relative),
+                    "cumulative": row.cumulative,
+                }
+                for row in outcome.frequency
+            ],
             "measures": measures,
         },
     )

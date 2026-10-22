@@ -13,7 +13,8 @@ pedido: nunca é ela que calcula.
 > Pelo navegador ou pela API, o Mathcode já: calcula; simplifica, fatora e expande; resolve equações
 > (polinomiais, racionais e outras) e sistemas lineares; divide polinômios;
 > deriva, integra e calcula limites; desenha gráficos com raízes e intercepto;
-> calcula média, mediana, moda e desvio padrão de uma lista; opera com
+> calcula média, mediana, quartis, IQR, moda, desvio padrão, médias ponderadas
+> e tabelas de frequências de uma lista; opera com
 > matrizes (determinante, inversa, transposta, traço, posto, produto) e
 > vetores (escalar, vetorial, norma, ângulo); calcula áreas, perímetros e
 > volumes, Pitágoras e geometria analítica; conta (fatorial, arranjo,
@@ -31,8 +32,11 @@ pedido: nunca é ela que calcula.
 > endurecimento: uma auditoria de segurança (um regex com backtracking
 > exponencial que derrubava o servidor — [ADR 0026](docs/decisions/0026-redos-e-event-loop.md)),
 > integração contínua em cada push ([ADR 0027](docs/decisions/0027-integracao-continua.md)),
-> lint do frontend ([ADR 0028](docs/decisions/0028-lint-do-frontend.md)) e
-> menos tempo de resposta ([ADR 0030](docs/decisions/0030-tempo-de-resposta.md)).
+> lint do frontend ([ADR 0028](docs/decisions/0028-lint-do-frontend.md)), menos
+> tempo de resposta ([ADR 0030](docs/decisions/0030-tempo-de-resposta.md)),
+> quartis e IQR ([ADR 0031](docs/decisions/0031-quartis-e-iqr.md)) e média
+> ponderada com tabela de frequências
+> ([ADR 0032](docs/decisions/0032-media-ponderada-e-frequencias.md)).
 
 ## Princípios
 
@@ -99,6 +103,8 @@ Abra <http://localhost:5180> e experimente, por exemplo:
 | Gráfico (x de `-2pi` até `2pi`) | `tan(x)` |
 | Estatística | `2, 4, 4, 4, 5, 5, 7, 9` (resumo completo) |
 | Quartis e IQR (frase) | `primeiro quartil de 2, 4, 4, 4, 5, 5, 7, 9` ou `IQR de 2, 4, 4, 4, 5, 5, 7, 9` |
+| Média ponderada (frase) | `média ponderada de 7, 8, 9 com pesos 2, 3, 5` |
+| Tabela de frequências (frase) | `tabela de frequências de 1, 2, 2, 3` |
 | Matrizes (cálculo: Inversa) | `[[2, 1, 0], [1, 3, 1], [0, 1, 4]]` |
 | Automático (matrizes) | `[[1, 2], [3, 4]] * [[5, 6], [7, 8]]` |
 | Vetores (cálculo: Produto vetorial) | `[1, 2, 3]; [4, 5, 6]` |

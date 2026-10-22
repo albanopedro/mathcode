@@ -1,0 +1,238 @@
+{
+  "success": true,
+  "intent": "statistics",
+  "input": "tabela de frequências de 1, 2, 2, 3",
+  "normalized_input": "1; 2; 2; 3",
+  "result": {
+    "plain": "tabela de frequências (n = 4)",
+    "latex": "\\text{Tabela de frequências}",
+    "approx": null
+  },
+  "steps": [],
+  "details": {
+    "measure": "frequency",
+    "count": 4,
+    "weighted": false,
+    "data": [
+      "1",
+      "2",
+      "2",
+      "3"
+    ],
+    "sorted": [
+      "1",
+      "2",
+      "2",
+      "3"
+    ],
+    "modes": [
+      "2"
+    ],
+    "frequency": [
+      {
+        "value": "1",
+        "frequency": 1,
+        "relative": "1/4",
+        "cumulative": 1
+      },
+      {
+        "value": "2",
+        "frequency": 2,
+        "relative": "1/2",
+        "cumulative": 3
+      },
+      {
+        "value": "3",
+        "frequency": 1,
+        "relative": "1/4",
+        "cumulative": 4
+      }
+    ],
+    "measures": [
+      {
+        "name": "count",
+        "label": "Quantidade de valores",
+        "symbol": "n",
+        "plain": "4",
+        "latex": "4",
+        "approx": null
+      },
+      {
+        "name": "sum",
+        "label": "Soma",
+        "symbol": "\\sum x",
+        "plain": "8",
+        "latex": "8",
+        "approx": null
+      },
+      {
+        "name": "mean",
+        "label": "Média",
+        "symbol": "\\bar{x}",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "median",
+        "label": "Mediana",
+        "symbol": "\\mathrm{Md}",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "q1",
+        "label": "1º quartil",
+        "symbol": "Q_{1}",
+        "plain": "3/2",
+        "latex": "\\frac{3}{2}",
+        "approx": "1.5"
+      },
+      {
+        "name": "q3",
+        "label": "3º quartil",
+        "symbol": "Q_{3}",
+        "plain": "5/2",
+        "latex": "\\frac{5}{2}",
+        "approx": "2.5"
+      },
+      {
+        "name": "iqr",
+        "label": "Intervalo interquartil",
+        "symbol": "\\mathrm{IQR}",
+        "plain": "1",
+        "latex": "1",
+        "approx": null
+      },
+      {
+        "name": "mode",
+        "label": "Moda",
+        "symbol": "\\mathrm{Mo}",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "min",
+        "label": "Mínimo",
+        "symbol": "\\min",
+        "plain": "1",
+        "latex": "1",
+        "approx": null
+      },
+      {
+        "name": "max",
+        "label": "Máximo",
+        "symbol": "\\max",
+        "plain": "3",
+        "latex": "3",
+        "approx": null
+      },
+      {
+        "name": "range",
+        "label": "Amplitude",
+        "symbol": "\\mathrm{A}",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "variance",
+        "label": "Variância populacional",
+        "symbol": "\\sigma^{2}",
+        "plain": "1/2",
+        "latex": "\\frac{1}{2}",
+        "approx": "0.5"
+      },
+      {
+        "name": "std",
+        "label": "Desvio padrão populacional",
+        "symbol": "\\sigma",
+        "plain": "sqrt(2)/2",
+        "latex": "\\frac{\\sqrt{2}}{2}",
+        "approx": "0.707106781186548"
+      },
+      {
+        "name": "sample_variance",
+        "label": "Variância amostral",
+        "symbol": "s^{2}",
+        "plain": "2/3",
+        "latex": "\\frac{2}{3}",
+        "approx": "0.666666666666667"
+      },
+      {
+        "name": "sample_std",
+        "label": "Desvio padrão amostral",
+        "symbol": "s",
+        "plain": "sqrt(6)/3",
+        "latex": "\\frac{\\sqrt{6}}{3}",
+        "approx": "0.816496580927726"
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os 4 valores, relidos da expressão com frações exatas (sem o SymPy), são os mesmos usados no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, quartis, moda, variâncias, mínimo, máximo, amplitude e soma."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A soma dos desvios em relação à média é exatamente 0."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A mediana divide os dados: 3 valor(es) são ≤ a ela e 3 são ≥ a ela, de 4."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Q1 e Q3 são as medianas das metades, Q1 ≤ mediana ≤ Q3, e o IQR é exatamente Q3 − Q1."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A tabela de frequências corresponde à contagem dos dados, e as relativas somam exatamente 1."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Os desvios padrão são as raízes não negativas das variâncias: σ² e s² são exatamente as variâncias."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [
+    {
+      "code": "POPULATION_AND_SAMPLE",
+      "message": "σ e σ² são populacionais (dividem por n), para quando os dados são o grupo inteiro; s e s² são amostrais (dividem por n − 1), para quando os dados são uma amostra de um grupo maior."
+    }
+  ],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "statistics",
+    "expression": "1, 2, 2, 3",
+    "options": {
+      "measure": "frequency"
+    },
+    "provider": null,
+    "model": null
+  },
+  "plan": []
+}

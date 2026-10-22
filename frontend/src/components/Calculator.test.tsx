@@ -554,7 +554,43 @@ describe("Calculator: statistics", () => {
     expect(within(result).getByText(/Dados em ordem \(n = 8\)/)).toHaveTextContent(
       "2; 4; 4; 4; 5; 5; 7; 9",
     );
+    const frequency = within(result).getByRole("table", { name: "Tabela de frequências" });
+    expect(within(frequency).getAllByRole("row")).toHaveLength(6); // header + 5 distinct values
+    expect(within(frequency).getByText("3/8")).toBeInTheDocument();
+    expect(within(frequency).getByText("1/4")).toBeInTheDocument();
     expect(within(result).getByText(/σ e σ² são populacionais/)).toBeInTheDocument();
+  });
+
+  it("shows weighted data and its frequency table", async () => {
+    answer(fixtures.statisticsWeighted);
+    await calculateText("média ponderada de 7, 8, 9 com pesos 2, 3, 5");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(latexOf(result)).toContain("\\bar{x}_w = \\frac{83}{10}");
+    expect(within(result).getByText(/Dados agrupados \(n = 10\)/)).toHaveTextContent(
+      "7 (×2); 8 (×3); 9 (×5)",
+    );
+    const summary = within(result).getByRole("table", { name: "Resumo estatístico" });
+    expect(within(summary).getByRole("rowheader", { name: /Média ponderada/ })).toBeInTheDocument();
+    const frequency = within(result).getByRole("table", { name: "Tabela de frequências" });
+    expect(within(frequency).getAllByRole("row")).toHaveLength(4);
+    expect(within(frequency).getByText("1/5")).toBeInTheDocument();
+    expect(within(frequency).getByText("1/2")).toBeInTheDocument();
+  });
+
+  it("highlights the frequency table when it is asked for", async () => {
+    answer(fixtures.statisticsFrequency);
+    await calculateText("tabela de frequências de 1, 2, 2, 3");
+
+    const result = await screen.findByRole("region", { name: "Resultado" });
+    expect(latexOf(result)).toContain("\\text{Tabela de frequências}");
+    const frequency = within(result).getByRole("region", { name: "Tabela de frequências" });
+    expect(frequency).toHaveAttribute("aria-current", "true");
+    const summary = within(result).getByRole("table", { name: "Resumo estatístico" });
+    const asked = within(summary)
+      .getAllByRole("row")
+      .filter((row) => row.getAttribute("aria-current") === "true");
+    expect(asked).toHaveLength(0);
   });
 
   it("highlights the measure asked for in a phrase", async () => {

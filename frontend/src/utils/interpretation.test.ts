@@ -51,6 +51,16 @@ describe("describeInterpretation", () => {
     expect(text.options).toEqual(["medida: desvio padrão populacional"]);
   });
 
+  it("names the weighted mean and its weights", () => {
+    const text = describeInterpretation(fixtures.statisticsWeighted.interpretation!);
+    expect(text.options).toEqual(["medida: média ponderada", "pesos: 2, 3, 5"]);
+  });
+
+  it("names the frequency table asked for", () => {
+    const text = describeInterpretation(fixtures.statisticsFrequency.interpretation!);
+    expect(text.options).toEqual(["medida: tabela de frequências"]);
+  });
+
   it("names the quartile asked for", () => {
     const interpretation: Interpretation = {
       method: "rules",

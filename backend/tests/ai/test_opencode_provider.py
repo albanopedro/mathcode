@@ -145,7 +145,7 @@ def test_uses_the_last_text_and_skips_log_lines(fake: Fake) -> None:
         json.dumps({**ANSWER, "result": "2x + 3"}),  # an extra key: the answer itself
         json.dumps({**ANSWER, "intent": "derivada"}),  # not one of the intents
         json.dumps({**ANSWER, "options": {"order": 10**30}}),  # beyond the option limits
-        json.dumps({**ANSWER, "options": {"variable": "x" * 101}}),
+        json.dumps({**ANSWER, "options": {"variable": "x" * 501}}),
         json.dumps([ANSWER]),
     ],
 )

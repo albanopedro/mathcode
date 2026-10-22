@@ -1,0 +1,253 @@
+{
+  "success": true,
+  "intent": "statistics",
+  "input": "média ponderada de 7, 8, 9 com pesos 2, 3, 5",
+  "normalized_input": "7; 8; 9",
+  "result": {
+    "plain": "média ponderada = 83/10",
+    "latex": "\\bar{x}_w = \\frac{83}{10}",
+    "approx": "8.3"
+  },
+  "steps": [],
+  "details": {
+    "measure": "mean",
+    "count": 10,
+    "weighted": true,
+    "data": [
+      "7",
+      "8",
+      "9"
+    ],
+    "sorted": [
+      "7",
+      "7",
+      "8",
+      "8",
+      "8",
+      "9",
+      "9",
+      "9",
+      "9",
+      "9"
+    ],
+    "modes": [
+      "9"
+    ],
+    "frequency": [
+      {
+        "value": "7",
+        "frequency": 2,
+        "relative": "1/5",
+        "cumulative": 2
+      },
+      {
+        "value": "8",
+        "frequency": 3,
+        "relative": "3/10",
+        "cumulative": 5
+      },
+      {
+        "value": "9",
+        "frequency": 5,
+        "relative": "1/2",
+        "cumulative": 10
+      }
+    ],
+    "measures": [
+      {
+        "name": "count",
+        "label": "Quantidade de valores",
+        "symbol": "n",
+        "plain": "10",
+        "latex": "10",
+        "approx": null
+      },
+      {
+        "name": "sum",
+        "label": "Soma ponderada",
+        "symbol": "\\sum wx",
+        "plain": "83",
+        "latex": "83",
+        "approx": null
+      },
+      {
+        "name": "mean",
+        "label": "Média ponderada",
+        "symbol": "\\bar{x}_w",
+        "plain": "83/10",
+        "latex": "\\frac{83}{10}",
+        "approx": "8.3"
+      },
+      {
+        "name": "median",
+        "label": "Mediana",
+        "symbol": "\\mathrm{Md}",
+        "plain": "17/2",
+        "latex": "\\frac{17}{2}",
+        "approx": "8.5"
+      },
+      {
+        "name": "q1",
+        "label": "1º quartil",
+        "symbol": "Q_{1}",
+        "plain": "8",
+        "latex": "8",
+        "approx": null
+      },
+      {
+        "name": "q3",
+        "label": "3º quartil",
+        "symbol": "Q_{3}",
+        "plain": "9",
+        "latex": "9",
+        "approx": null
+      },
+      {
+        "name": "iqr",
+        "label": "Intervalo interquartil",
+        "symbol": "\\mathrm{IQR}",
+        "plain": "1",
+        "latex": "1",
+        "approx": null
+      },
+      {
+        "name": "mode",
+        "label": "Moda",
+        "symbol": "\\mathrm{Mo}",
+        "plain": "9",
+        "latex": "9",
+        "approx": null
+      },
+      {
+        "name": "min",
+        "label": "Mínimo",
+        "symbol": "\\min",
+        "plain": "7",
+        "latex": "7",
+        "approx": null
+      },
+      {
+        "name": "max",
+        "label": "Máximo",
+        "symbol": "\\max",
+        "plain": "9",
+        "latex": "9",
+        "approx": null
+      },
+      {
+        "name": "range",
+        "label": "Amplitude",
+        "symbol": "\\mathrm{A}",
+        "plain": "2",
+        "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "variance",
+        "label": "Variância populacional",
+        "symbol": "\\sigma^{2}",
+        "plain": "61/100",
+        "latex": "\\frac{61}{100}",
+        "approx": "0.61"
+      },
+      {
+        "name": "std",
+        "label": "Desvio padrão populacional",
+        "symbol": "\\sigma",
+        "plain": "sqrt(61)/10",
+        "latex": "\\frac{\\sqrt{61}}{10}",
+        "approx": "0.781024967590665"
+      },
+      {
+        "name": "sample_variance",
+        "label": "Variância amostral",
+        "symbol": "s^{2}",
+        "plain": "61/90",
+        "latex": "\\frac{61}{90}",
+        "approx": "0.677777777777778"
+      },
+      {
+        "name": "sample_std",
+        "label": "Desvio padrão amostral",
+        "symbol": "s",
+        "plain": "sqrt(610)/30",
+        "latex": "\\frac{\\sqrt{610}}{30}",
+        "approx": "0.823272602348565"
+      }
+    ]
+  },
+  "verification": {
+    "status": "verified_symbolic",
+    "checks": [
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os 3 valores e os 3 pesos, relidos da expressão com frações exatas (sem o SymPy), são os mesmos usados no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "Os 3 pesos, relidos da expressão com frações exatas (sem o SymPy), são os mesmos usados no cálculo."
+      },
+      {
+        "kind": "comparison",
+        "outcome": "passed",
+        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, quartis, moda, variâncias, mínimo, máximo, amplitude e soma."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A soma dos desvios em relação à média é exatamente 0."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A mediana divide os dados: 5 valor(es) são ≤ a ela e 5 são ≥ a ela, de 10."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Q1 e Q3 são as medianas das metades, Q1 ≤ mediana ≤ Q3, e o IQR é exatamente Q3 − Q1."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A tabela de frequências corresponde à contagem dos dados, e as relativas somam exatamente 1."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "Os desvios padrão são as raízes não negativas das variâncias: σ² e s² são exatamente as variâncias."
+      }
+    ],
+    "message": "Resultado verificado simbolicamente.",
+    "reason": null,
+    "methods": [
+      "comparison",
+      "symbolic"
+    ]
+  },
+  "warnings": [
+    {
+      "code": "WEIGHTED_DATA",
+      "message": "Os pesos são frequências: cada valor entra no cálculo w vezes; n = soma dos pesos."
+    },
+    {
+      "code": "POPULATION_AND_SAMPLE",
+      "message": "σ e σ² são populacionais (dividem por n), para quando os dados são o grupo inteiro; s e s² são amostrais (dividem por n − 1), para quando os dados são uma amostra de um grupo maior."
+    }
+  ],
+  "error": null,
+  "interpretation": {
+    "method": "rules",
+    "intent": "statistics",
+    "expression": "7, 8, 9",
+    "options": {
+      "measure": "mean",
+      "weights": "2, 3, 5"
+    },
+    "provider": null,
+    "model": null
+  },
+  "plan": []
+}

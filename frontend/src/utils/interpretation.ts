@@ -11,6 +11,7 @@ const OPTION_LABELS: Record<string, string> = {
   x_min: "x de",
   x_max: "x até",
   measure: "medida",
+  weights: "pesos",
   operation: "cálculo",
   figure: "figura",
   calculation: "cálculo",
@@ -102,6 +103,7 @@ const MEASURES: Record<string, string> = {
   std: "desvio padrão populacional",
   sample_variance: "variância amostral",
   sample_std: "desvio padrão amostral",
+  frequency: "tabela de frequências",
 };
 
 const SIDES: Record<string, string> = { both: "ambos", left: "esquerda", right: "direita" };
@@ -120,6 +122,7 @@ export interface InterpretationText {
 export function describeInterpretation(interpretation: Interpretation): InterpretationText {
   const byAi = interpretation.method === "ai";
   const model = interpretation.model ?? interpretation.provider;
+  const weighted = interpretation.options.weights !== undefined;
   return {
     source: byAi ? (model ? `IA (${model})` : "IA") : "regras locais",
     operation: interpretation.intent ? INTENT_LABELS[interpretation.intent] : null,
@@ -128,7 +131,7 @@ export function describeInterpretation(interpretation: Interpretation): Interpre
       const names: Record<string, string> =
         {
           side: SIDES,
-          measure: MEASURES,
+          measure: weighted ? { ...MEASURES, mean: "média ponderada" } : MEASURES,
           operation: OPERATION_NAMES,
           figure: GEOMETRY_NAMES,
           calculation: { ...GEOMETRY_NAMES, ...PROBABILITY_NAMES, ...TRIGONOMETRY_NAMES },

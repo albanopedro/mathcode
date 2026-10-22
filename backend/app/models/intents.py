@@ -13,7 +13,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.core.limits import MAX_DERIVATIVE_ORDER
+from app.core.limits import MAX_DERIVATIVE_ORDER, MAX_INPUT_LENGTH
 
 _VARIABLE = r"^[a-zA-Z]$"
 
@@ -139,14 +139,20 @@ type Measure = Literal[
     "std",
     "sample_variance",
     "sample_std",
+    "frequency",  # the frequency table itself; no single numeric value
 ]
 
 
 class StatisticsParams(_Params):
-    """A list of numbers ("10, 20, 30"); ``measure`` None asks for the whole summary."""
+    """A list of numbers ("10, 20, 30"); ``measure`` None asks for the whole summary.
+
+    ``weights`` are optional positive integers (frequencies), one per value; with
+    them every measure is computed on the expanded data (ADR 0032).
+    """
 
     data: str
     measure: Measure | None = None
+    weights: str | None = None
 
 
 # Matrices (Phase 10, ADR 0012): what to do with the matrix the expression evaluates to.
@@ -286,7 +292,7 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.INTEGRAL: frozenset({"variable", "lower", "upper"}),
     IntentName.LIMIT: frozenset({"variable", "point", "side"}),
     IntentName.GRAPH: frozenset({"x_min", "x_max"}),
-    IntentName.STATISTICS: frozenset({"measure"}),
+    IntentName.STATISTICS: frozenset({"measure", "weights"}),
     IntentName.MATRIX: frozenset({"operation"}),
     IntentName.VECTOR: frozenset({"operation"}),
     IntentName.GEOMETRY: frozenset({"figure", "calculation"}),
@@ -295,9 +301,10 @@ INTENT_OPTIONS: dict[IntentName, frozenset[str]] = {
     IntentName.EXTREMA: frozenset({"variable"}),
 }
 
-# An option value: a short text (variable, bound, point, side) or a small number
+# An option value: a text (variable, bound, point, side, weights) or a small number
 # (order). Strict types: in lax mode a long numeric text would become a huge int.
+# The text limit is the same as the input's, so a list of weights fits (ADR 0032).
 type OptionValue = (
-    Annotated[StrictStr, StringConstraints(max_length=100)]
+    Annotated[StrictStr, StringConstraints(max_length=MAX_INPUT_LENGTH)]
     | Annotated[StrictInt, Field(ge=-1000, le=1000)]
 )

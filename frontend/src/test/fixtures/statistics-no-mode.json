@@ -12,6 +12,7 @@
   "details": {
     "measure": "mode",
     "count": 3,
+    "weighted": false,
     "data": [
       "1",
       "2",
@@ -23,6 +24,26 @@
       "3"
     ],
     "modes": [],
+    "frequency": [
+      {
+        "value": "1",
+        "frequency": 1,
+        "relative": "1/3",
+        "cumulative": 1
+      },
+      {
+        "value": "2",
+        "frequency": 1,
+        "relative": "1/3",
+        "cumulative": 2
+      },
+      {
+        "value": "3",
+        "frequency": 1,
+        "relative": "1/3",
+        "cumulative": 3
+      }
+    ],
     "measures": [
       {
         "name": "count",
@@ -54,6 +75,30 @@
         "symbol": "\\mathrm{Md}",
         "plain": "2",
         "latex": "2",
+        "approx": null
+      },
+      {
+        "name": "q1",
+        "label": "1º quartil",
+        "symbol": "Q_{1}",
+        "plain": null,
+        "latex": null,
+        "approx": null
+      },
+      {
+        "name": "q3",
+        "label": "3º quartil",
+        "symbol": "Q_{3}",
+        "plain": null,
+        "latex": null,
+        "approx": null
+      },
+      {
+        "name": "iqr",
+        "label": "Intervalo interquartil",
+        "symbol": "\\mathrm{IQR}",
+        "plain": null,
+        "latex": null,
         "approx": null
       },
       {
@@ -133,7 +178,7 @@
       {
         "kind": "comparison",
         "outcome": "passed",
-        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, moda, variâncias, mínimo, máximo, amplitude e soma."
+        "message": "O módulo statistics do Python (aritmética exata com frações, independente do motor) obtém os mesmos valores para média, mediana, quartis, moda, variâncias, mínimo, máximo, amplitude e soma."
       },
       {
         "kind": "symbolic",
@@ -144,6 +189,11 @@
         "kind": "symbolic",
         "outcome": "passed",
         "message": "A mediana divide os dados: 2 valor(es) são ≤ a ela e 2 são ≥ a ela, de 3."
+      },
+      {
+        "kind": "symbolic",
+        "outcome": "passed",
+        "message": "A tabela de frequências corresponde à contagem dos dados, e as relativas somam exatamente 1."
       },
       {
         "kind": "symbolic",
@@ -162,6 +212,10 @@
     {
       "code": "POPULATION_AND_SAMPLE",
       "message": "σ e σ² são populacionais (dividem por n), para quando os dados são o grupo inteiro; s e s² são amostrais (dividem por n − 1), para quando os dados são uma amostra de um grupo maior."
+    },
+    {
+      "code": "QUARTILES_NOT_DEFINED",
+      "message": "Com menos de 4 valores, os quartis e o IQR não são definidos."
     }
   ],
   "error": null,
