@@ -79,7 +79,7 @@ A IA (opcional, Fase 8) só interpreta o pedido: nunca calcula.
 | Pós-12: dívida de duplicação (helpers compartilhados) | concluída e commitada (`c9b2e7e`, ADR 0029) |
 | Pós-12: tempo de resposta | concluída e commitada (`b41ca29`, ADR 0030) |
 | Pós-12: quartis e IQR | concluída e commitada (`e1dbb14`, ADR 0031) |
-| Pós-12: média ponderada e tabela de frequências | **concluída, aguardando revisão e commit** (ADR 0032) |
+| Pós-12: média ponderada e tabela de frequências | concluída e commitada (`1d9b49e`, ADR 0032) |
 | 4 a 12 | ver [docs/roadmap.md](docs/roadmap.md) |
 
 Duas coisas continuam abertas, ambas em

@@ -3,9 +3,10 @@
 - **Fase:** pós-Fase 12, item do backlog "média ponderada e tabela de frequências"
 - **ADR:** [0032](decisions/0032-media-ponderada-e-frequencias.md)
 - **Data:** 2026-10-21
-- **Status:** implementação concluída, testada e documentada; **aguardando revisão e commit do usuário**
+- **Status:** implementação concluída, testada, documentada e commitada em
+  `1d9b49e` (enviada para `origin/main`); CI verde
 - **Base do Git:** `e1dbb14` (`main`, já com a ADR 0031 / quartis e IQR)
-- **Commits feitos pelo assistente:** nenhum. Todas as mudanças estão no working tree.
+- **Commit da fase:** `1d9b49e`, feito pelo usuário; working tree limpo
 
 Este arquivo é um handoff da fase: decisões, mudanças por arquivo, exemplos,
 verificação, testes e o que ficou pendente. O resumo permanente do projeto
@@ -439,7 +440,9 @@ Antes da fase: **355** testes. Depois: **363** (+8).
 git diff --check                  → limpo
 ```
 
-Nenhum commit foi feito pelo assistente. O usuário faz os commits.
+O assistente não fez commits; o usuário commitou a fase como `1d9b49e`,
+já enviada para `origin/main`. A CI do push terminou com **sucesso**
+(run `39868833778`).
 
 ---
 
@@ -584,9 +587,9 @@ npm run build
 
 ### 10.1 Desta fase
 
-- [ ] Revisão do usuário.
-- [ ] Commit das mudanças (o usuário faz os commits).
-- [ ] Rodar a CI no Linux depois do push.
+- [x] Revisão do usuário.
+- [x] Commit das mudanças (`1d9b49e`, enviado para `origin/main`).
+- [x] CI no Linux: sucesso (run `39868833778`).
 
 ### 10.2 Backlog de estatística
 

@@ -33,7 +33,7 @@ Regras gerais:
 | — | Dívida de duplicação (helpers compartilhados) | concluída |
 | — | Tempo de resposta | concluída |
 | — | Quartis e IQR | concluída |
-| — | Média ponderada e tabela de frequências | concluída (aguardando revisão) |
+| — | Média ponderada e tabela de frequências | concluída |
 
 ## Fase 0 — Auditoria e arquitetura
 
@@ -656,6 +656,7 @@ determinística.
     `Counter`, com relativas somando 1;
   - quatro fixtures recapturados e dois novos (média ponderada e tabela).
 - **Testes:** 1 740 no backend (eram 1 713) e 363 no frontend (eram 355).
+- **Commit:** `1d9b49e` (enviado para `origin/main`).
 
 ## Sugestões registradas (fora do escopo atual)
 
